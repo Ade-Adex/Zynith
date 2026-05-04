@@ -40,7 +40,7 @@ export const Hero = () => {
 
               <button
                 onClick={() => setIsVideoOpen(true)}
-                className="group flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-slate-900"
+                className="group flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-slate-900 cursor-pointer"
               >
                 <div className="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center group-hover:bg-slate-50 group-hover:border-blue-200 transition-all duration-300">
                   <Play size={14} className="fill-slate-900 ml-1" />
