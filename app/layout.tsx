@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
-import { geistSans, geistMono } from './fonts' 
+import { geistSans, geistMono } from './fonts'
 import './globals.css'
 import { Navbar } from '@/app/components/layout/Navbar/Navbar'
 import { Footer } from '@/app/components/layout/Footer'
+import { AppProviders } from './providers' // Import the new wrapper
 
 export const metadata: Metadata = {
   title: 'Zynith | High-Fidelity LMS',
@@ -20,12 +21,14 @@ export default function RootLayout({
         className={`
           ${geistSans.variable} 
           ${geistMono.variable} 
-          min-h-screen antialiased
+          min-h-screen antialiased bg-white text-[#171717]
         `}
       >
-        <Navbar />
-        {children}
-        <Footer />
+        <AppProviders>
+          <Navbar />
+          <main>{children}</main>
+          <Footer />
+        </AppProviders>
       </body>
     </html>
   )

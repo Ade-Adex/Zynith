@@ -2,7 +2,7 @@ import { Zap, Shield, Users, BarChart3 } from 'lucide-react'
 
 export const Features = () => (
   <section className="py-24 bg-white">
-    <div className="max-w-7xl mx-auto px-6">
+    <div className="max-w-5xl mx-auto px-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
         {[
           {

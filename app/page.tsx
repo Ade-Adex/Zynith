@@ -42,7 +42,7 @@ export default function LandingPage() {
               <button
                 key={type}
                 onClick={() => setFilter(type)}
-                className={`px-8 py-2 rounded-lg text-[10px] font-black uppercase tracking-[0.15em] transition-all duration-300 ${
+                className={`px-8 py-2 rounded-lg text-xs! font-bold! uppercase tracking-[0.15em] transition-all duration-300 ${
                   filter === type
                     ? 'bg-white text-blue-600 shadow-sm border border-slate-100 scale-[1.02]'
                     : 'text-slate-400 hover:text-slate-600'
@@ -70,7 +70,7 @@ export default function LandingPage() {
         )}
 
         <div className="mt-20 flex justify-center">
-          <button className="px-10 py-4 bg-slate-900 text-white rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">
+          <button className="px-10 py-3 bg-slate-900 text-white rounded-xl text-sm! font-bold! uppercase tracking-widest hover:bg-blue-600 transition-colors shadow-lg shadow-slate-200">
             View All 42 Courses
           </button>
         </div>

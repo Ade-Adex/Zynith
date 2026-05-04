@@ -34,13 +34,13 @@ export const Hero = () => {
             </p>
 
             <div className="flex flex-wrap gap-6">
-              <button className="bg-slate-900 text-white px-8 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest flex items-center gap-3 hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-200 transition-all duration-300">
+              <button className="bg-slate-900 text-white px-8 py-3 rounded-xl text-sm! font-bold! uppercase tracking-widest flex items-center gap-3 hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-200 transition-all duration-300">
                 Explore Tracks <ArrowRight size={16} />
               </button>
 
               <button
                 onClick={() => setIsVideoOpen(true)}
-                className="group flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-slate-900 cursor-pointer"
+                className="group flex items-center gap-3 text-sm! font-bold! uppercase tracking-widest text-slate-900 cursor-pointer"
               >
                 <div className="w-12 h-12 rounded-full border border-slate-200 flex items-center justify-center group-hover:bg-slate-50 group-hover:border-blue-200 transition-all duration-300">
                   <Play size={14} className="fill-slate-900 ml-1" />
