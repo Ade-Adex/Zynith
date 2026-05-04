@@ -1,9 +1,7 @@
 import { Course, NavLink, StatItem } from '@/app/types'
 
 export const NAV_LINKS: NavLink[] = [
-  { label: 'Curriculum', href: '#curriculum' },
-  { label: 'Mentors', href: '#mentors' },
-  { label: 'Enterprise', href: '#enterprise' },
+  { label: 'Courses', href: '#courses' },
   { label: 'Pricing', href: '#pricing' },
 ]
 
@@ -20,7 +18,7 @@ export const COURSES: Course[] = [
     level: 'Advanced',
     color: 'from-blue-600/20 to-indigo-600/20',
     image:
-      'https://images.unsplash.com/photo-1558494949-ef010cbdcc51?q=80&w=800',
+      'https://images.unsplash.com/photo-1451187580459-43490279c0fa?q=80&w=800',
   },
   {
     id: 2,
