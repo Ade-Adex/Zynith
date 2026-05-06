@@ -1,9 +1,12 @@
+import React from 'react'
 import { PlayCircle, Star, Users, Clock, ArrowUpRight } from 'lucide-react'
 import { Course } from '@/app/types'
 import Image from 'next/image'
+import Link from 'next/link' // Import Link
 
 export const CourseCard = ({ course }: { course: Course }) => (
-  <div className="group relative h-full">
+  // Wrap the entire card in a Link to make it navigable
+  <Link href={`/courses/${course.id}`} className="group relative h-full block">
     <div className="bg-foreground/[0.02] border border-foreground/5 rounded-[32px] p-4 hover:bg-foreground/[0.04] transition-all duration-700 flex flex-col h-full">
       {/* Visual Container */}
       <div
@@ -36,7 +39,7 @@ export const CourseCard = ({ course }: { course: Course }) => (
         </div>
       </div>
 
-      {/* Content Area - flex-1 ensures this grows to fill space */}
+      {/* Content Area */}
       <div className="px-1 flex-1 flex flex-col">
         <div className="flex items-center gap-3 mb-3">
           <span
@@ -56,14 +59,13 @@ export const CourseCard = ({ course }: { course: Course }) => (
           </div>
         </div>
 
-        {/* Title container grows to push footer down */}
         <div className="flex-1">
           <h3 className="text-xs md:text-sm font-black leading-[1.1] mb-6 group-hover:translate-x-1 transition-transform duration-500 uppercase tracking-tighter">
             {course.title}
           </h3>
         </div>
 
-        {/* Footer Area - Stays at bottom */}
+        {/* Footer Area */}
         <div className="flex items-center justify-between pt-5 border-t border-foreground/5 mt-auto">
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-1">
@@ -76,10 +78,11 @@ export const CourseCard = ({ course }: { course: Course }) => (
             </div>
           </div>
           <span className="text-sm font-black tracking-tighter">
-            {course.type === 'Free' ? 'FREE' : course.price}
+            {/* Standardized Price Rendering */}
+            {course.type === 'Free' ? 'FREE' : `₦${course.price}`}
           </span>
         </div>
       </div>
     </div>
-  </div>
+  </Link>
 )
