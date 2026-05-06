@@ -1,5 +1,5 @@
 import React from 'react'
-import { ShieldCheck, ArrowRight, Award, Globe, Zap } from 'lucide-react'
+import { ShieldCheck, ArrowRight, Award, Globe, Zap, Users } from 'lucide-react'
 
 export function CourseEnrollCard({
   price,
@@ -12,7 +12,6 @@ export function CourseEnrollCard({
 
   return (
     <div className="bg-white border border-slate-200 p-10 rounded-[3rem] shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] relative overflow-hidden">
-      {/* Accent Light */}
       <div className="absolute -top-24 -right-24 w-48 h-48 bg-blue-600/10 blur-[80px] rounded-full" />
 
       <div className="mb-10 relative z-10">
@@ -20,7 +19,7 @@ export function CourseEnrollCard({
           <Zap size={12} fill="currentColor" /> Lifetime Access
         </p>
         <div className="flex items-baseline gap-3">
-          <span className="text-6xl font-black tracking-tighter italic">
+          <span className="text-2xl md:text-4xl font-black tracking-tighter italic">
             {isFree ? 'FREE' : `₦${price}`}
           </span>
           {!isFree && (
@@ -48,9 +47,9 @@ export function CourseEnrollCard({
             text: 'Industry Certificate',
           },
           {
-            icon: <Globe className="text-blue-600" size={20} />,
-            text: 'Global Community',
-          },
+            icon: <Users className="text-blue-600" size={20} />,
+            text: 'P2P Peer Grading',
+          }, // Added P2P here
           {
             icon: <ShieldCheck className="text-blue-600" size={20} />,
             text: 'Expert Support',

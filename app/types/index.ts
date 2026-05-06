@@ -9,8 +9,25 @@ export type CourseTag = 'Trending' | 'Bestseller' | 'New'
 export interface Module {
   title: string
   lessons: number
-  hasTest: boolean // For per-module test results
-  isFinal?: boolean // For course-wide final exam
+  hasTest: boolean
+  isFinal?: boolean
+  // NEW: P2P Fields
+  hasAssignment?: boolean
+  assignmentPrompt?: string
+  peerReviewsRequired?: number // Usually 3
+}
+
+export interface PeerReview {
+  id: string
+  submissionId: string
+  reviewerId: string
+  scores: {
+    technical: number // 1-5
+    clarity: number // 1-5
+    execution: number // 1-5
+  }
+  feedback: string
+  status: 'pending' | 'completed' | 'flagged'
 }
 
 export interface Course {

@@ -120,7 +120,15 @@ export const COURSES: Course[] = [
     image:
       'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?q=80&w=800',
     modules: [
-      { title: 'Memory Safety', lessons: 12, hasTest: true },
+      {
+        title: 'Memory Safety',
+        lessons: 12,
+        hasTest: true,
+        hasAssignment: true,
+        peerReviewsRequired: 3,
+        assignmentPrompt:
+          "Build a memory-safe doubly linked list using 'Box' and 'Option'.",
+      },
       { title: 'Concurrency in Rust', lessons: 8, hasTest: true },
       { title: 'Final Exam', lessons: 0, hasTest: true, isFinal: true },
     ],

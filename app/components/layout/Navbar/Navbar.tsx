@@ -11,6 +11,7 @@ import {
   ShoppingCart,
   User,
 } from 'lucide-react'
+import Link from 'next/link'
 import { useState } from 'react'
 
 export const Navbar = () => {
@@ -26,11 +27,11 @@ export const Navbar = () => {
     <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-3 md:px-5">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between relative">
         {/* Left: Logo */}
-        <div className="flex items-center z-10">
-          <span className="text-lg font-black tracking-tighter uppercase italic">
+        <Link href="/" className="flex items-center z-10">
+          <span className="text-lg font-black tracking-tighter uppercase italic cursor-pointer">
             Zynith<span className="text-blue-600">.</span>
           </span>
-        </div>
+        </Link>
 
         {/* Center: Nav Links */}
         <div className="hidden md:flex absolute left-1/2 -translate-x-1/2 items-center gap-8 text-[11px] font-bold uppercase tracking-widest text-slate-500">

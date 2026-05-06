@@ -1,5 +1,5 @@
 import React from 'react'
-import { Lock, PlayCircle, CheckCircle } from 'lucide-react'
+import { Lock, PlayCircle, Users, FileText } from 'lucide-react'
 import { Module } from '@/app/types'
 
 export function CourseCurriculum({ modules }: { modules: Module[] }) {
@@ -19,14 +19,21 @@ export function CourseCurriculum({ modules }: { modules: Module[] }) {
                 {mod.title}
               </h3>
             </div>
-            {mod.hasTest && (
-              <span className="px-3 py-1 rounded-lg bg-white border border-slate-200 text-[9px] font-black uppercase tracking-widest">
-                Includes Assessment
-              </span>
-            )}
+            <div className="flex gap-2">
+              {mod.hasAssignment && (
+                <span className="px-3 py-1 rounded-lg bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
+                  <Users size={10} /> P2P Grading
+                </span>
+              )}
+              {mod.hasTest && (
+                <span className="px-3 py-1 rounded-lg bg-white border border-slate-200 text-[9px] font-black uppercase tracking-widest">
+                  Assessment
+                </span>
+              )}
+            </div>
           </div>
+
           <div className="p-6 space-y-2">
-            {/* Generating mock lessons based on the data count */}
             {[...Array(mod.lessons || 1)].map((_, idx) => (
               <div
                 key={idx}
@@ -44,11 +51,32 @@ export function CourseCurriculum({ modules }: { modules: Module[] }) {
                     Lesson {idx + 1}: Technical Deep Dive
                   </span>
                 </div>
-                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest group-hover/item:text-slate-900">
+                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                   15:00
                 </span>
               </div>
             ))}
+
+            {/* NEW: Assignment Row */}
+            {mod.hasAssignment && (
+              <div className="mt-4 p-4 rounded-2xl bg-blue-50/50 border border-dashed border-blue-200 flex items-center justify-between group/p2p cursor-pointer hover:bg-blue-50 transition-all">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center">
+                    <FileText size={18} />
+                  </div>
+                  <div>
+                    <span className="block text-sm font-black uppercase tracking-tight text-blue-900">
+                      Module Project & Peer Review
+                    </span>
+                    <span className="text-[10px] font-bold text-blue-600/70 uppercase">
+                      Requires {mod.peerReviewsRequired || 3} Reviews to unlock
+                      next module
+                    </span>
+                  </div>
+                </div>
+                <Users size={18} className="text-blue-400" />
+              </div>
+            )}
           </div>
         </div>
       ))}
