@@ -5,7 +5,7 @@ export function CertificatePreview() {
   return (
     <section
       id="certification"
-      className="bg-slate-900 py-32 px-6 rounded-[3rem] text-white max-w-7xl mx-auto relative overflow-hidden mb-20"
+      className="bg-slate-900 py-16 px-6 rounded-[3rem] text-white max-w-7xl mx-auto relative overflow-hidden mb-20"
     >
       {/* Decorative background glow */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 blur-[100px] rounded-full -mr-32 -mt-32" />
@@ -24,7 +24,7 @@ export function CertificatePreview() {
             certificates are backed by your specific performance data and
             modular test scores.
           </p>
-          <button className="flex items-center gap-3 bg-blue-600 hover:bg-blue-500 px-8 py-4 rounded-2xl font-black uppercase text-xs transition-all">
+          <button className="flex items-center gap-3 bg-blue-600 hover:bg-blue-500 px-8 py-3 rounded-2xl font-black uppercase text-xs transition-all">
             Start Your Journey <ArrowRight size={16} />
           </button>
         </div>
