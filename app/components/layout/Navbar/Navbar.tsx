@@ -1,24 +1,29 @@
 'use client'
 
-import React from 'react'
-import {
-  Search,
-  ShoppingCart,
-  Menu as MenuIcon,
-  User,
-  LogOut,
-  Settings,
-  CreditCard,
-} from 'lucide-react'
-import { Menu, UnstyledButton, rem } from '@mantine/core'
 import { NAV_LINKS } from '@/app/data'
+import { Menu, UnstyledButton, rem } from '@mantine/core'
+import {
+  CreditCard,
+  LogOut,
+  Menu as MenuIcon,
+  Search,
+  Settings,
+  ShoppingCart,
+  User,
+} from 'lucide-react'
+import { useState } from 'react'
 
 export const Navbar = () => {
-  // Toggle this to see the different states
-  const isAuthenticated = true
+  const [isAuthenticated, setIsAuthenticated] = useState(true)
+
+  const handleLogout = () => {
+    if (isAuthenticated) {
+      setIsAuthenticated(false)
+    }
+  }
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100">
+    <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-3 md:px-5">
       <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between relative">
         {/* Left: Logo */}
         <div className="flex items-center z-10">
@@ -104,6 +109,7 @@ export const Navbar = () => {
                     leftSection={
                       <LogOut style={{ width: rem(14), height: rem(14) }} />
                     }
+                    onClick={() => handleLogout()}
                   >
                     <span className="text-[11px] font-bold">Logout</span>
                   </Menu.Item>
@@ -111,7 +117,10 @@ export const Navbar = () => {
               </Menu>
             </div>
           ) : (
-            <button className="bg-slate-900 text-white px-5 py-2 rounded-xl text-xs! font-bold! uppercase tracking-widest hover:bg-blue-600 transition-all">
+            <button
+              className="bg-slate-900 text-white px-5 py-2 rounded-xl text-xs! font-bold! uppercase tracking-widest hover:bg-blue-600 transition-all cursor-pointer"
+              onClick={() => setIsAuthenticated(true)}
+            >
               Sign In
             </button>
           )}

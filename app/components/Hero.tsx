@@ -9,7 +9,10 @@ export const Hero = () => {
 
   return (
     <>
-      <section className="pt-25 pb-20 border-b border-slate-100 bg-white overflow-hidden">
+      <section
+        id="hero"
+        className="pt-25 pb-20 border-b border-slate-100 bg-white overflow-hidden"
+      >
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Left Column: Copy & CTA */}
           <div className="relative z-10">
