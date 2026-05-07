@@ -7,33 +7,33 @@ export function CourseCurriculum({ modules }: { modules: Module[] }) {
     <div className="space-y-6">
       {modules.map((mod, i) => (
         <div
-          key={i}
+          key={mod.id}
           className="group border border-slate-100 rounded-[2.5rem] overflow-hidden hover:border-blue-200 transition-colors"
         >
-          <div className="bg-slate-50 px-10 py-6 flex justify-between items-center border-b border-slate-100 group-hover:bg-blue-50/30 transition-colors">
+          <div className="bg-slate-50 px-4 md:px-10 py-4 flex justify-between items-center border-b border-slate-100 group-hover:bg-blue-50/30 transition-colors">
             <div>
-              <p className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">
+              <p className="text-[8px] md:text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-1">
                 Module {String(i + 1).padStart(2, '0')}
               </p>
-              <h3 className="font-black uppercase tracking-tight text-lg">
+              <h3 className="font-black uppercase tracking-tight text-sm md:text-lg">
                 {mod.title}
               </h3>
             </div>
             <div className="flex gap-2">
               {mod.hasAssignment && (
-                <span className="px-3 py-1 rounded-lg bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
+                <span className="px-3 py-1 rounded-lg bg-blue-600 text-white text-[8px] md:text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
                   <Users size={10} /> P2P Grading
                 </span>
               )}
               {mod.hasTest && (
-                <span className="px-3 py-1 rounded-lg bg-white border border-slate-200 text-[9px] font-black uppercase tracking-widest">
+                <span className="px-3 py-1 rounded-lg bg-white border border-slate-200 text-[8px] md:text-[9px] font-black uppercase tracking-widest">
                   Assessment
                 </span>
               )}
             </div>
           </div>
 
-          <div className="p-6 space-y-2">
+          <div className="p-2 md:p-6 space-y-2">
             {[...Array(mod.lessons || 1)].map((_, idx) => (
               <div
                 key={idx}
@@ -57,7 +57,6 @@ export function CourseCurriculum({ modules }: { modules: Module[] }) {
               </div>
             ))}
 
-            {/* NEW: Assignment Row */}
             {mod.hasAssignment && (
               <div className="mt-4 p-4 rounded-2xl bg-blue-50/50 border border-dashed border-blue-200 flex items-center justify-between group/p2p cursor-pointer hover:bg-blue-50 transition-all">
                 <div className="flex items-center gap-4">
@@ -68,9 +67,8 @@ export function CourseCurriculum({ modules }: { modules: Module[] }) {
                     <span className="block text-sm font-black uppercase tracking-tight text-blue-900">
                       Module Project & Peer Review
                     </span>
-                    <span className="text-[10px] font-bold text-blue-600/70 uppercase">
+                    <span className="text-[8px] md:text-[10px] font-bold text-blue-600/70 uppercase">
                       Requires {mod.peerReviewsRequired || 3} Reviews to unlock
-                      next module
                     </span>
                   </div>
                 </div>

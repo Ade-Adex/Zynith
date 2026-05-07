@@ -1,88 +1,158 @@
-import React from 'react'
-import { PlayCircle, Star, Users, Clock, ArrowUpRight } from 'lucide-react'
+'use client'
+
+import React, { useState, useRef, useEffect } from 'react'
+import {
+  Star,
+  Users,
+  Clock,
+  ArrowUpRight,
+  GraduationCap,
+} from 'lucide-react'
 import { Course } from '@/app/types'
 import Image from 'next/image'
-import Link from 'next/link' // Import Link
+import Link from 'next/link'
 
-export const CourseCard = ({ course }: { course: Course }) => (
-  // Wrap the entire card in a Link to make it navigable
-  <Link href={`/courses/${course.id}`} className="group relative h-full block">
-    <div className="bg-foreground/[0.02] border border-foreground/5 rounded-[32px] p-4 hover:bg-foreground/[0.04] transition-all duration-700 flex flex-col h-full">
-      {/* Visual Container */}
-      <div
-        className={`relative aspect-[16/11] rounded-[24px] overflow-hidden mb-6 bg-gradient-to-br ${course.color}`}
-      >
-        {/* Course Image */}
-        {course.image && (
+export const CourseCard = ({ course }: { course: Course }) => {
+ const [isHovered, setIsHovered] = useState(false)
+ const [isPreviewFinished, setIsPreviewFinished] = useState(false)
+ const videoRef = useRef<HTMLVideoElement>(null)
+
+ // HANDLE HOVER LOGIC
+ const handleMouseEnter = () => {
+   setIsHovered(true)
+ }
+
+ const handleMouseLeave = () => {
+   setIsHovered(false)
+   setIsPreviewFinished(false) // Reset state here, outside the effect
+   if (videoRef.current) {
+     videoRef.current.pause()
+     videoRef.current.currentTime = 0
+   }
+ }
+
+ useEffect(() => {
+   let timer: NodeJS.Timeout
+
+   // Only start the timer/video if we are hovered and hasn't finished yet
+   if (isHovered && !isPreviewFinished && videoRef.current) {
+     videoRef.current.play().catch(() => {
+       /* silenty handle autoplay block */
+     })
+
+     timer = setTimeout(() => {
+       if (videoRef.current) {
+         videoRef.current.pause()
+         setIsPreviewFinished(true)
+       }
+     }, 5000)
+   }
+
+   return () => {
+     if (timer) clearTimeout(timer)
+   }
+   // We only react to changes in isHovered or isPreviewFinished
+ }, [isHovered, isPreviewFinished])
+
+  return (
+    <Link
+      href={`/courses/${course.id}`}
+      className="group relative h-full block no-underline text-inherit"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      <div className="bg-white border border-foreground/5 rounded-[32px] p-4 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 flex flex-col h-full">
+        {/* Visual Media Container */}
+        <div
+          className={`relative aspect-[16/10] rounded-[24px] overflow-hidden mb-6 bg-gradient-to-br ${course.color}`}
+        >
+          {/* Static Image - Shows if not hovered OR if the 5s preview is done */}
           <Image
             src={course.image}
             alt={course.title}
             fill
-            className="object-cover transition-transform duration-700 group-hover:scale-110"
+            className={`object-cover transition-opacity duration-500 ${(isHovered && !isPreviewFinished) && course.previewVideo ? 'opacity-0' : 'opacity-100'}`}
           />
-        )}
 
-        <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 backdrop-blur-sm bg-background/20 z-10">
-          <div className="p-4 bg-background rounded-full shadow-2xl scale-75 group-hover:scale-100 transition-transform duration-500">
-            <PlayCircle className="text-primary fill-primary/10" size={32} />
+          {/* Video Preview */}
+          {course.previewVideo && (
+            <video
+              ref={videoRef}
+              src={course.previewVideo}
+              muted
+              playsInline
+              // Remove "loop" if you want it to strictly stop at the end of the file/5s
+              className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-500 ${isHovered && !isPreviewFinished ? 'opacity-100' : 'opacity-0'}`}
+            />
+          )}
+
+          {/* Top Badges */}
+          <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
+            <div className="flex gap-2">
+              <span className="px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur text-[8px] font-black uppercase tracking-widest border border-foreground/5">
+                {course.level}
+              </span>
+              {course.tag && (
+                <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest">
+                  {course.tag}
+                </span>
+              )}
+            </div>
+            <div
+              className={`w-8 h-8 rounded-full bg-white/90 flex items-center justify-center transition-all ${isHovered ? 'opacity-100' : 'opacity-0'}`}
+            >
+              <ArrowUpRight size={14} className="text-blue-600" />
+            </div>
           </div>
         </div>
 
-        {/* Top Badges */}
-        <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
-          <span className="px-2.5 py-1 rounded-lg bg-background/90 backdrop-blur text-[8px] font-black uppercase tracking-tighter border border-foreground/5">
-            {course.level}
-          </span>
-          <div className="w-8 h-8 rounded-full bg-background/90 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-            <ArrowUpRight size={14} className="text-primary" />
+        {/* Content Area */}
+        <div className="px-1 flex-1 flex flex-col">
+          <div className="flex items-center gap-3 mb-4">
+            <span
+              className={`text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-md ${course.type === 'Free' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-blue-500/10 text-blue-600'}`}
+            >
+              {course.type}
+            </span>
+            <div className="flex items-center gap-1 opacity-50">
+              <Clock size={10} />
+              <span className="text-[9px] font-black uppercase tracking-widest">
+                {course.duration}
+              </span>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Content Area */}
-      <div className="px-1 flex-1 flex flex-col">
-        <div className="flex items-center gap-3 mb-3">
-          <span
-            className={`text-[9px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded-md ${
-              course.type === 'Free'
-                ? 'bg-emerald-500/10 text-emerald-500'
-                : 'bg-primary/10 text-primary'
-            }`}
-          >
-            {course.type}
-          </span>
-          <div className="flex items-center gap-1 opacity-80">
-            <Clock size={10} />
-            <span className="text-[9px] font-black uppercase tracking-widest">
-              {course.duration}
+          <h3 className="text-sm md:text-[15px] font-black leading-[1.2] mb-2 transition-colors group-hover:text-blue-600 uppercase tracking-tighter">
+            {course.title}
+          </h3>
+          <div className="flex items-center gap-1.5 mb-6 opacity-60">
+            <GraduationCap size={12} />
+            <p className="text-[10px] font-bold uppercase tracking-wider">
+              {course.instructor}
+            </p>
+          </div>
+
+          <div className="flex items-center justify-between pt-5 border-t border-foreground/5 mt-auto">
+            <div className="flex items-center gap-4 opacity-70">
+              <div className="flex items-center gap-1">
+                <Star size={10} className="fill-amber-400 text-amber-400" />
+                <span className="text-[11px] font-black">
+                  {course.rating.toFixed(1)}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Users size={10} />
+                <span className="text-[11px] font-black">
+                  {course.students.toLocaleString()}
+                </span>
+              </div>
+            </div>
+            <span className="text-[15px] font-black tracking-tighter">
+              {course.type === 'Free' ? 'FREE' : `₦${course.price}`}
             </span>
           </div>
         </div>
-
-        <div className="flex-1">
-          <h3 className="text-xs md:text-sm font-black leading-[1.1] mb-6 group-hover:translate-x-1 transition-transform duration-500 uppercase tracking-tighter">
-            {course.title}
-          </h3>
-        </div>
-
-        {/* Footer Area */}
-        <div className="flex items-center justify-between pt-5 border-t border-foreground/5 mt-auto">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-1">
-              <Star size={10} className="fill-primary text-orange-600" />
-              <span className="text-[11px] font-black">{course.rating}</span>
-            </div>
-            <div className="flex items-center gap-1 opacity-80">
-              <Users size={10} />
-              <span className="text-[11px] font-black">{course.students}</span>
-            </div>
-          </div>
-          <span className="text-sm font-black tracking-tighter">
-            {/* Standardized Price Rendering */}
-            {course.type === 'Free' ? 'FREE' : `₦${course.price}`}
-          </span>
-        </div>
       </div>
-    </div>
-  </Link>
-)
+    </Link>
+  )
+}
