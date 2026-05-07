@@ -30,14 +30,22 @@ import { MOCK_USER } from '@/app/data/mockUser'
 import { SidebarContent } from '@/app/components/dashboard/SidebarContent'
 import Link from 'next/link'
 import { useMediaQuery } from '@mantine/hooks'
+import { useRouter } from 'next/navigation'
+import { useAuth } from '@/app/context/AuthContext'
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const [opened, { toggle }] = useDisclosure(true)
+ const [opened, { toggle }] = useDisclosure(true)
   const isMobile = useMediaQuery(`(max-width: ${rem(768)})`)
+  const { user, logout } = useAuth()
+  const router = useRouter()
+
+ if (!user) {
+   return null 
+ }
 
   return (
     <AppShell
@@ -132,8 +140,12 @@ export default function DashboardLayout({
                   Settings
                 </Menu.Item>
                 <Menu.Divider />
-                <Menu.Item color="red" leftSection={<LogOut size={16} />}>
-                  Logout
+                <Menu.Item
+                  color="red"
+                  onClick={logout}
+                  leftSection={<LogOut size={16} />}
+                >
+                  <span className="font-bold">Logout</span>
                 </Menu.Item>
               </Menu.Dropdown>
             </Menu>
@@ -149,7 +161,7 @@ export default function DashboardLayout({
 
         {/* Mini Profile info when Sidebar is Open */}
         {opened && (
-          <AppShell.Section className="border-t border-slate-50 pt-4">
+          <AppShell.Section className="border-t border-slate-50 pt-0">
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
               <Avatar src={MOCK_USER.avatar} size="sm" radius="md" />
               <div className="flex-1 overflow-hidden">

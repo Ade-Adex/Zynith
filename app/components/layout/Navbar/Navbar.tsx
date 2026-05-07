@@ -1,5 +1,6 @@
 'use client'
 
+import { useAuth } from '@/app/context/AuthContext'
 import { NAV_LINKS } from '@/app/data'
 import { MOCK_USER } from '@/app/data/mockUser'
 import {
@@ -27,13 +28,8 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 export const Navbar = () => {
-  const [isAuthenticated, setIsAuthenticated] = useState(true)
 
-  const handleLogout = () => {
-    if (isAuthenticated) {
-      setIsAuthenticated(false)
-    }
-  }
+  const { user, logout, login, isAuthenticated } = useAuth()
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-5">
@@ -202,7 +198,7 @@ export const Navbar = () => {
                     leftSection={
                       <LogOut style={{ width: rem(14), height: rem(14) }} />
                     }
-                    onClick={handleLogout}
+                    onClick={logout}
                   >
                     <span className="text-[11px] font-bold">Logout</span>
                   </Menu.Item>
@@ -212,7 +208,7 @@ export const Navbar = () => {
           ) : (
             <button
               className="bg-slate-900 text-white px-5 py-1.5! rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-md active:scale-95 cursor-pointer"
-              onClick={() => setIsAuthenticated(true)}
+              onClick={login}
             >
               Sign In
             </button>
