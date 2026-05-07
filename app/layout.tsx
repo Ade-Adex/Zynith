@@ -1,9 +1,12 @@
+// /app/layout.tsx
+
+
 import type { Metadata } from 'next'
-import { geistSans, geistMono } from './fonts'
+import { jakarta, inter, jetbrains } from './fonts'
 import './globals.css'
 import { Navbar } from '@/app/components/layout/Navbar/Navbar'
 import { Footer } from '@/app/components/layout/Footer'
-import { AppProviders } from './providers' // Import the new wrapper
+import { AppProviders } from './providers'
 
 export const metadata: Metadata = {
   title: 'Zynith | High-Fidelity LMS',
@@ -16,14 +19,11 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
-      <body
-        className={`
-          ${geistSans.variable} 
-          ${geistMono.variable} 
-          min-h-screen antialiased bg-white text-[#171717]
-        `}
-      >
+    <html
+      lang="en"
+      className={`scroll-smooth ${jakarta.variable} ${inter.variable} ${jetbrains.variable}`}
+    >
+      <body className="min-h-screen font-sans antialiased">
         <AppProviders>
           <Navbar />
           <main>{children}</main>

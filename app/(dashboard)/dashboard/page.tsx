@@ -1,6 +1,10 @@
-import { MOCK_USER } from '@/app/data/mockUser'
-import { Enrollment } from '@/app/types/user'
+'use client'
 
+import React from 'react'
+import { MOCK_USER } from '@/app/data/mockUser'
+import { COURSES } from '@/app/data'
+import { Enrollment } from '@/app/types/user'
+import Link from 'next/link'
 import {
   Card,
   Text,
@@ -10,6 +14,7 @@ import {
   SimpleGrid,
   Paper,
   Stack,
+  rem,
 } from '@mantine/core'
 import {
   Zap,
@@ -20,6 +25,7 @@ import {
   Wallet,
   ChevronRight,
 } from 'lucide-react'
+import { useMediaQuery } from '@mantine/hooks'
 
 interface StatProps {
   label: string
@@ -29,17 +35,25 @@ interface StatProps {
 }
 
 export default function DashboardOverview() {
-  const currentCourse: Enrollment = MOCK_USER.enrollments[0]
+  // Get enrollment and find matching course data
+  const enrollment: Enrollment = MOCK_USER.enrollments[0]
+  const courseDetails = COURSES.find((c) => c.id === enrollment.courseId)
+
+  const isMobile = useMediaQuery(`(max-width: ${rem(768)})`)
+  // Find current module title from course details
+  const currentModule = courseDetails?.modules.find(
+    (m) => m.id === enrollment.currentModuleId,
+  )
 
   return (
-    <div className='py-12'>
+    <div className="py-12">
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className='mb-8'>
+        <div className="mb-8">
           <Badge
             variant="dot"
             color="blue"
-            className="mb-2 uppercase font-black tracking-widest text-[9px]"
+            className="mb-4 md:mb-2 uppercase font-black tracking-widest text-[9px]"
           >
             Student Workspace
           </Badge>
@@ -52,7 +66,7 @@ export default function DashboardOverview() {
           withBorder
           radius="md"
           p="xs"
-          className="flex items-center gap-2 px-4 bg-white shadow-sm mb-5"
+          className=" flex items-center justify-items-center md:justify-items-start gap-2 px-4 bg-white shadow-sm mb-5"
         >
           <Clock size={14} className="text-slate-400" />
           <Text
@@ -66,7 +80,7 @@ export default function DashboardOverview() {
       </div>
 
       {/* Stats Grid */}
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md">
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md" mb="xl">
         <StatItem
           label="Course Points"
           value={MOCK_USER.stats.points.toLocaleString()}
@@ -97,18 +111,21 @@ export default function DashboardOverview() {
         {/* Main Learning Card */}
         <div className="lg:col-span-8">
           <Card
-            padding="xl"
+            padding={isMobile ? '6px' : 'xl'}
             radius="32px"
-            className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white overflow-hidden relative min-h-[340px] flex flex-col justify-between"
+            className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white overflow-hidden relative min-h-85 flex flex-col justify-between"
           >
-            <div className="absolute top-0 right-0 p-8">
-              <div className="w-32 h-32 bg-blue-50 rounded-full blur-3xl opacity-60" />
+            {/* Visual background gradient based on course color */}
+            <div className="absolute top-0 right-0 md:p-8">
+              <div
+                className={`w-40 h-40 bg-linear-to-br ${courseDetails?.color || 'from-blue-50 to-indigo-50'} rounded-full blur-3xl opacity-20`}
+              />
             </div>
 
             <Stack>
               <Group justify="space-between">
                 <Badge
-                  size="md"
+                  size="sm"
                   radius="sm"
                   color="blue"
                   variant="light"
@@ -116,62 +133,77 @@ export default function DashboardOverview() {
                 >
                   Current Track
                 </Badge>
-                <ArrowUpRight className="text-slate-300" />
+                <Link href={`/courses/${enrollment.courseId}`}>
+                  <ArrowUpRight className="text-slate-300 hover:text-blue-600 transition-colors cursor-pointer" />
+                </Link>
               </Group>
 
               <div className="mt-4">
                 <Text
-                  size="24px"
+                  size="20px"
                   fw={900}
-                  className="tracking-tighter leading-tight max-w-md text-slate-900"
+                  className="tracking-tighter leading-tight max-w-md text-slate-900 uppercase"
                 >
-                  {currentCourse.courseTitle}
+                  {courseDetails?.title || enrollment.courseTitle}
                 </Text>
                 <Text
                   c="dimmed"
                   fw={700}
-                  className="uppercase tracking-[0.2em] text-[10px]! mt-2!"
+                  className="uppercase tracking-[0.2em] text-[10px]! mt-1.5!"
                 >
-                  Module {currentCourse.currentModuleId} • Lecture 4: Ownership
-                  & Borrowing
+                  {currentModule
+                    ? `Module ${enrollment.currentModuleId} • ${currentModule.title}`
+                    : `Module ${enrollment.currentModuleId} • Continuing Lessons`}
                 </Text>
               </div>
             </Stack>
 
-            <div className="mt-10">
+            <div className="mt-4">
               <Group justify="space-between" mb="xs">
-                <Text size="xs" fw={900} color="blue">
-                  {currentCourse.progressPercentage}% COMPLETE
+                <Text
+                  size="10px"
+                  fw={900}
+                  color="blue"
+                  className="tracking-widest"
+                >
+                  {enrollment.progressPercentage}% COMPLETE
                 </Text>
                 <Text size="xs" fw={800} c="dimmed">
-                  12 / 24 LESSONS
+                  {/* Estimated lesson count based on 20 lessons total */}
+                  {Math.round((enrollment.progressPercentage / 100) * 20)} / 20
+                  LESSONS
                 </Text>
               </Group>
               <Progress
-                value={currentCourse.progressPercentage}
+                value={enrollment.progressPercentage}
                 color="blue"
-                size="xl"
+                size="lg"
                 radius="xl"
                 className="bg-slate-100"
               />
-              <button className="mt-8 bg-slate-900 text-white w-full md:w-auto px-10 py-3 rounded-2xl text-[11px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-blue-900/10">
-                Resume Course
-              </button>
+              <Link
+                href={`/courses/${enrollment.courseId}/learn`}
+                className="block mt-8"
+              >
+                <button className="bg-slate-900 text-white w-full md:w-auto px-10 py-3 rounded-2xl text-xs! font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-blue-900/10">
+                  Resume Course
+                </button>
+              </Link>
             </div>
           </Card>
         </div>
 
         {/* Sidebar Mini-Tasks */}
-        <div className="lg:col-span-4 space-y-6 mt-6">
+        <div className="lg:col-span-4 space-y-6">
           <Paper
-            p="lg"
+            p={isMobile ? 'sm' : 'lg'}
             radius="32px"
             withBorder
             className="border-slate-100 bg-white shadow-sm"
           >
             <Text
               fw={900}
-              className="uppercase tracking-widest text-[11px] mb-6 text-slate-400"
+              className="uppercase tracking-widest text-sm! mb-6 text-slate-400"
             >
               P2P Pending Reviews
             </Text>
@@ -179,9 +211,9 @@ export default function DashboardOverview() {
               {[1, 2].map((id) => (
                 <div
                   key={id}
-                  className="group flex items-center gap-4 py-3 hover:bg-slate-50 rounded-2xl transition-all cursor-pointer border border-transparent hover:border-slate-100"
+                  className="group flex items-center gap-4 py-3 hover:bg-slate-50 rounded-2xl transition-all cursor-pointer border border-transparent hover:border-slate-100 "
                 >
-                  <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 font-bold text-xs group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
+                  <div className="w-8 h-8 bg-slate-50 rounded-xl flex items-center justify-center text-slate-400 font-bold text-xs group-hover:bg-blue-100 group-hover:text-blue-600 transition-colors">
                     {id === 1 ? 'R' : 'G'}
                   </div>
                   <div className="flex-1">
@@ -199,7 +231,7 @@ export default function DashboardOverview() {
                   <ChevronRight size={14} className="text-slate-300" />
                 </div>
               ))}
-              <button className="w-full mt-4 text-[10px]! font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 py-3 rounded-xl transition-all">
+              <button className="w-full mt-4 text-sm! font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 py-3 rounded-xl transition-all">
                 Access Grading Hub
               </button>
             </Stack>
@@ -213,13 +245,13 @@ export default function DashboardOverview() {
 function StatItem({ label, value, icon, trend }: StatProps) {
   return (
     <Paper
-      p="xl"
+      p="md"
       radius="28px"
       withBorder
       className="border-slate-100 bg-white hover:border-blue-100 hover:shadow-lg hover:shadow-blue-900/5 transition-all duration-300 group"
     >
-      <Group justify="space-between" mb="lg">
-        <div className="p-3 bg-slate-50 rounded-2xl group-hover:bg-blue-50 transition-colors">
+      <Group justify="space-between" mb="md">
+        <div className="p-2 bg-slate-50 rounded-2xl group-hover:bg-blue-50 transition-colors">
           {icon}
         </div>
         <Badge
@@ -231,14 +263,14 @@ function StatItem({ label, value, icon, trend }: StatProps) {
           {trend}
         </Badge>
       </Group>
-      <Text size="20px" fw={900} className="tracking-tighter text-slate-900">
+      <Text size="18px" fw={900} className="tracking-tighter text-slate-900">
         {value}
       </Text>
       <Text
-        size="9px"
+        size="8px"
         fw={800}
         c="dimmed"
-        className="uppercase tracking-widest mt-2!"
+        className="uppercase tracking-widest mt-1.5!"
       >
         {label}
       </Text>

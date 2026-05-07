@@ -107,7 +107,7 @@ export default function DashboardLayout({
                   position="right"
                   withArrow
                 >
-                  <Link href={item.href} className="no-underline">
+                  <Link href={item.href} className="no-underline font-inter font-semibold">
                     <NavLink
                       label={opened ? item.label : null}
                       leftSection={
