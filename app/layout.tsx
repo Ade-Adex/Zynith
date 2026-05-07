@@ -4,8 +4,6 @@
 import type { Metadata } from 'next'
 import { jakarta, inter, jetbrains } from './fonts'
 import './globals.css'
-import { Navbar } from '@/app/components/layout/Navbar/Navbar'
-import { Footer } from '@/app/components/layout/Footer'
 import { AppProviders } from './providers'
 
 export const metadata: Metadata = {
@@ -25,9 +23,7 @@ export default function RootLayout({
     >
       <body className="min-h-screen font-sans antialiased">
         <AppProviders>
-          <Navbar />
           <main>{children}</main>
-          <Footer />
         </AppProviders>
       </body>
     </html>

@@ -1,50 +1,35 @@
+// /app/(dashboard)/layout.tsx
+
 'use client'
 
 import React from 'react'
 import {
   AppShell,
   Burger,
-  NavLink,
-  ScrollArea,
-  Avatar,
   Group,
+  Avatar,
   Text,
-  Badge,
-  Tooltip,
   ActionIcon,
-  Stack,
+  Tooltip,
+  ScrollArea,
+  Menu,
+  rem,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import {
-  LayoutDashboard,
-  BookOpen,
-  Award,
-  Users,
-  Wallet,
-  Settings,
-  LogOut,
-  ChevronLeft,
+  Search,
+  Bell,
   Flame,
+  Zap,
+  Menu as MenuIcon,
+  LogOut,
+  User,
+  Settings,
 } from 'lucide-react'
 import { MOCK_USER } from '@/app/data/mockUser'
+import { SidebarContent } from '@/app/components/dashboard/SidebarContent'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-
-interface SidebarItem {
-  icon: React.ElementType
-  label: string
-  href: string
-  badge?: number
-}
-
-const SIDEBAR_DATA: SidebarItem[] = [
-  { icon: LayoutDashboard, label: 'Overview', href: '/dashboard' },
-  { icon: BookOpen, label: 'My Learning', href: '/dashboard/courses' },
-  { icon: Users, label: 'Peer Review', href: '/dashboard/p2p', badge: 2 },
-  { icon: Award, label: 'Certificates', href: '/dashboard/certificates' },
-  { icon: Wallet, label: 'Marketplace', href: '/dashboard/wallet' },
-  { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
-]
+import { useMediaQuery } from '@mantine/hooks'
 
 export default function DashboardLayout({
   children,
@@ -52,129 +37,137 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   const [opened, { toggle }] = useDisclosure(true)
-  const pathname = usePathname()
+  const isMobile = useMediaQuery(`(max-width: ${rem(768)})`)
 
   return (
     <AppShell
+      header={{ height: 70 }}
       navbar={{
-        width: opened ? 280 : 80,
+        width: opened ? 260 : 80,
         breakpoint: 'sm',
         collapsed: { mobile: !opened },
       }}
-      padding="lg"
-      transitionDuration={300}
-      transitionTimingFunction="ease"
-      className="bg-[#fcfcfd]"
+      className="bg-[#fcfcfd] px-8"
     >
-      <AppShell.Navbar
-        p="md"
-        className="border-r border-slate-100 shadow-sm bg-white"
-      >
-        {/* Header / Logo */}
-        <AppShell.Section className="flex items-center justify-between px-2 mb-10 mt-2">
-          {opened && (
-            <Link
-              href="/"
-              className="tracking-tighter italic text-xl  font-extrabold uppercase"
+      {/* Global Dashboard Header */}
+      <AppShell.Header className="border-b border-slate-100 px-6 bg-white/80 backdrop-blur-md">
+        <Group h="100%" justify="space-between" wrap="nowrap">
+          <Group gap="md">
+            <ActionIcon
+              variant="subtle"
+              color="gray"
+              onClick={toggle}
+              size="lg"
+              className="hover:bg-slate-50"
             >
-              ZYNITH<span className="text-blue-600">.</span>
+              <MenuIcon size={20} className="text-slate-600" />
+            </ActionIcon>
+
+            <Link href="/" className="hidden sm:block">
+              <Text className="tracking-tighter italic text-xl font-black uppercase text-slate-900">
+                ZYNITH<span className="text-blue-600">.</span>
+              </Text>
             </Link>
-          )}
-          <ActionIcon
-            variant="subtle"
-            color="gray"
-            onClick={toggle}
-            className={!opened ? 'mx-auto' : ''}
-          >
-            {opened ? (
-              <ChevronLeft size={18} />
-            ) : (
-              <Burger opened={false} size="sm" />
-            )}
-          </ActionIcon>
-        </AppShell.Section>
+          </Group>
 
-        {/* Navigation */}
-        <AppShell.Section grow component={ScrollArea} className="-mx-2 px-2">
-          <Stack gap={4}>
-            {SIDEBAR_DATA.map((item) => {
-              const isActive = pathname === item.href
-              return (
-                <Tooltip
-                  key={item.label}
-                  label={item.label}
-                  disabled={opened}
-                  position="right"
-                  withArrow
-                >
-                  <Link href={item.href} className="no-underline font-inter font-semibold">
-                    <NavLink
-                      label={opened ? item.label : null}
-                      leftSection={
-                        <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
-                      }
-                      rightSection={
-                        opened && item.badge ? (
-                          <Badge size="xs" color="blue" variant="filled">
-                            {item.badge}
-                          </Badge>
-                        ) : null
-                      }
-                      active={isActive}
-                      variant="light"
-                      color="blue"
-                      className={`rounded-xl py-3! font-bold! uppercase tracking-widest text-[10px]! transition-all
-                        ${isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-500 hover:bg-slate-50'}
-                      `}
-                    />
-                  </Link>
-                </Tooltip>
-              )
-            })}
-          </Stack>
-        </AppShell.Section>
-
-        {/* Footer / User Profile */}
-        <AppShell.Section className="border-t border-slate-50 pt-6">
-          <Group
-            justify={opened ? 'space-between' : 'center'}
-            className={`transition-all ${opened ? 'bg-slate-50 p-2 rounded-2xl border border-slate-100' : ''}`}
-          >
-            <Avatar
-              src={MOCK_USER.avatar}
-              radius="xl"
-              size={opened ? 'md' : 'sm'}
-            />
-            {opened && (
-              <div className="flex-1 min-w-0">
-                <Text size="xs" fw={900} className="truncate uppercase">
-                  {MOCK_USER.firstName}
-                </Text>
-                <div className="flex items-center gap-1">
+          <Group gap={isMobile ? '6px' : '12px'}>
+            {/* Gamification Stats */}
+            <Group gap="xs" className="hidden! lg:flex">
+              <Tooltip label="12 Day Streak">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 rounded-lg border border-orange-100">
                   <Flame
-                    size={10}
+                    size={14}
                     className="text-orange-500 fill-orange-500"
                   />
-                  <Text size="10px" c="dimmed" fw={700}>
-                    {MOCK_USER.stats.streakDays} Day Streak
+                  <span className="text-xs font-black text-orange-600">
+                    {MOCK_USER.stats.streakDays}
+                  </span>
+                </div>
+              </Tooltip>
+
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-100">
+                <Zap size={14} className="text-blue-600 fill-blue-600" />
+                <span className="text-xs font-black text-blue-600 uppercase">
+                  {MOCK_USER.stats.points.toLocaleString()} PTS
+                </span>
+              </div>
+            </Group>
+
+            <ActionIcon variant="subtle" color="gray" size="lg">
+              <Bell size={20} />
+            </ActionIcon>
+
+            {/* Profile Dropdown */}
+            <Menu
+              shadow="md"
+              width={220}
+              radius="md"
+              position="bottom-end"
+              transitionProps={{ transition: 'pop-top-right' }}
+            >
+              <Menu.Target>
+                <Avatar
+                  src={MOCK_USER.avatar}
+                  radius="xl"
+                  size="md"
+                  className="cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all"
+                />
+              </Menu.Target>
+              <Menu.Dropdown>
+                <div className="px-3 py-2 mb-1">
+                  <Text
+                    size="xs"
+                    fw={900}
+                    className="uppercase tracking-widest text-slate-400"
+                  >
+                    Account
+                  </Text>
+                  <Text size="sm" fw={700}>
+                    {MOCK_USER.name}
                   </Text>
                 </div>
-              </div>
-            )}
-            {opened && (
-              <LogOut
-                size={14}
-                className="text-slate-300 hover:text-red-500 cursor-pointer"
-              />
-            )}
+                <Menu.Divider />
+                <Menu.Item leftSection={<User size={16} />}>Profile</Menu.Item>
+                <Menu.Item leftSection={<Settings size={16} />}>
+                  Settings
+                </Menu.Item>
+                <Menu.Divider />
+                <Menu.Item color="red" leftSection={<LogOut size={16} />}>
+                  Logout
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
           </Group>
+        </Group>
+      </AppShell.Header>
+
+      {/* Sidebar Section */}
+      <AppShell.Navbar className="border-r border-slate-100 px-4 py-10">
+        <AppShell.Section grow component={ScrollArea} mx="-xs" px="xs">
+          <SidebarContent isCollapsed={!opened} />
         </AppShell.Section>
+
+        {/* Mini Profile info when Sidebar is Open */}
+        {opened && (
+          <AppShell.Section className="border-t border-slate-50 pt-4">
+            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+              <Avatar src={MOCK_USER.avatar} size="sm" radius="md" />
+              <div className="flex-1 overflow-hidden">
+                <Text size="11px" fw={900} className="truncate uppercase">
+                  {MOCK_USER.firstName}
+                </Text>
+                <Text size="10px" c="dimmed" fw={700} className="truncate">
+                  Active Student
+                </Text>
+              </div>
+            </div>
+          </AppShell.Section>
+        )}
       </AppShell.Navbar>
 
+      {/* Primary Content Window */}
       <AppShell.Main>
-        <div className="max-w-300 mx-auto animate-in fade-in slide-in-from-bottom-4 duration-500">
-          {children}
-        </div>
+        <div className="max-w-6xl mx-auto ">{children}</div>
       </AppShell.Main>
     </AppShell>
   )

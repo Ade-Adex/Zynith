@@ -6,7 +6,7 @@ export const MOCK_USER: UserType = {
   firstName: 'Solomon',
   lastName: 'Oluwatosin',
   username: 'solomon_codes',
-  email: 'solomon@christbcogbomoso.org',
+  email: 'solomon@gmail.com',
   avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=Solomon',
   role: 'STUDENT',
   headline: 'Building the Digital World Through Code',
