@@ -8,7 +8,7 @@ export function CourseCurriculum({ modules }: { modules: Module[] }) {
       {modules.map((mod, i) => (
         <div
           key={mod.id}
-          className="group border border-slate-100 rounded-[2.5rem] overflow-hidden hover:border-blue-200 transition-colors"
+          className="group border border-slate-200 rounded-2xl  overflow-hidden hover:border-blue-200 transition-colors"
         >
           <div className="bg-slate-50 px-4 md:px-10 py-4 flex justify-between items-center border-b border-slate-100 group-hover:bg-blue-50/30 transition-colors">
             <div>

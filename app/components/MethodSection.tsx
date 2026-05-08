@@ -21,7 +21,7 @@ export function MethodSection() {
   ]
 
   return (
-    <section id="method" className="max-w-7xl mx-auto md:px-6 py-24">
+    <section id="method" className="max-w-7xl mx-auto py-24">
       <div className="text-center mb-16">
         <span className="text-blue-600 font-black uppercase tracking-[0.3em] text-[10px]">
           The Zynith Protocol

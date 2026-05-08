@@ -58,7 +58,7 @@ export default function DashboardLayout({
       className="bg-[#fcfcfd] px-8"
     >
       {/* Global Dashboard Header */}
-      <AppShell.Header className="border-b border-slate-100 px-6 bg-white/80 backdrop-blur-md">
+      <AppShell.Header className="border-b border-slate-100 bg-white/80 backdrop-blur-md px-6 md:px-12">
         <Group h="100%" justify="space-between" wrap="nowrap">
           <Group gap="md">
             <ActionIcon
@@ -72,7 +72,7 @@ export default function DashboardLayout({
             </ActionIcon>
 
             <Link href="/" className="hidden sm:block">
-              <Text className="tracking-tighter italic text-xl font-black uppercase text-slate-900">
+              <Text className="text-lg! font-black! tracking-tighter! uppercase italic cursor-pointer">
                 ZYNITH<span className="text-blue-600">.</span>
               </Text>
             </Link>

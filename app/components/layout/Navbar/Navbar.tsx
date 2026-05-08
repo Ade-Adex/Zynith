@@ -28,36 +28,36 @@ import Link from 'next/link'
 import { useState } from 'react'
 
 export const Navbar = () => {
-
   const { user, logout, login, isAuthenticated } = useAuth()
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-4 md:px-5">
+    <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-5 md:px-16">
       <div className="max-w-7xl mx-auto h-16 flex items-center justify-between relative">
-        {/* Left: Logo */}
-        <div className="flex-1 flex justify-start z-10">
-          <Link href="/" className="flex items-center">
-            <span className="text-lg font-black tracking-tighter uppercase italic cursor-pointer">
-              Zynith<span className="text-blue-600">.</span>
-            </span>
-          </Link>
-        </div>
-
-        {/* Center: Nav Links - Hidden on mobile/tablet */}
-        <div className="hidden md:flex items-center gap-6 lg:gap-8 text-[11px] font-bold uppercase tracking-widest text-slate-500 whitespace-nowrap">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="hover:text-blue-600 transition-colors"
-            >
-              {link.label}
+        <div className="flex justify-between items-center w-1/2">
+          {/* Left: Logo */}
+          <div className="z-10">
+            <Link href="/" className="flex items-center">
+              <span className="text-lg font-black tracking-tighter uppercase italic cursor-pointer">
+                Zynith<span className="text-blue-600">.</span>
+              </span>
             </Link>
-          ))}
+          </div>
+          {/* Center: Nav Links - Hidden on mobile/tablet */}
+          <div className="hidden md:flex items-center gap-6 lg:gap-8 text-[11px] font-bold uppercase tracking-widest text-slate-500 whitespace-nowrap">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.label}
+                href={link.href}
+                className="hover:text-blue-600 transition-colors"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
         </div>
 
         {/* Right: Actions */}
-        <div className="flex-1 flex justify-end items-center gap-2 lg:gap-4 z-10">
+        <div className="w-1/2 flex justify-end items-center gap-2 lg:gap-4 z-10">
           {/* Search Bar - hidden on md/lg to prevent overlap, visible on xl */}
           <div className="hidden xl:flex items-center gap-2 px-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg transition-all focus-within:border-blue-400 focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-50">
             <Search size={14} className="text-slate-400" />

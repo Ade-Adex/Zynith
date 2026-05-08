@@ -1,7 +1,7 @@
 import { Zap, Shield, Users, BarChart3 } from 'lucide-react'
 
 export const Features = () => (
-  <section className="py-24 bg-white">
+  <section className="md:py-12 bg-white">
     <div className="max-w-5xl mx-auto px-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
         {[
@@ -26,7 +26,7 @@ export const Features = () => (
             desc: 'Track your architectural growth.',
           },
         ].map((f, i) => (
-          <div key={i} className="space-y-4 group">
+          <div key={i} className="space-y-4 group mx-auto justify-items-center text-center">
             <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
               {f.icon}
             </div>

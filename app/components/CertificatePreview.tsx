@@ -8,7 +8,7 @@ export function CertificatePreview() {
   return (
     <section
       id="certification"
-      className="bg-slate-900 py-8 md:py-16 px-4 md:px-6 rounded-2xl md:rounded-[3rem] text-white max-w-7xl mx-auto relative overflow-hidden mb-20"
+      className="bg-slate-900 py-8 md:py-16 px-4 md:px-6 rounded-2xl md:rounded-3xl text-white max-w-7xl mx-auto relative overflow-hidden mb-20"
     >
       {/* Decorative background glow */}
       <div className="absolute top-0 right-0 w-96 h-96 bg-blue-600/10 blur-[100px] rounded-full -mr-32 -mt-32" />

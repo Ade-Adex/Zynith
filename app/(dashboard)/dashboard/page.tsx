@@ -112,8 +112,8 @@ export default function DashboardOverview() {
         <div className="lg:col-span-8">
           <Card
             padding={isMobile ? '6px' : 'xl'}
-            radius="32px"
-            className="border-none shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white overflow-hidden relative min-h-85 flex flex-col justify-between"
+            radius="16px"
+            className="border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white overflow-hidden relative min-h-85 flex flex-col justify-between"
           >
             {/* Visual background gradient based on course color */}
             <div className="absolute top-0 right-0 md:p-8">
@@ -185,7 +185,7 @@ export default function DashboardOverview() {
                 href={`/courses/${enrollment.courseId}/learn`}
                 className="block mt-8"
               >
-                <button className="bg-slate-900 text-white w-full md:w-auto px-10 py-3 rounded-2xl text-xs! font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-blue-900/10">
+                <button className="bg-slate-900 text-white w-full md:w-auto px-10 py-3 rounded-xl text-xs! font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-blue-900/10">
                   Resume Course
                 </button>
               </Link>
@@ -197,7 +197,7 @@ export default function DashboardOverview() {
         <div className="lg:col-span-4 space-y-6">
           <Paper
             p={isMobile ? 'sm' : 'lg'}
-            radius="32px"
+            radius="16px"
             withBorder
             className="border-slate-100 bg-white shadow-sm"
           >
@@ -246,7 +246,7 @@ function StatItem({ label, value, icon, trend }: StatProps) {
   return (
     <Paper
       p="md"
-      radius="28px"
+      radius="16px"
       withBorder
       className="border-slate-100 bg-white hover:border-blue-100 hover:shadow-lg hover:shadow-blue-900/5 transition-all duration-300 group"
     >

@@ -13,7 +13,7 @@ export const Hero = () => {
         id="hero"
         className="pt-25 pb-20 border-b border-slate-100 bg-white overflow-hidden"
       >
-        <div className="max-w-7xl mx-auto md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Left Column: Copy & CTA */}
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-6">

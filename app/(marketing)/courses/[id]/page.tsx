@@ -32,7 +32,7 @@ export default async function CourseDetails({ params }: Props) {
   return (
     <div className="min-h-screen bg-white">
       {/* Hero Header Section */}
-      <section className="relative bg-slate-950 text-white pt-40 pb-24 px-6 overflow-hidden">
+      <section className="relative bg-slate-950 text-white pt-25 pb-16 md:pt-30 md:pb-24 px-5 md:px-16 overflow-hidden">
         {/* Visual Background Layer */}
         <div className="absolute inset-0 opacity-30">
           {course.previewVideo ? (
@@ -45,7 +45,7 @@ export default async function CourseDetails({ params }: Props) {
             />
           ) : (
             <div
-              className={`w-full h-full bg-gradient-to-br ${course.color} blur-3xl opacity-50`}
+              className={`w-full h-full bg-linear-to-br ${course.color} blur-3xl opacity-50`}
             />
           )}
         </div>
@@ -99,7 +99,9 @@ export default async function CourseDetails({ params }: Props) {
               <div>
                 <div className="flex items-center gap-2 text-emerald-400 mb-1">
                   <Clock size={16} />
-                  <span className="text-base md:text-xl font-black">{course.duration}</span>
+                  <span className="text-base md:text-xl font-black">
+                    {course.duration}
+                  </span>
                 </div>
                 <p className="text-[8px] md:text-[10px] font-bold uppercase tracking-widest text-slate-500">
                   Duration
@@ -109,7 +111,7 @@ export default async function CourseDetails({ params }: Props) {
           </div>
 
           {/* Interactive Preview Player */}
-          <div className="relative group aspect-video rounded-[2.5rem] overflow-hidden bg-slate-900 border border-white/10 shadow-2xl flex items-center justify-center">
+          <div className="relative group aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-white/10 shadow-2xl flex items-center justify-center">
             {course.previewVideo ? (
               <video
                 src={course.previewVideo}
@@ -135,14 +137,14 @@ export default async function CourseDetails({ params }: Props) {
               <p className="font-black uppercase text-[10px] tracking-[0.4em] text-white">
                 Live Preview
               </p>
-              <div className="h-[1px] flex-1 mx-4 bg-white/20" />
+              <div className="h-px flex-1 mx-4 bg-white/20" />
               <span className="text-[10px] font-black text-white">READY</span>
             </div>
           </div>
         </div>
       </section>
 
-      <main className="max-w-7xl mx-auto px-6 py-10 grid lg:grid-cols-3 gap-10">
+      <main className="max-w-7xl mx-auto px-5 md:px-16 py-10 grid lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-10">
           <section>
             <div className="flex items-center gap-4 mb-6">

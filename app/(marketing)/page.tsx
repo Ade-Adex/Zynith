@@ -38,7 +38,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-white selection:bg-blue-600 selection:text-white p-3 md:p-5 font-sans">
+    <div className="min-h-screen bg-white selection:bg-blue-600 selection:text-white p-5 md:p-16 font-sans">
       <QuickNav />
       <Hero />
       <StatsBar />
@@ -47,7 +47,7 @@ export default function LandingPage() {
       <section
         id="courses"
         ref={coursesRef}
-        className="max-w-7xl mx-auto md:px-6 py-12 scroll-mt-24"
+        className="max-w-7xl mx-auto py-12 scroll-mt-24"
       >
         <CourseGrid
           courses={filteredCourses}
