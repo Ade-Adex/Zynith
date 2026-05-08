@@ -1,7 +1,7 @@
 'use client'
 
 import React from 'react'
-import { Stack, NavLink, Badge, Tooltip } from '@mantine/core'
+import { Stack, NavLink, Badge, Tooltip, rem } from '@mantine/core'
 import {
   LayoutDashboard,
   BookOpen,
@@ -13,9 +13,11 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { useMediaQuery } from '@mantine/hooks'
 
 interface SidebarContentProps {
   isCollapsed: boolean
+  closeSidebar: () => void;
 }
 
 const SIDEBAR_DATA = [
@@ -27,8 +29,16 @@ const SIDEBAR_DATA = [
   { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
 ]
 
-export function SidebarContent({ isCollapsed }: SidebarContentProps) {
+export function SidebarContent({ isCollapsed, closeSidebar }: SidebarContentProps) {
   const pathname = usePathname()
+
+  const isMobile = useMediaQuery(`(max-width: ${rem(768)})`)
+
+  const handleLinkClick = () => {
+    // if (isMobile) {
+      closeSidebar()
+    // }
+  }
 
   return (
     <Stack gap={4} px={isCollapsed ? 4 : 0}>
@@ -40,6 +50,7 @@ export function SidebarContent({ isCollapsed }: SidebarContentProps) {
             component={Link}
             href={item.href}
             label={isCollapsed ? null : item.label}
+            onClick={handleLinkClick}
             leftSection={
               <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
             }
@@ -72,7 +83,7 @@ export function SidebarContent({ isCollapsed }: SidebarContentProps) {
             withArrow
             offset={15}
           >
-            {linkContent}
+            <div className="w-full">{linkContent}</div>
           </Tooltip>
         ) : (
           <React.Fragment key={item.label}>{linkContent}</React.Fragment>
@@ -80,10 +91,11 @@ export function SidebarContent({ isCollapsed }: SidebarContentProps) {
       })}
 
       {/* Support Section at Bottom */}
-      <div className="mt-8 pt-8 border-t border-slate-50">
+      <div className="mt-8 pt-8 border-t border-slate-100">
         <NavLink
           label={isCollapsed ? null : 'Help Center'}
           leftSection={<HelpCircle size={20} />}
+          onClick={handleLinkClick} // Also close for support link
           className="rounded-xl py-3! font-semibold uppercase tracking-widest text-[10px]! text-slate-400 hover:text-slate-600"
         />
       </div>

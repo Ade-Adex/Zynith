@@ -30,7 +30,6 @@ import { MOCK_USER } from '@/app/data/mockUser'
 import { SidebarContent } from '@/app/components/dashboard/SidebarContent'
 import Link from 'next/link'
 import { useMediaQuery } from '@mantine/hooks'
-import { useRouter } from 'next/navigation'
 import { useAuth } from '@/app/context/AuthContext'
 
 export default function DashboardLayout({
@@ -38,10 +37,9 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
- const [opened, { toggle }] = useDisclosure(true)
+ const [opened, { toggle, close }] = useDisclosure(false)
   const isMobile = useMediaQuery(`(max-width: ${rem(768)})`)
   const { user, logout } = useAuth()
-  const router = useRouter()
 
  if (!user) {
    return null 
@@ -156,7 +154,7 @@ export default function DashboardLayout({
       {/* Sidebar Section */}
       <AppShell.Navbar className="border-r border-slate-100 px-4 py-10">
         <AppShell.Section grow component={ScrollArea} mx="-xs" px="xs">
-          <SidebarContent isCollapsed={!opened} />
+          <SidebarContent isCollapsed={!opened} closeSidebar={close} />
         </AppShell.Section>
 
         {/* Mini Profile info when Sidebar is Open */}
