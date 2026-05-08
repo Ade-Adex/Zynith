@@ -60,7 +60,7 @@ export function CourseGrid({
           />
         </>
       ) : (
-        <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-[2rem]">
+        <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-4xl">
           <p className="text-slate-400 text-xs font-black uppercase tracking-widest">
             No tracks found matching &quot;{currentFilter}&quot;.
           </p>

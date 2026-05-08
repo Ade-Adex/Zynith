@@ -61,7 +61,7 @@ export const CourseCard = ({ course }: { course: Course }) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <div className="bg-white border border-foreground/5 rounded-[32px] p-4 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 flex flex-col h-full">
+      <div className="bg-white border border-foreground/20 rounded-2xl p-4 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 flex flex-col h-full">
         {/* Visual Media Container */}
         <div
           className={`relative aspect-[16/10] rounded-[24px] overflow-hidden mb-6 bg-gradient-to-br ${course.color}`}

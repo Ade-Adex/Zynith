@@ -13,7 +13,7 @@ export const Hero = () => {
         id="hero"
         className="pt-25 pb-20 border-b border-slate-100 bg-white overflow-hidden"
       >
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-7xl mx-auto md:px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           {/* Left Column: Copy & CTA */}
           <div className="relative z-10">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-6">
@@ -80,8 +80,8 @@ export const Hero = () => {
           <div className="relative group">
             <div className="absolute -inset-4 bg-blue-100/40 rounded-[40px] blur-3xl group-hover:bg-blue-200/40 transition duration-1000" />
 
-            <div className="relative bg-white rounded-[32px] p-3 border border-slate-200 shadow-2xl shadow-slate-200/50">
-              <div className="bg-white rounded-[24px] border border-slate-100 aspect-video flex flex-col overflow-hidden">
+            <div className="relative bg-white rounded-4xl p-3 border border-slate-300 shadow-2xl shadow-slate-200/50">
+              <div className="bg-white rounded-3xl border border-slate-100 md:aspect-video flex flex-col overflow-hidden">
                 <div className="h-10 bg-slate-50/50 border-b border-slate-100 flex items-center justify-between px-4">
                   <div className="flex gap-1.5">
                     <div className="w-2.5 h-2.5 rounded-full bg-red-300" />
@@ -139,7 +139,7 @@ export const Hero = () => {
                       </div>
                     </div>
 
-                    <div className="absolute -bottom-2 -left-2 bg-white p-3 rounded-xl border border-slate-200 shadow-xl max-w-[180px] hidden md:block z-20">
+                    <div className="absolute -bottom-2 -left-2 bg-white p-3 rounded-xl border border-slate-200 shadow-xl max-w-45 hidden md:block z-20">
                       <p className="text-[8px] font-black uppercase tracking-widest text-blue-600 mb-1">
                         Coming Up Next
                       </p>
@@ -171,7 +171,7 @@ export const Hero = () => {
 
       {/* Professional Video Modal */}
       {isVideoOpen && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center p-6">
+        <div className="fixed inset-0 z-999 flex items-center justify-center p-6">
           <div
             className="absolute inset-0 bg-slate-900/90 backdrop-blur-md animate-in fade-in duration-300"
             onClick={() => setIsVideoOpen(false)}

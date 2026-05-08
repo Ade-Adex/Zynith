@@ -21,7 +21,7 @@ export function MethodSection() {
   ]
 
   return (
-    <section id="method" className="max-w-7xl mx-auto px-6 py-24">
+    <section id="method" className="max-w-7xl mx-auto md:px-6 py-24">
       <div className="text-center mb-16">
         <span className="text-blue-600 font-black uppercase tracking-[0.3em] text-[10px]">
           The Zynith Protocol
@@ -34,7 +34,7 @@ export function MethodSection() {
         {methods.map((item, idx) => (
           <div
             key={idx}
-            className="group p-8 rounded-4xl border border-slate-100 hover:bg-slate-50/50 transition-all"
+            className="group p-8 rounded-4xl border border-slate-300 hover:bg-slate-50/50 transition-all"
           >
             <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center mb-6">
               {item.icon}

@@ -47,7 +47,7 @@ export default function LandingPage() {
       <section
         id="courses"
         ref={coursesRef}
-        className="max-w-7xl mx-auto px-6 py-12 scroll-mt-24"
+        className="max-w-7xl mx-auto md:px-6 py-12 scroll-mt-24"
       >
         <CourseGrid
           courses={filteredCourses}
