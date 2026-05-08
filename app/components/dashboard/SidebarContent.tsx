@@ -35,9 +35,9 @@ export function SidebarContent({ isCollapsed, closeSidebar }: SidebarContentProp
   const isMobile = useMediaQuery(`(max-width: ${rem(768)})`)
 
   const handleLinkClick = () => {
-    // if (isMobile) {
+    if (isMobile) {
       closeSidebar()
-    // }
+    }
   }
 
   return (

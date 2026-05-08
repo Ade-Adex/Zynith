@@ -22,6 +22,7 @@ import {
   Flame,
   Zap,
   Menu as MenuIcon,
+  X as CloseIcon,
   LogOut,
   User,
   Settings,
@@ -59,15 +60,14 @@ export default function DashboardLayout({
       <AppShell.Header className="border-b border-slate-100 bg-white/80 backdrop-blur-md px-6 md:px-12">
         <Group h="100%" justify="space-between" wrap="nowrap">
           <Group gap="md">
-            <ActionIcon
-              variant="subtle"
-              color="gray"
+            <Burger
+              opened={opened}
               onClick={toggle}
-              size="lg"
-              className="hover:bg-slate-50"
-            >
-              <MenuIcon size={20} className="text-slate-600" />
-            </ActionIcon>
+              size="sm"
+              color="var(--mantine-color-gray-6)"
+              className="hover:bg-slate-50 rounded-md p-1"
+              aria-label="Toggle navigation"
+            />
 
             <Link href="/" className="hidden sm:block">
               <Text className="text-lg! font-black! tracking-tighter! uppercase italic cursor-pointer">
