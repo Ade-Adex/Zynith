@@ -2,37 +2,23 @@
 
 import React from 'react'
 import { Stack, NavLink, Badge, Tooltip, rem } from '@mantine/core'
-import {
-  LayoutDashboard,
-  BookOpen,
-  Award,
-  Users,
-  Wallet,
-  Settings,
-  HelpCircle,
-} from 'lucide-react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useMediaQuery } from '@mantine/hooks'
+import { SIDEBAR_DATA } from '@/app/data/sidebarData'
+import { HelpCircle } from 'lucide-react'
 
 interface SidebarContentProps {
   isCollapsed: boolean
-  closeSidebar: () => void;
+  closeSidebar: () => void
+  isMobile?: boolean
 }
 
-const SIDEBAR_DATA = [
-  { icon: LayoutDashboard, label: 'Overview', href: '/dashboard' },
-  { icon: BookOpen, label: 'My Learning', href: '/dashboard/courses' },
-  { icon: Users, label: 'Peer Review', href: '/dashboard/p2p', badge: 2 },
-  { icon: Award, label: 'Certificates', href: '/dashboard/certificates' },
-  { icon: Wallet, label: 'Marketplace', href: '/dashboard/wallet' },
-  { icon: Settings, label: 'Settings', href: '/dashboard/settings' },
-]
-
-export function SidebarContent({ isCollapsed, closeSidebar }: SidebarContentProps) {
+export function SidebarContent({
+  isCollapsed,
+  closeSidebar,
+  isMobile,
+}: SidebarContentProps) {
   const pathname = usePathname()
-
-  const isMobile = useMediaQuery(`(max-width: ${rem(768)})`)
 
   const handleLinkClick = () => {
     if (isMobile) {
@@ -50,7 +36,7 @@ export function SidebarContent({ isCollapsed, closeSidebar }: SidebarContentProp
             component={Link}
             href={item.href}
             label={isCollapsed ? null : item.label}
-            onClick={handleLinkClick}
+            onClick={handleLinkClick} // Condition handles mobile vs desktop
             leftSection={
               <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
             }
@@ -64,38 +50,37 @@ export function SidebarContent({ isCollapsed, closeSidebar }: SidebarContentProp
             active={isActive}
             variant="light"
             color="blue"
-            className={`
-              rounded-xl py-3! transition-all duration-200
-              ${
-                isActive
-                  ? 'font-bold uppercase tracking-widest text-[10px]! bg-blue-50 text-blue-700'
-                  : 'font-semibold uppercase tracking-widest text-[10px]! text-slate-500 hover:bg-slate-50'
-              }
-            `}
+            className={`rounded-xl py-3! transition-all duration-200 ${
+              isActive
+                ? 'font-bold uppercase tracking-widest text-[10px]! bg-blue-50 text-blue-700'
+                : 'font-semibold uppercase tracking-widest text-[10px]! text-slate-500 hover:bg-slate-50'
+            }`}
           />
         )
 
-        return isCollapsed ? (
-          <Tooltip
-            key={item.label}
-            label={item.label}
-            position="right"
-            withArrow
-            offset={15}
-          >
-            <div className="w-full">{linkContent}</div>
-          </Tooltip>
-        ) : (
-          <React.Fragment key={item.label}>{linkContent}</React.Fragment>
+        return (
+          <React.Fragment key={item.label}>
+            {isCollapsed ? (
+              <Tooltip
+                label={item.label}
+                position="right"
+                withArrow
+                offset={15}
+              >
+                <div className="w-full">{linkContent}</div>
+              </Tooltip>
+            ) : (
+              linkContent
+            )}
+          </React.Fragment>
         )
       })}
 
-      {/* Support Section at Bottom */}
       <div className="mt-8 pt-8 border-t border-slate-100">
         <NavLink
           label={isCollapsed ? null : 'Help Center'}
           leftSection={<HelpCircle size={20} />}
-          onClick={handleLinkClick} // Also close for support link
+          onClick={handleLinkClick}
           className="rounded-xl py-3! font-semibold uppercase tracking-widest text-[10px]! text-slate-400 hover:text-slate-600"
         />
       </div>

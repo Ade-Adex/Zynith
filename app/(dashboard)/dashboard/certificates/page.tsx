@@ -10,15 +10,11 @@ import {
   Button,
   ActionIcon,
   Tooltip,
-  Divider,
 } from '@mantine/core'
 import {
   Award,
   Download,
-  ExternalLink,
   ShieldCheck,
-  Share2,
-  MoreHorizontal,
   ChevronRight,
 } from 'lucide-react'
 import { MOCK_USER } from '@/app/data/mockUser'
@@ -65,7 +61,7 @@ export default function CertificationPage() {
           <Group
             px="sm"
             py="sm"
-            className="hidden md:flex opacity-40 uppercase font-bold text-[9px]"
+            className="hidden! md:flex! opacity-40 uppercase font-bold text-[9px]"
           >
             <Text className="flex-1 text-[9px]! md:text-sm!">
               Certification Track
@@ -98,38 +94,58 @@ function CertificateRow({ cert }: { cert: CertificateData }) {
       withBorder
       className="group bg-white border-slate-100 hover:border-blue-200 hover:shadow-[0_20px_40px_rgb(0,0,0,0.03)] transition-all duration-300"
     >
-      <Group gap="xl" wrap="nowrap">
-        {/* Leading Icon */}
-        <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
-          <Award size={20} strokeWidth={2.5} />
-        </div>
+      <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+        {/* Top Section */}
+        <div className="flex items-start gap-4 flex-1 min-w-0">
+          {/* Leading Icon */}
+          <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
+            <Award size={20} strokeWidth={2.5} />
+          </div>
 
-        {/* Course Info */}
-        <div className="flex-1 min-w-0">
-          <Text className="text-base! font-bold! uppercase tracking-tight truncate text-slate-900">
-            {cert.details?.title || cert.courseTitle}
-          </Text>
-          <Group gap={6} mt={2}>
-            <ShieldCheck size={12} className="text-blue-600" />
-            <Text
-              size="10px"
-              fw={700}
-              c="dimmed"
-              className="uppercase tracking-wider"
-            >
-              Verified Credential
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <Text className="text-sm md:text-base! font-bold! uppercase tracking-tight text-slate-900 leading-snug wrap-break-word">
+              {cert.details?.title || cert.courseTitle}
             </Text>
-          </Group>
+
+            <Group gap={6} mt={4}>
+              <ShieldCheck size={12} className="text-blue-600 shrink-0" />
+              <Text
+                size="10px"
+                fw={700}
+                c="dimmed"
+                className="uppercase tracking-wider"
+              >
+                Verified Credential
+              </Text>
+            </Group>
+
+            {/* Mobile Meta */}
+            <div className="flex flex-col gap-2 mt-4 md:hidden">
+              <Text size="11px" fw={800} className="text-slate-500 uppercase">
+                Issued May 2026
+              </Text>
+
+              <Badge
+                variant="outline"
+                color="gray"
+                radius="sm"
+                className="text-[10px]! border-slate-200 w-fit"
+              >
+                ZN-{String(cert.courseId).toUpperCase()}-X22
+              </Badge>
+            </div>
+          </div>
         </div>
 
-        {/* Date */}
+        {/* Desktop Date */}
         <div className="w-40 hidden md:block text-center">
           <Text size="12px" fw={800} className="text-slate-600">
             MAY 2026
           </Text>
         </div>
 
-        {/* ID */}
+        {/* Desktop ID */}
         <div className="w-48 hidden md:block text-center">
           <Badge
             variant="outline"
@@ -142,23 +158,33 @@ function CertificateRow({ cert }: { cert: CertificateData }) {
         </div>
 
         {/* Actions */}
-        <Group gap="xs" className="w-32 justify-end">
+        <Group
+          gap="xs"
+          className="w-full md:w-32 justify-between md:justify-end"
+        >
           <Tooltip label="Download PDF" position="top">
-            <ActionIcon variant="subtle" color="dark" radius="md" size="lg">
+            <ActionIcon
+              variant="subtle"
+              color="dark"
+              radius="md"
+              size="lg"
+              className="flex-1 md:flex-none"
+            >
               <Download size={18} />
             </ActionIcon>
           </Tooltip>
+
           <ActionIcon
             variant="filled"
             color="blue"
             radius="md"
             size="lg"
-            className="shadow-lg shadow-blue-600/20"
+            className="shadow-lg shadow-blue-600/20 flex-1 md:flex-none"
           >
             <ChevronRight size={20} />
           </ActionIcon>
         </Group>
-      </Group>
+      </div>
     </Paper>
   )
 }
@@ -166,15 +192,14 @@ function CertificateRow({ cert }: { cert: CertificateData }) {
 function EmptyRegistry() {
   return (
     <Paper
-      p={100}
-      radius="32px"
-      className="bg-slate-50 border border-slate-100 flex flex-col items-center justify-center text-center"
+      radius="16px"
+      className="bg-slate-50 border border-slate-200 px-6 md:px-16 py-12 flex flex-col items-center justify-center text-center"
     >
       <div className="relative mb-8">
         <div className="absolute inset-0 bg-blue-100 blur-2xl rounded-full opacity-50" />
         <Award size={64} className="text-slate-300 relative z-10" />
       </div>
-      <Text className="font-jakarta font-black uppercase text-xl tracking-tighter text-slate-400">
+      <Text className="font-bold uppercase text-base md:text-xl tracking-tighter text-slate-400">
         Registry Entry Empty
       </Text>
       <Text
@@ -189,7 +214,7 @@ function EmptyRegistry() {
         variant="filled"
         color="dark"
         radius="xl"
-        className="font-jakarta uppercase tracking-widest text-[10px] h-11 px-10"
+        className="uppercase tracking-widest text-[10px] h-11 px-10"
       >
         Go to Learning Path
       </Button>

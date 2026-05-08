@@ -17,12 +17,9 @@ import {
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import {
-  Search,
   Bell,
   Flame,
   Zap,
-  Menu as MenuIcon,
-  X as CloseIcon,
   LogOut,
   User,
   Settings,
@@ -154,7 +151,7 @@ export default function DashboardLayout({
       {/* Sidebar Section */}
       <AppShell.Navbar className="border-r border-slate-100 px-4 py-10">
         <AppShell.Section grow component={ScrollArea} mx="-xs" px="xs">
-          <SidebarContent isCollapsed={!opened} closeSidebar={close} />
+          <SidebarContent isCollapsed={!opened} closeSidebar={close} isMobile={isMobile} />
         </AppShell.Section>
 
         {/* Mini Profile info when Sidebar is Open */}

@@ -1,3 +1,6 @@
+// /app/(marketing)/courses/[id]/page.tsx
+
+
 import React from 'react'
 import { notFound } from 'next/navigation'
 import { COURSES } from '@/app/data'
