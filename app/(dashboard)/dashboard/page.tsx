@@ -185,7 +185,7 @@ export default function DashboardOverview() {
                 href={`/courses/${enrollment.courseId}/learn`}
                 className="block mt-8"
               >
-                <button className="bg-slate-900 text-white w-full md:w-auto px-10 py-3 rounded-xl text-xs! font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-blue-900/10">
+                <button className="bg-slate-900 text-white w-full md:w-auto px-10 py-3 rounded-xl text-xs! cursor-pointer font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-blue-900/10">
                   Resume Course
                 </button>
               </Link>
@@ -231,7 +231,7 @@ export default function DashboardOverview() {
                   <ChevronRight size={14} className="text-slate-300" />
                 </div>
               ))}
-              <button className="w-full mt-4 text-sm! font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 py-3 rounded-xl transition-all">
+              <button className="w-full mt-4 text-sm! font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 py-3 rounded-xl transition-all cursor-pointer">
                 Access Grading Hub
               </button>
             </Stack>
