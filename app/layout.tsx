@@ -20,8 +20,12 @@ export default function RootLayout({
     <html
       lang="en"
       className={`scroll-smooth ${jakarta.variable} ${inter.variable} ${jetbrains.variable}`}
+      suppressHydrationWarning
     >
-      <body className="min-h-screen font-sans antialiased">
+      <body
+        className="min-h-screen font-sans antialiased"
+        suppressHydrationWarning
+      >
         <AppProviders>
           <main>{children}</main>
         </AppProviders>

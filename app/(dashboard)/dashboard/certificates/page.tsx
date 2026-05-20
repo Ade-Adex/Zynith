@@ -1,6 +1,7 @@
+// /app/certification/page.tsx
 'use client'
 
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   Paper,
   Text,
@@ -10,29 +11,72 @@ import {
   Button,
   ActionIcon,
   Tooltip,
+  Loader,
 } from '@mantine/core'
-import {
-  Award,
-  Download,
-  ShieldCheck,
-  ChevronRight,
-} from 'lucide-react'
-import { MOCK_USER } from '@/app/data/mockUser'
-import { COURSES } from '@/app/data'
-import { Enrollment } from '@/app/types/user'
+import { Award, Download, ShieldCheck, ChevronRight } from 'lucide-react'
+import { Enrollment, UserType } from '@/app/types/user'
 import { Course } from '@/app/types'
+import { useAuthStore } from '@/app/store/authStore'
+import { useCourses } from '@/app/hooks/useCourses'
 
 interface CertificateData extends Enrollment {
   details?: Course
 }
 
 export default function CertificationPage() {
-  const completedCourses: CertificateData[] = MOCK_USER.enrollments
-    .filter((en: Enrollment) => en.progressPercentage === 100)
-    .map((en: Enrollment) => ({
+  const store = useAuthStore()
+  const user = store.user as UserType | null | undefined
+
+  const { courses: databaseCourses, loading, error } = useCourses()
+
+  const activeEnrollments = user?.enrollments || []
+
+  // Direct, safe execution path cleanly mapped out
+  const completedCourses: CertificateData[] = activeEnrollments
+    .filter((en) => en.progressPercentage === 100)
+    .map((en) => ({
       ...en,
-      details: COURSES.find((c: Course) => c.id === en.courseId),
+      details: databaseCourses.find(
+        (c) => String(c._id) === String(en.courseId),
+      ),
     }))
+
+  // System Loading Viewport
+  if (loading) {
+    return (
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+        <Loader size="sm" color="blue" />
+        <Text
+          size="xs"
+          fw={700}
+          className="text-slate-400 uppercase tracking-widest"
+        >
+          Querying secure credentials...
+        </Text>
+      </div>
+    )
+  }
+
+  // System Error Recovery Fallback Viewport
+  if (error) {
+    return (
+      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-2 p-4 text-center">
+        <Text
+          size="sm"
+          fw={800}
+          className="text-red-500 uppercase tracking-wider"
+        >
+          Registry Exception Enforced
+        </Text>
+        <Text size="xs" c="dimmed" className="max-w-xs mb-4">
+          {error}
+        </Text>
+        <Button size="xs" color="dark" onClick={() => window.location.reload()}>
+          Retry Verification
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="py-8 max-w-6xl mx-auto">
@@ -95,14 +139,11 @@ function CertificateRow({ cert }: { cert: CertificateData }) {
       className="group bg-white border-slate-100 hover:border-blue-200 hover:shadow-[0_20px_40px_rgb(0,0,0,0.03)] transition-all duration-300"
     >
       <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-        {/* Top Section */}
         <div className="flex items-start gap-4 flex-1 min-w-0">
-          {/* Leading Icon */}
           <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
             <Award size={20} strokeWidth={2.5} />
           </div>
 
-          {/* Content */}
           <div className="flex-1 min-w-0">
             <Text className="text-sm md:text-base! font-bold! uppercase tracking-tight text-slate-900 leading-snug wrap-break-word">
               {cert.details?.title || cert.courseTitle}
@@ -120,7 +161,6 @@ function CertificateRow({ cert }: { cert: CertificateData }) {
               </Text>
             </Group>
 
-            {/* Mobile Meta */}
             <div className="flex flex-col gap-2 mt-4 md:hidden">
               <Text size="11px" fw={800} className="text-slate-500 uppercase">
                 Issued May 2026
@@ -138,14 +178,12 @@ function CertificateRow({ cert }: { cert: CertificateData }) {
           </div>
         </div>
 
-        {/* Desktop Date */}
         <div className="w-40 hidden md:block text-center">
           <Text size="12px" fw={800} className="text-slate-600">
             MAY 2026
           </Text>
         </div>
 
-        {/* Desktop ID */}
         <div className="w-48 hidden md:block text-center">
           <Badge
             variant="outline"
@@ -157,7 +195,6 @@ function CertificateRow({ cert }: { cert: CertificateData }) {
           </Badge>
         </div>
 
-        {/* Actions */}
         <Group
           gap="xs"
           className="w-full md:w-32 justify-between md:justify-end"

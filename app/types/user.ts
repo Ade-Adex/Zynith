@@ -30,7 +30,7 @@ export interface UserStats {
 }
 
 export interface UserType {
-  id: string
+  _id: string
   name: string
   firstName: string
   lastName: string

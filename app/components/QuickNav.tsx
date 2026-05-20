@@ -11,7 +11,7 @@ export function QuickNav() {
   ]
 
   return (
-    <aside className="fixed right-6 top-1/2 -translate-y-1/2 z-50 hidden xl:flex flex-col gap-4">
+    <aside className="fixed right-4 top-1/2 -translate-y-1/2 hidden xl:flex flex-col gap-4">
       {navItems.map((item) => (
         <a
           key={item.id}

@@ -5,12 +5,14 @@ import React from 'react'
 import { MantineProvider, createTheme } from '@mantine/core'
 import { SnackbarProvider } from 'notistack'
 import { AuthSyncManager } from '@/app/components/auth/AuthSyncManager'
+
 import '@mantine/core/styles.css'
+import '@mantine/carousel/styles.css' 
 
 const theme = createTheme({
   primaryColor: 'blue',
-  fontFamily: 'var(--font-geist-sans)',
-  fontFamilyMonospace: 'var(--font-geist-mono)',
+  fontFamily: 'var(--font-jakarta), var(--font-inter), sans-serif',
+  fontFamilyMonospace: 'var(--font-jetbrains), monospace',
   defaultRadius: 'xl',
 })
 

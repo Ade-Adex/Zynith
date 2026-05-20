@@ -1,9 +1,11 @@
 'use client'
 
+import { useAuthStore } from '@/app/store/authStore'
 import { Stack, TextInput, Paper, Button, Divider } from '@mantine/core'
-import { MOCK_USER } from '@/app/data/mockUser'
 
 export default function SettingsPage() {
+    const { user, isAuthenticated } = useAuthStore()
+  
   return (
     <div className="py-8 max-w-2xl">
       <header className="mb-10">
@@ -22,14 +24,14 @@ export default function SettingsPage() {
           <div className="grid grid-cols-2 gap-4">
             <TextInput
               label="First Name"
-              defaultValue={MOCK_USER.firstName}
+              defaultValue={user?.firstName}
               classNames={{
                 label: 'font-bold uppercase text-[14px]! tracking-widest mb-2',
               }}
             />
             <TextInput
               label="Last Name"
-              defaultValue={MOCK_USER.lastName}
+              defaultValue={user?.lastName}
               classNames={{
                 label: 'font-bold uppercase text-[10px] tracking-widest mb-2',
               }}
@@ -37,7 +39,7 @@ export default function SettingsPage() {
           </div>
           <TextInput
             label="Email Address"
-            defaultValue={MOCK_USER.email}
+            defaultValue={user?.email}
             classNames={{
               label: 'font-bold uppercase text-[10px] tracking-widest mb-2',
             }}

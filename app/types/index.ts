@@ -1,113 +1,18 @@
-// // /app/types/index.ts
-
-// export type CourseType = 'Free' | 'Premium'
-// export type CourseLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'
-// export type CourseTag = 'Trending' | 'Bestseller' | 'New'
-// export type LessonContentType = 'video' | 'text' | 'code'
-
-// export interface QuizQuestion {
-//   id: string
-//   question: string
-//   options: string[]
-//   correctAnswer: string
-// }
-
-// export interface Quiz {
-//   id: string
-//   title: string
-//   passingScore: number // e.g., 80 for 80%
-//   questions: QuizQuestion[] // Max 3 questions per lesson constraint can be validated against this array
-// }
-
-// export interface Lesson {
-//   id: string
-//   title: string
-//   duration: string
-//   contentType: LessonContentType
-//   videoUrl?: string // Optional based on course format choice
-//   markdownBody?: string // For text-based lessons or reading options
-//   isFreePreview: boolean
-//   summary: string
-//   isDownloadable: boolean
-//   downloadUrl?: string
-//   quiz?: Quiz // Each lesson can have its own gatekeeping quiz
-// }
-
-// export interface Assignment {
-//   id: string
-//   title: string
-//   problemStatement: string
-//   submissionTemplateUrl?: string
-//   peerReviewsRequired: number // Number of other students' work this user must mark to pass
-// }
-
-// export interface Module {
-//   id: string
-//   title: string
-//   description: string
-//   lessonsCount: number
-//   lessons: Lesson[]
-//   quiz: Quiz // Each module has a mandatory quiz that must be passed to proceed
-//   assignment?: Assignment // Peer-reviewed assignment mechanics
-//   isFinal?: boolean
-// }
-
-// export interface Testimony {
-//   id: string
-//   studentName: string
-//   avatarUrl?: string
-//   rating: number
-//   reviewText: string
-// }
-
-// export interface TutorDetails {
-//   name: string
-//   bio: string
-//   avatar: string
-//   expertise: string[]
-// }
-
-// export interface Course {
-//   id: number
-//   title: string
-//   type: CourseType
-//   tag?: CourseTag
-//   price?: string
-//   instructor: string
-//   tutorDetails: TutorDetails // Embedded tutor information for details page
-//   previewVideo?: string
-//   rating: number
-//   color: string // Tailwind gradient classes
-//   image: string
-//   students: number
-//   duration: string
-//   level: CourseLevel
-//   modules: Module[]
-//   features?: string[]
-//   testimonies: Testimony[] // Social proof array for details page
-//   forumId: string // Course-specific forum room identifier
-//   chatId: string // Course-specific chat room identifier
-// }
-
-// export type FilterType =
-//   | 'All'
-//   | CourseType
-//   | 'Trending'
-//   | 'Bestseller'
-//   | 'Top Rated'
-
-// export interface StatItem {
-//   label: string
-//   val: string
-// }
-
-// export interface NavLink {
-//   label: string
-//   href: string
-// }
-
-
 // /app/types/index.ts
+
+
+export const NAV_LINKS: NavLink[] = [
+  { label: 'Courses', href: '#courses' },
+  { label: 'Certification', href: '#certification' },
+  { label: 'Pricing', href: '#pricing' },
+]
+
+export const STATS: StatItem[] = [
+  { label: 'Active Learners', val: '50K+' },
+  { label: 'Course Rating', val: '4.9/5' },
+  { label: 'Industry Mentors', val: '120+' },
+  { label: 'Global Reach', val: '24/7' },
+]
 
 export type CourseType = 'Free' | 'Premium'
 export type CourseLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'
@@ -178,7 +83,7 @@ export interface TutorDetails {
 }
 
 export interface Course {
-  id: number
+  _id: string
   title: string
   type: CourseType
   tag?: CourseTag

@@ -1,10 +1,36 @@
+// /app/(dashboard)/wallet/page.tsx
 'use client'
 
-import { SimpleGrid, Paper, Text, Stack, Group, Button } from '@mantine/core'
-import { Wallet, ArrowUpRight, History } from 'lucide-react'
-import { MOCK_USER } from '@/app/data/mockUser'
+import React from 'react'
+import { SimpleGrid, Paper, Text, Button, Center, Loader } from '@mantine/core'
+import { Wallet } from 'lucide-react'
+import { useAuthStore } from '@/app/store/authStore'
 
 export default function WalletPage() {
+  const { user, isAuthenticated } = useAuthStore()
+
+  // Safely grab structural assets from user storage states
+  const walletBalance = user?.wallet?.balance ?? 0
+  const currencySymbol =
+    user?.wallet?.currency === 'NGN' || !user?.wallet?.currency ? '₦' : '$'
+
+  if (!user && !isAuthenticated) {
+    return (
+      <Center className="py-32">
+        <div className="flex flex-col items-center gap-3">
+          <Loader size="sm" color="blue" />
+          <Text
+            size="xs"
+            fw={700}
+            className="uppercase tracking-widest text-slate-400"
+          >
+            Connecting Ledger Registry...
+          </Text>
+        </div>
+      </Center>
+    )
+  }
+
   return (
     <div className="py-8">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -20,7 +46,8 @@ export default function WalletPage() {
                 Available Balance
               </Text>
               <Text className="text-4xl font-jakarta font-black tracking-tighter mb-10">
-                ₦{MOCK_USER.wallet.balance.toLocaleString()}
+                {currencySymbol}
+                {walletBalance.toLocaleString()}
               </Text>
               <Button
                 fullWidth

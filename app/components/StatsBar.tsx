@@ -1,6 +1,6 @@
 // @/app/components/StatsBar.tsx
 
-import { STATS } from '@/app/data'
+import { STATS } from "@/app/types"
 
 export function StatsBar() {
   return (

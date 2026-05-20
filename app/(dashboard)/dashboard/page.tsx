@@ -2,7 +2,7 @@
 'use client'
 
 import React from 'react'
-import { COURSES } from '@/app/data'
+import { useCourses } from '@/app/hooks/useCourses'
 import { Enrollment, UserType } from '@/app/types/user'
 import Link from 'next/link'
 import {
@@ -37,13 +37,15 @@ interface StatProps {
 }
 
 export default function DashboardOverview() {
-  // Explicitly cast user context output to our strict UserType structure
   const store = useAuthStore()
   const user = store.user as UserType | null | undefined
   const isMobile = useMediaQuery(`(max-width: ${rem(768)})`)
 
-  // Guard clause handling store hydration states safely without white-screening
-  if (!user || !user.stats) {
+  // Pulling live data directly from the hook connected to /api/courses
+  const { courses: databaseCourses, loading: coursesLoading } = useCourses()
+
+  // Guard clause handles both store hydration and active API loading states safely
+  if (!user || !user.stats || coursesLoading) {
     return (
       <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3">
         <Loader size="sm" color="blue" />
@@ -58,17 +60,20 @@ export default function DashboardOverview() {
     )
   }
 
-  // Safe evaluations directly leveraging the user.ts schema interfaces
   const userEnrollments: Enrollment[] = user.enrollments || []
   const enrollment: Enrollment | undefined = userEnrollments[0]
 
+  // Pure lookups inside your database array values
+  // Wrapped in String() to prevent matching bugs if one side is an ObjectId string and the other is a raw string
   const courseDetails = enrollment
-    ? COURSES.find((c) => c.id === enrollment.courseId)
+    ? databaseCourses.find((c) => String(c._id) === String(enrollment.courseId))
     : undefined
 
   const currentModule =
     courseDetails && enrollment
-      ? courseDetails.modules.find((m) => m.id === enrollment.currentModuleId)
+      ? courseDetails.modules.find(
+          (m) => String(m.id) === String(enrollment.currentModuleId),
+        )
       : undefined
 
   return (
@@ -136,16 +141,15 @@ export default function DashboardOverview() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Main Learning Card */}
         <div className="lg:col-span-8">
-          {enrollment ? (
+          {enrollment && courseDetails ? (
             <Card
               padding={isMobile ? 'md' : 'xl'}
               radius="16px"
               className="border border-slate-200 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white overflow-hidden relative min-h-85 flex flex-col justify-between"
             >
-              {/* Visual background gradient based on course color */}
               <div className="absolute top-0 right-0 md:p-8">
                 <div
-                  className={`w-40 h-40 bg-linear-to-br ${courseDetails?.color || 'from-blue-50 to-indigo-50'} rounded-full blur-3xl opacity-20`}
+                  className={`w-40 h-40 bg-gradient-to-br ${courseDetails.color || 'from-blue-50 to-indigo-50'} rounded-full blur-3xl opacity-20`}
                 />
               </div>
 
@@ -167,12 +171,12 @@ export default function DashboardOverview() {
 
                 <div className="mt-4">
                   <h2 className="text-xl font-black tracking-tighter leading-tight max-w-md text-slate-900 uppercase">
-                    {courseDetails?.title || enrollment.courseTitle}
+                    {courseDetails.title}
                   </h2>
                   <Text
                     c="dimmed"
                     fw={700}
-                    className="uppercase tracking-[0.2em] text-[10px]! mt-1.5!"
+                    className="uppercase tracking-[0.2em] text-[10px] !mt-1.5"
                   >
                     {currentModule
                       ? `Module ${enrollment.currentModuleId} • ${currentModule.title}`
@@ -209,7 +213,7 @@ export default function DashboardOverview() {
                   href={`/courses/${enrollment.courseId}/learn`}
                   className="block mt-8"
                 >
-                  <button className="bg-slate-900 text-white w-full md:w-auto px-10 py-3 rounded-xl text-xs! cursor-pointer font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-blue-900/10">
+                  <button className="bg-slate-900 text-white w-full md:w-auto px-10 py-3 rounded-xl text-xs cursor-pointer font-black uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 shadow-xl shadow-blue-900/10">
                     Resume Course
                   </button>
                 </Link>
@@ -229,11 +233,11 @@ export default function DashboardOverview() {
                 No Active Enrollments
               </Text>
               <p className="text-xs text-slate-400 font-semibold max-w-xs leading-relaxed mb-6">
-                You are currently not registered for any system tracks. Explore
-                the repository catalog to pick up points.
+                You are currently not registered for any active system tracks.
+                Explore the repository catalog to pick up points.
               </p>
               <Link href="/courses">
-                <button className="bg-blue-600 text-white px-8 py-2.5 rounded-xl text-xs! font-black uppercase tracking-widest hover:bg-slate-900 transition-all cursor-pointer shadow-md">
+                <button className="bg-blue-600 text-white px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-900 transition-all cursor-pointer shadow-md">
                   Browse Catalog
                 </button>
               </Link>
@@ -251,7 +255,7 @@ export default function DashboardOverview() {
           >
             <Text
               fw={900}
-              className="uppercase tracking-widest text-sm! mb-6 text-slate-400"
+              className="uppercase tracking-widest text-sm mb-6 text-slate-400"
             >
               P2P Pending Reviews
             </Text>
@@ -279,7 +283,7 @@ export default function DashboardOverview() {
                   <ChevronRight size={14} className="text-slate-300" />
                 </div>
               ))}
-              <button className="w-full mt-4 text-sm! font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 py-3 rounded-xl transition-all cursor-pointer">
+              <button className="w-full mt-4 text-sm font-black uppercase tracking-widest text-blue-600 hover:bg-blue-50 py-3 rounded-xl transition-all cursor-pointer">
                 Access Grading Hub
               </button>
             </Stack>
@@ -318,7 +322,7 @@ function StatItem({ label, value, icon, trend }: StatProps) {
         size="8px"
         fw={800}
         c="dimmed"
-        className="uppercase tracking-widest mt-1.5!"
+        className="uppercase tracking-widest !mt-1.5"
       >
         {label}
       </Text>
