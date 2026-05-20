@@ -1,3 +1,5 @@
+// /app/data/mockUser.ts
+
 import { UserType } from '../types/user'
 
 export const MOCK_USER: UserType = {

@@ -13,14 +13,17 @@
     "@mantine/core": "^9.1.1",
     "@mantine/hooks": "^9.1.1",
     "lucide-react": "^1.14.0",
+    "mongoose": "^9.6.2",
     "next": "16.2.4",
     "notistack": "^3.0.2",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "resend": "^6.12.3",
+    "zustand": "^5.0.13"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
+    "@types/node": "^20.19.41",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

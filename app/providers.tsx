@@ -1,12 +1,12 @@
+// /app/providers.tsx
 'use client'
 
 import React from 'react'
 import { MantineProvider, createTheme } from '@mantine/core'
 import { SnackbarProvider } from 'notistack'
+import { AuthSyncManager } from '@/app/components/auth/AuthSyncManager'
 import '@mantine/core/styles.css'
-import { AuthProvider } from '@/app/context/AuthContext'
 
-// You can customize your Mantine theme here to match Zynith's branding
 const theme = createTheme({
   primaryColor: 'blue',
   fontFamily: 'var(--font-geist-sans)',
@@ -22,9 +22,9 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
         autoHideDuration={3000}
       >
-        <AuthProvider>
+        <AuthSyncManager>
           {children}
-        </AuthProvider>
+        </AuthSyncManager>
       </SnackbarProvider>
     </MantineProvider>
   )

@@ -1,4 +1,6 @@
-export type UserRole = 'STUDENT' | 'MENTOR' | 'ADMIN' | 'VENDOR'
+// /app/types/user.ts
+
+export type UserRole = 'STUDENT' | 'MENTOR' | 'ADMIN' | ''
 export type EnrollmentStatus =
   | 'ENROLLED'
   | 'IN_PROGRESS'
@@ -10,10 +12,10 @@ export interface Enrollment {
   courseTitle: string
   status: EnrollmentStatus
   progressPercentage: number
-  currentModuleId: string | number // Linked to Module.id
+  currentModuleId: string | number
   completedLessons: string[]
   assignmentsSubmitted: string[]
-  peerReviewsCount: number // How many peer assignments the user has graded for this specific course
+  peerReviewsCount: number
   enrolledAt: string
   lastAccessedAt: string
 }
@@ -21,8 +23,8 @@ export interface Enrollment {
 export interface UserStats {
   coursesCompleted: number
   certificatesEarned: number
-  peerReviewsDone: number // Lifetime total across all courses
-  averagePeerRating: number // The average score Solomon received from other students
+  peerReviewsDone: number
+  averagePeerRating: number
   points: number
   streakDays: number
 }

@@ -24,11 +24,10 @@ import {
   User,
   Settings,
 } from 'lucide-react'
-import { MOCK_USER } from '@/app/data/mockUser'
 import { SidebarContent } from '@/app/components/dashboard/SidebarContent'
 import Link from 'next/link'
 import { useMediaQuery } from '@mantine/hooks'
-import { useAuth } from '@/app/context/AuthContext'
+import { useAuthStore } from '@/app/store/authStore'
 
 export default function DashboardLayout({
   children,
@@ -37,7 +36,7 @@ export default function DashboardLayout({
 }) {
  const [opened, { toggle, close }] = useDisclosure(false)
   const isMobile = useMediaQuery(`(max-width: ${rem(768)})`)
-  const { user, logout } = useAuth()
+ const { user, logout, isAuthenticated } = useAuthStore()
 
  if (!user) {
    return null 
@@ -83,7 +82,7 @@ export default function DashboardLayout({
                     className="text-orange-500 fill-orange-500"
                   />
                   <span className="text-xs font-black text-orange-600">
-                    {MOCK_USER.stats.streakDays}
+                    {/* {user.stats.streakDays} */}
                   </span>
                 </div>
               </Tooltip>
@@ -91,7 +90,7 @@ export default function DashboardLayout({
               <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-100">
                 <Zap size={14} className="text-blue-600 fill-blue-600" />
                 <span className="text-xs font-black text-blue-600 uppercase">
-                  {MOCK_USER.stats.points.toLocaleString()} PTS
+                  {/* {user.stats.points.toLocaleString()} PTS */}
                 </span>
               </div>
             </Group>
@@ -110,7 +109,7 @@ export default function DashboardLayout({
             >
               <Menu.Target>
                 <Avatar
-                  src={MOCK_USER.avatar}
+                  src={user.avatar}
                   radius="xl"
                   size="md"
                   className="cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all"
@@ -126,7 +125,7 @@ export default function DashboardLayout({
                     Account
                   </Text>
                   <Text size="sm" fw={700}>
-                    {MOCK_USER.name}
+                    {user.firstName}
                   </Text>
                 </div>
                 <Menu.Divider />
@@ -158,10 +157,10 @@ export default function DashboardLayout({
         {opened && (
           <AppShell.Section className="border-t border-slate-50 pt-0">
             <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
-              <Avatar src={MOCK_USER.avatar} size="sm" radius="md" />
+              <Avatar src={user.avatar} size="sm" radius="md" />
               <div className="flex-1 overflow-hidden">
                 <Text size="11px" fw={900} className="truncate uppercase">
-                  {MOCK_USER.firstName}
+                  {user.firstName}
                 </Text>
                 <Text size="10px" c="dimmed" fw={700} className="truncate">
                   Active Student
