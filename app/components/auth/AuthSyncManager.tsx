@@ -75,7 +75,7 @@ export function AuthSyncManager({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // 3. Proactive Route Guards
-    if (isAuthenticated && (pathname === '/auth' || pathname === '/')) {
+    if (isAuthenticated && (pathname === '/auth')) {
       router.replace('/dashboard')
     }
     if (!isAuthenticated && pathname.startsWith('/dashboard')) {

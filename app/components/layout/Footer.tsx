@@ -23,7 +23,7 @@ const SocialIcons = {
 }
 
 export const Footer = () => (
-  <footer className="bg-white border-t border-slate-100 pt-24 pb-12">
+  <footer className="bg-background border-t border-slate-300! dark:border-slate-600! pt-24 pb-12">
     <div className="max-w-7xl mx-auto px-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-20">
         <div className="col-span-1 sm:col-span-2">
@@ -95,7 +95,7 @@ export const Footer = () => (
         </div>
       </div>
 
-      <div className="pt-8 border-t border-slate-50 flex flex-col md:flex-row justify-between items-center gap-6">
+      <div className="pt-8 border-t border-slate-300! dark:border-slate-600! flex flex-col md:flex-row justify-between items-center gap-6">
         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
           © 2026 ZYNITH EDUCATION GROUP.
         </span>

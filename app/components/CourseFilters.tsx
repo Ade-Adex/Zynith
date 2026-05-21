@@ -42,8 +42,8 @@ export function CourseFilters({ currentFilter, onFilterChange }: FilterProps) {
   ]
 
   return (
-    <div className="sticky top-4 z-40 bg-white/90 backdrop-blur-md border border-slate-200 shadow-sm rounded-lg py-3 px-6 mb-12 flex items-center gap-4 overflow-x-auto no-scrollbar">
-      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0 pr-4 border-r border-slate-200">
+    <div className="sticky top-4 z-40 bg-background backdrop-blur-md border border-slate-300! dark:border-slate-600! shadow-sm rounded-lg py-3 px-6 mb-12 flex items-center gap-4 overflow-x-auto no-scrollbar">
+      <span className="text-[9px] font-black uppercase tracking-widest text-slate-400 shrink-0 pr-4 border-r border-slate-300! dark:border-slate-600!">
         Catalog Filter
       </span>
       {filters.map((tag) => (
@@ -52,8 +52,8 @@ export function CourseFilters({ currentFilter, onFilterChange }: FilterProps) {
           onClick={() => onFilterChange(tag.value)}
           className={`flex items-center gap-2 whitespace-nowrap px-5 py-2.5 rounded-xl border transition-all cursor-pointer ${
             currentFilter === tag.value
-              ? 'bg-slate-900 border-slate-900 text-white shadow-lg'
-              : 'bg-white border-slate-100 hover:border-blue-200 text-slate-600'
+              ? 'bg-[#1d4ed8] border-none text-white shadow-lg'
+              : 'bg-surface border-slate-300! dark:border-slate-600! hover:border-blue-200'
           }`}
         >
           {tag.icon}

@@ -1,4 +1,6 @@
-import React from 'react'
+'use client'
+
+import React, { useState, useEffect } from 'react'
 import { CourseCard } from '@/app/components/CourseCard'
 import { CourseFilters } from '@/app/components/CourseFilters'
 import { Pagination } from '@/app/components/Pagination'
@@ -23,11 +25,46 @@ export function CourseGrid({
   onFilterChange,
   onPageChange,
 }: CourseGridProps) {
-  const totalPages = Math.ceil(courses.length / ITEMS_PER_PAGE)
-  const displayedCourses = courses.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
+  const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(
+    null,
   )
+  const [animatingPage, setAnimatingPage] = useState(currentPage)
+  const [isTransitioning, setIsTransitioning] = useState(false)
+
+  const totalPages = Math.ceil(courses.length / ITEMS_PER_PAGE)
+
+  // Derive courses based on the current animating page block
+  const displayedCourses = courses.slice(
+    (animatingPage - 1) * ITEMS_PER_PAGE,
+    animatingPage * ITEMS_PER_PAGE,
+  )
+
+  const handlePageTransition = (nextPage: number) => {
+    if (nextPage === currentPage || isTransitioning) return
+
+    // Determine swipe vector trajectory
+    setSlideDirection(nextPage > currentPage ? 'right' : 'left')
+    setIsTransitioning(true)
+
+    // Stage 1: Trigger out-slide action
+    setTimeout(() => {
+      onPageChange(nextPage)
+      setAnimatingPage(nextPage)
+      // Reverse slide vector to smoothly slide in from the opposite side
+      setSlideDirection(nextPage > currentPage ? 'left' : 'right')
+    }, 250) // Matches half duration cycle
+  }
+
+  useEffect(() => {
+    if (isTransitioning) {
+      // Stage 2: Reset transformation tracks to resting state
+      const timer = setTimeout(() => {
+        setSlideDirection(null)
+        setIsTransitioning(false)
+      }, 300)
+      return () => clearTimeout(timer)
+    }
+  }, [currentPage, isTransitioning])
 
   return (
     <>
@@ -47,20 +84,30 @@ export function CourseGrid({
       />
 
       {displayedCourses.length > 0 ? (
-        <>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+        // Overflow container hidden hides the sliding elements outside the card boundaries
+        <div className="w-full overflow-x-hidden py-4 px-1">
+          <div
+            className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 transition-all duration-300 ease-out transform ${
+              slideDirection === 'right'
+                ? '-translate-x-12 opacity-20 filter blur-xs'
+                : slideDirection === 'left'
+                  ? 'translate-x-12 opacity-20 filter blur-xs'
+                  : 'translate-x-0 opacity-100 filter blur-none'
+            }`}
+          >
             {displayedCourses.map((course) => (
               <CourseCard key={course._id} course={course} />
             ))}
           </div>
+
           <Pagination
             currentPage={currentPage}
             totalPages={totalPages}
-            onPageChange={onPageChange}
+            onPageChange={handlePageTransition}
           />
-        </>
+        </div>
       ) : (
-        <div className="py-20 text-center border-2 border-dashed border-slate-100 rounded-4xl">
+        <div className="py-20 text-center border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-4xl">
           <p className="text-slate-400 text-xs font-black uppercase tracking-widest">
             No tracks found matching &quot;{currentFilter}&quot;.
           </p>

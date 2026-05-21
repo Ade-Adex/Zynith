@@ -16,31 +16,25 @@ import {
   rem,
 } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
-import {
-  Bell,
-  Flame,
-  Zap,
-  LogOut,
-  User,
-  Settings,
-} from 'lucide-react'
+import { Bell, Flame, Zap, LogOut, User, Settings } from 'lucide-react'
 import { SidebarContent } from '@/app/components/dashboard/SidebarContent'
 import Link from 'next/link'
 import { useMediaQuery } from '@mantine/hooks'
 import { useAuthStore } from '@/app/store/authStore'
+import { ThemeToggle } from '@/app/components/constant/ThemeToggle'
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
- const [opened, { toggle, close }] = useDisclosure(false)
+  const [opened, { toggle, close }] = useDisclosure(false)
   const isMobile = useMediaQuery(`(max-width: ${rem(768)})`)
- const { user, logout, isAuthenticated } = useAuthStore()
+  const { user, logout, isAuthenticated } = useAuthStore()
 
- if (!user) {
-   return null 
- }
+  if (!user) {
+    return null
+  }
 
   return (
     <AppShell
@@ -50,10 +44,10 @@ export default function DashboardLayout({
         breakpoint: 'sm',
         collapsed: { mobile: !opened },
       }}
-      className="bg-[#fcfcfd] px-8"
+      className="bg-[var(--background)] text-[var(--foreground)] px-8"
     >
       {/* Global Dashboard Header */}
-      <AppShell.Header className="border-b border-slate-100 bg-white/80 backdrop-blur-md px-6 md:px-12">
+      <AppShell.Header className="border-b border-slate-100 dark:border-slate-800 bg-white/80 dark:bg-slate-950/80 backdrop-blur-md px-6 md:px-12">
         <Group h="100%" justify="space-between" wrap="nowrap">
           <Group gap="md">
             <Burger
@@ -61,13 +55,14 @@ export default function DashboardLayout({
               onClick={toggle}
               size="sm"
               color="var(--mantine-color-gray-6)"
-              className="hover:bg-slate-50 rounded-md p-1"
+              className="hover:bg-slate-50 dark:hover:bg-slate-800 rounded-md p-1"
               aria-label="Toggle navigation"
             />
 
             <Link href="/" className="hidden sm:block">
-              <Text className="text-lg! font-black! tracking-tighter! uppercase italic cursor-pointer">
-                ZYNITH<span className="text-blue-600">.</span>
+              <Text className="text-lg! font-black! tracking-tighter! uppercase italic cursor-pointer text-slate-900 dark:text-slate-100">
+                ZYNITH
+                <span className="text-blue-600 dark:text-blue-500">.</span>
               </Text>
             </Link>
           </Group>
@@ -76,27 +71,32 @@ export default function DashboardLayout({
             {/* Gamification Stats */}
             <Group gap="xs" className="hidden! lg:flex">
               <Tooltip label="12 Day Streak">
-                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 rounded-lg border border-orange-100">
+                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-100 dark:border-orange-900/50">
                   <Flame
                     size={14}
                     className="text-orange-500 fill-orange-500"
                   />
-                  <span className="text-xs font-black text-orange-600">
+                  <span className="text-xs font-black text-orange-600 dark:text-orange-400">
                     {/* {user.stats.streakDays} */}
                   </span>
                 </div>
               </Tooltip>
 
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 rounded-lg border border-blue-100">
-                <Zap size={14} className="text-blue-600 fill-blue-600" />
-                <span className="text-xs font-black text-blue-600 uppercase">
+              <div className="flex items-center gap-2 px-3 py-1.5 bg-blue-50 dark:bg-blue-950/30 rounded-lg border border-blue-100 dark:border-blue-900/50">
+                <Zap
+                  size={14}
+                  className="text-blue-600 fill-blue-600 dark:text-blue-400 dark:fill-blue-400"
+                />
+                <span className="text-xs font-black text-blue-600 dark:text-blue-400 uppercase">
                   {/* {user.stats.points.toLocaleString()} PTS */}
                 </span>
               </div>
             </Group>
 
+            <ThemeToggle />
+
             <ActionIcon variant="subtle" color="gray" size="lg">
-              <Bell size={20} />
+              <Bell size={20} className="text-slate-600 dark:text-slate-400" />
             </ActionIcon>
 
             {/* Profile Dropdown */}
@@ -115,29 +115,42 @@ export default function DashboardLayout({
                   className="cursor-pointer border-2 border-transparent hover:border-blue-500 transition-all"
                 />
               </Menu.Target>
-              <Menu.Dropdown>
+              <Menu.Dropdown className="dark:bg-slate-900 dark:border-slate-800">
                 <div className="px-3 py-2 mb-1">
                   <Text
                     size="xs"
                     fw={900}
-                    className="uppercase tracking-widest text-slate-400"
+                    className="uppercase tracking-widest text-slate-400 dark:text-slate-500"
                   >
                     Account
                   </Text>
-                  <Text size="sm" fw={700}>
+                  <Text
+                    size="sm"
+                    fw={700}
+                    className="text-slate-800 dark:text-slate-200"
+                  >
                     {user.firstName}
                   </Text>
                 </div>
-                <Menu.Divider />
-                <Menu.Item leftSection={<User size={16} />}>Profile</Menu.Item>
-                <Menu.Item leftSection={<Settings size={16} />}>
+                <Menu.Divider className="dark:border-slate-800" />
+                <Menu.Item
+                  leftSection={<User size={16} />}
+                  className="dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                >
+                  Profile
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<Settings size={16} />}
+                  className="dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
+                >
                   Settings
                 </Menu.Item>
-                <Menu.Divider />
+                <Menu.Divider className="dark:border-slate-800" />
                 <Menu.Item
                   color="red"
                   onClick={logout}
                   leftSection={<LogOut size={16} />}
+                  className="dark:hover:bg-red-950/30"
                 >
                   <span className="font-bold">Logout</span>
                 </Menu.Item>
@@ -148,21 +161,34 @@ export default function DashboardLayout({
       </AppShell.Header>
 
       {/* Sidebar Section */}
-      <AppShell.Navbar className="border-r border-slate-100 px-4 py-10">
+      <AppShell.Navbar className="border-r border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 px-4 py-10">
         <AppShell.Section grow component={ScrollArea} mx="-xs" px="xs">
-          <SidebarContent isCollapsed={!opened} closeSidebar={close} isMobile={isMobile} />
+          <SidebarContent
+            isCollapsed={!opened}
+            closeSidebar={close}
+            isMobile={isMobile}
+          />
         </AppShell.Section>
 
         {/* Mini Profile info when Sidebar is Open */}
         {opened && (
-          <AppShell.Section className="border-t border-slate-50 pt-0">
-            <div className="bg-slate-50 p-3 rounded-xl border border-slate-100 flex items-center gap-3">
+          <AppShell.Section className="border-t border-slate-50 dark:border-slate-900 pt-4">
+            <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800 flex items-center gap-3">
               <Avatar src={user.avatar} size="sm" radius="md" />
               <div className="flex-1 overflow-hidden">
-                <Text size="11px" fw={900} className="truncate uppercase">
+                <Text
+                  size="11px"
+                  fw={900}
+                  className="truncate uppercase text-slate-800 dark:text-slate-200"
+                >
                   {user.firstName}
                 </Text>
-                <Text size="10px" c="dimmed" fw={700} className="truncate">
+                <Text
+                  size="10px"
+                  c="dimmed"
+                  fw={700}
+                  className="truncate text-slate-400 dark:text-slate-500"
+                >
                   Active Student
                 </Text>
               </div>
@@ -172,8 +198,8 @@ export default function DashboardLayout({
       </AppShell.Navbar>
 
       {/* Primary Content Window */}
-      <AppShell.Main>
-        <div className="max-w-6xl mx-auto ">{children}</div>
+      <AppShell.Main className="bg-[var(--background)]">
+        <div className="max-w-6xl mx-auto">{children}</div>
       </AppShell.Main>
     </AppShell>
   )

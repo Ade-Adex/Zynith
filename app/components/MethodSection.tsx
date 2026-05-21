@@ -34,9 +34,9 @@ export function MethodSection() {
         {methods.map((item, idx) => (
           <div
             key={idx}
-            className="group p-8 rounded-4xl border border-slate-300 hover:bg-slate-50/50 transition-all"
+            className="group p-8 rounded-4xl border border-slate-300! dark:border-slate-600! hover:bg-surface/50 transition-all"
           >
-            <div className="w-14 h-14 bg-slate-900 text-white rounded-2xl flex items-center justify-center mb-6">
+            <div className="w-14 h-14 bg-slate-900 text-white group-hover:bg-[#1d4ed8]  rounded-2xl flex items-center justify-center mb-6">
               {item.icon}
             </div>
             <h3 className="font-black uppercase tracking-tight text-lg mb-3">

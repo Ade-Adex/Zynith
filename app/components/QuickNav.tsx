@@ -18,10 +18,10 @@ export function QuickNav() {
           href={`#${item.id}`}
           className="group flex items-center justify-end gap-3"
         >
-          <span className="opacity-0 group-hover:opacity-100 transition-opacity bg-slate-900 text-white text-[10px] font-black px-2 py-1 rounded">
+          <span className="opacity-0 group-hover:opacity-100 transition-opacity  text-[10px] font-black px-2 py-1 rounded">
             {item.label}
           </span>
-          <div className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center hover:border-blue-600 transition-all shadow-sm hover:text-blue-600">
+          <div className="w-10 h-10 border border-slate-300! dark:border-slate-600!  rounded-full flex items-center justify-center hover:border-blue-600 transition-all shadow-sm hover:text-blue-600">
             {item.icon}
           </div>
         </a>

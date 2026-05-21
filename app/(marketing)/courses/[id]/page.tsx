@@ -1,7 +1,9 @@
+
 // /app/(marketing)/courses/[id]/page.tsx
 import React from 'react'
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
+import Link from 'next/link'
 import {
   Play,
   Clock,
@@ -20,23 +22,23 @@ interface Props {
   params: Promise<{ id: string }>
 }
 
-// Optimization Note: Instead of pulling all courses, it's highly recommended to update your
-// API layer to support `/api/courses/${id}` so MongoDB filters it directly.
+async function getCurrentUserSession() {
+  return {
+    isLoggedIn: true,
+    purchasedCourseIds: ['some-other-id-123'],
+    wishlistCourseIds: [] as string[],
+  }
+}
+
 async function getCourseFromDatabase(id: string): Promise<Course | null> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
-
-    // Fetching from the general endpoint as per your current architecture
     const response = await fetch(`${baseUrl}/api/courses`, {
       next: { revalidate: 60 },
     })
-
     if (!response.ok) return null
-
     const json = await response.json()
     const courses: Course[] = json.data || []
-
-    // Directly matching against the Mongoose stringified _id field
     return courses.find((c) => String(c._id) === id) || null
   } catch (error) {
     console.error('Server side database communications failure:', error)
@@ -50,13 +52,19 @@ export default async function CourseDetails({ params }: Props) {
 
   if (!course) notFound()
 
+  const userSession = await getCurrentUserSession()
+  const parsedPrice = parseFloat(course.price || '0')
+  const isFree = parsedPrice === 0
+  const hasAccess = isFree || userSession.purchasedCourseIds.includes(String(course._id))
+  const isInWishlist = userSession.wishlistCourseIds.includes(String(course._id))
+
   const features = course.features || []
   const price = course.price || '0'
   const type = course.type || 'Premium'
   const modules = course.modules || []
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
       {/* Hero Header Section */}
       <section className="relative bg-slate-950 text-white pt-25 pb-16 md:pt-30 md:pb-24 px-5 md:px-16 overflow-hidden">
         <div className="absolute inset-0 opacity-30">
@@ -135,6 +143,7 @@ export default async function CourseDetails({ params }: Props) {
             </div>
           </div>
 
+          {/* Video Preview Unit */}
           <div className="relative group aspect-video rounded-2xl overflow-hidden bg-slate-900 border border-white/10 shadow-2xl flex items-center justify-center">
             {course.previewVideo ? (
               <video
@@ -155,13 +164,20 @@ export default async function CourseDetails({ params }: Props) {
               )
             )}
 
-            <button className="relative z-10 w-16 h-16 bg-white text-slate-950 rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-2xl">
+            <Link
+              href={
+                hasAccess
+                  ? `/dashboard/courses/${course._id}/lessons`
+                  : `#enrollment-card`
+              }
+              className="relative z-10 w-16 h-16 bg-white text-slate-950 rounded-full flex items-center justify-center hover:scale-110 transition-all shadow-2xl cursor-pointer"
+            >
               <Play fill="currentColor" size={32} className="ml-1" />
-            </button>
+            </Link>
 
             <div className="absolute bottom-8 left-8 right-8 flex justify-between items-center">
               <p className="font-black uppercase text-[10px] tracking-[0.4em] text-white">
-                Live Preview
+                {hasAccess ? 'Full Course Unlocked' : 'Preview Mode'}
               </p>
               <div className="h-px flex-1 mx-4 bg-white/20" />
               <span className="text-[10px] font-black text-white">READY</span>
@@ -170,14 +186,15 @@ export default async function CourseDetails({ params }: Props) {
         </div>
       </section>
 
+      {/* Main Layout Area */}
       <main className="max-w-7xl mx-auto px-5 md:px-16 py-10 grid lg:grid-cols-3 gap-10">
         <div className="lg:col-span-2 space-y-12">
           {/* Learning Outcomes */}
           {features.length > 0 && (
             <section>
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center">
-                  <CheckCircle2 className="text-blue-600" />
+                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-transparent dark:border-blue-900/20 flex items-center justify-center">
+                  <CheckCircle2 className="text-blue-600 dark:text-blue-400" />
                 </div>
                 <h2 className="text-lg md:text-2xl font-black uppercase tracking-tighter">
                   Learning Outcomes
@@ -187,10 +204,13 @@ export default async function CourseDetails({ params }: Props) {
                 {features.map((feature, i) => (
                   <div
                     key={i}
-                    className="flex gap-4 p-4 rounded-3xl border border-slate-100 bg-slate-50/50 transition-all hover:bg-white hover:shadow-xl group"
+                    className="flex gap-4 p-4 rounded-3xl border border-slate-100 dark:border-border/60 bg-surface transition-all hover:shadow-xl dark:hover:shadow-black/20 group"
                   >
-                    <ShieldCheck className="text-blue-600 shrink-0" size={20} />
-                    <p className="text-xs md:text-sm font-bold text-slate-700 leading-snug">
+                    <ShieldCheck
+                      className="text-blue-600 dark:text-blue-400 shrink-0"
+                      size={20}
+                    />
+                    <p className="text-xs md:text-sm font-bold text-slate-700 dark:text-slate-300 leading-snug">
                       {feature}
                     </p>
                   </div>
@@ -203,29 +223,36 @@ export default async function CourseDetails({ params }: Props) {
           <section>
             <div className="flex items-end justify-between mb-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-slate-900 flex items-center justify-center">
-                  <BookOpen className="text-white" size={20} />
+                <div className="w-12 h-12 rounded-2xl bg-slate-900 dark:bg-surface border border-transparent dark:border-border/60 flex items-center justify-center">
+                  <BookOpen
+                    className="text-white dark:text-blue-400"
+                    size={20}
+                  />
                 </div>
                 <h2 className="text-lg md:text-2xl font-black uppercase tracking-tighter">
                   Curriculum
                 </h2>
               </div>
-              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em]">
+              <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.3em]">
                 {modules.length} Stages
               </span>
             </div>
-            <CourseCurriculum modules={modules} />
+            <CourseCurriculum
+              modules={modules}
+              courseId={String(course._id)}
+              hasAccess={hasAccess}
+            />
           </section>
 
           {/* Dedicated Tutor Profile Block */}
           {course.tutorDetails && (
-            <section className="p-6 md:p-8 border border-slate-200 rounded-3xl bg-slate-50/50">
+            <section className="p-6 md:p-8 border border-slate-200 dark:border-border/60 rounded-3xl bg-surface">
               <div className="flex items-center gap-4 mb-6">
                 <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center text-white">
                   <Contact size={20} />
                 </div>
                 <div>
-                  <p className="text-[8px] md:text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-0.5">
+                  <p className="text-[8px] md:text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-0.5">
                     Your Instructor
                   </p>
                   <h2 className="text-lg md:text-xl font-black uppercase tracking-tight">
@@ -236,7 +263,7 @@ export default async function CourseDetails({ params }: Props) {
 
               <div className="flex flex-col md:flex-row gap-6 items-start">
                 {course.tutorDetails.avatar && (
-                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-slate-200">
+                  <div className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 border border-slate-200 dark:border-border/80">
                     <Image
                       src={course.tutorDetails.avatar}
                       alt={course.tutorDetails.name || 'Tutor Avatar'}
@@ -246,10 +273,10 @@ export default async function CourseDetails({ params }: Props) {
                   </div>
                 )}
                 <div className="space-y-3">
-                  <h3 className="font-black text-slate-900 uppercase text-sm tracking-tight">
+                  <h3 className="font-black text-slate-900 dark:text-white uppercase text-sm tracking-tight">
                     {course.tutorDetails.name}
                   </h3>
-                  <p className="text-slate-600 text-xs md:text-sm leading-relaxed font-medium">
+                  <p className="text-slate-600 dark:text-slate-300 text-xs md:text-sm leading-relaxed font-medium">
                     {course.tutorDetails.bio}
                   </p>
                   {course.tutorDetails.expertise && (
@@ -257,7 +284,7 @@ export default async function CourseDetails({ params }: Props) {
                       {course.tutorDetails.expertise.map((exp, index) => (
                         <span
                           key={index}
-                          className="px-2 py-0.5 bg-white border border-slate-200 text-slate-500 rounded-md text-[9px] font-bold uppercase tracking-wider"
+                          className="px-2 py-0.5 bg-background border border-slate-200 dark:border-border/60 text-slate-500 dark:text-slate-400 rounded-md text-[9px] font-bold uppercase tracking-wider"
                         >
                           {exp}
                         </span>
@@ -268,48 +295,19 @@ export default async function CourseDetails({ params }: Props) {
               </div>
             </section>
           )}
-
-          {/* Segmented Course Testimonies Block */}
-          {course.testimonies && course.testimonies.length > 0 && (
-            <section>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-12 h-12 rounded-2xl bg-amber-50 text-amber-500 flex items-center justify-center">
-                  <Star size={20} fill="currentColor" />
-                </div>
-                <h2 className="text-lg md:text-2xl font-black uppercase tracking-tighter">
-                  Course Reviews
-                </h2>
-              </div>
-              <div className="space-y-4">
-                {course.testimonies.map((review) => (
-                  <div
-                    key={review.id}
-                    className="p-5 border border-slate-100 rounded-2xl bg-white shadow-xs"
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-xs font-black uppercase tracking-wide text-slate-900">
-                        {review.studentName}
-                      </span>
-                      <div className="flex text-amber-400 gap-0.5">
-                        {[...Array(review.rating)].map((_, i) => (
-                          <Star key={i} size={10} fill="currentColor" />
-                        ))}
-                      </div>
-                    </div>
-                    <p className="text-slate-600 text-xs md:text-sm font-medium leading-relaxed italic">
-                      &quot;{review.reviewText}&quot;
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
         </div>
 
-        <aside>
+        {/* Action Sidebar */}
+        <aside id="enrollment-card">
           <div className="sticky top-32">
-            {/* Pass courseId down if needed for order processing/enrollment tracking */}
-            <CourseEnrollCard /* courseId={course._id} */ price={price} type={type} />
+            <CourseEnrollCard
+              course={course}
+              price={price}
+              type={type}
+              hasAccess={hasAccess}
+              isLoggedIn={userSession.isLoggedIn}
+              isInWishlist={isInWishlist}
+            />
           </div>
         </aside>
       </main>

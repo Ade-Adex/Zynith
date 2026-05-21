@@ -25,9 +25,12 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { ThemeToggle } from '@/app/components/constant/ThemeToggle'
+import { useCartStore } from '@/app/store/cartStore'
 
 export const Navbar = () => {
   const { user, logout, isAuthenticated } = useAuthStore()
+  const { cartItems } = useCartStore() 
   const [opened, { toggle, close }] = useDisclosure(false)
   const router = useRouter()
 
@@ -38,7 +41,7 @@ export const Navbar = () => {
   }
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-slate-100 px-5 md:px-16">
+    <nav className="fixed top-0 w-full z-50 bg-background backdrop-blur-md border-b border-slate-300! dark:border-slate-600! px-5 md:px-16">
       <div className="max-w-7xl mx-auto h-16 flex items-center justify-between relative">
         <div className="flex justify-between items-center w-1/2">
           <div className="z-10">
@@ -49,12 +52,12 @@ export const Navbar = () => {
             </Link>
           </div>
 
-          <div className="hidden md:flex items-center gap-6 lg:gap-8 text-[11px] font-bold uppercase tracking-widest text-slate-500 whitespace-nowrap">
+          <div className="hidden md:flex items-center gap-6 lg:gap-8 text-[11px] font-bold uppercase tracking-widest whitespace-nowrap">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.label}
                 href={link.href}
-                className="hover:text-blue-600 transition-colors"
+                className=" transition-colors hover:text-primary"
               >
                 {link.label}
               </Link>
@@ -63,25 +66,25 @@ export const Navbar = () => {
         </div>
 
         <div className="w-1/2 flex justify-end items-center gap-2 lg:gap-4 z-10">
-          <div className="hidden lg:flex items-center bg-slate-100 rounded-full px-4 py-2 group focus-within:bg-white focus-within:ring-2 focus-within:ring-blue-600/20 transition-all">
+          <div className="hidden lg:flex items-center bg-foreground/5 dark:bg-surface rounded-full px-4 group focus-within:bg-background focus-within:ring-2 focus-within:ring-blue-600/20 transition-all">
             <Search
               size={14}
-              className="text-slate-400 group-focus-within:text-blue-600"
+              className="text-foreground/40 group-focus-within:text-blue-600 transition-colors"
             />
             <input
               type="text"
               placeholder="Search courses..."
-              className="bg-transparent border-none focus:ring-0 text-sm! font-medium ml-2 w-32 xl:w-48 outline-none"
+              className="bg-transparent! border-none! p-0 focus:ring-0! text-sm! font-medium ml-2 w-32 xl:w-48 outline-none! text-foreground placeholder:text-foreground/40"
             />
           </div>
 
-          <div className="lg:hidden flex items-center justify-center w-9 h-9 rounded-full hover:bg-slate-100 transition-colors cursor-pointer">
-            <Search size={18} className="text-slate-600" />
+          <div className="lg:hidden flex items-center justify-center w-9 h-9 rounded-full hover:bg-foreground/5 dark:hover:bg-surface transition-colors cursor-pointer">
+            <Search size={18} className="text-foreground/70" />
           </div>
 
           {isAuthenticated && user ? (
             <div className="flex items-center gap-2 md:gap-3">
-              <div className="hidden sm:flex items-center gap-3 bg-slate-50 border border-slate-100 px-3 py-1.5 rounded-full">
+              <div className="hidden sm:flex items-center gap-3 border border-slate-300 dark:border-slate-700 px-3 py-1.5 rounded-full">
                 <Tooltip label="Daily Streak">
                   <div className="flex items-center gap-1">
                     <Flame
@@ -93,7 +96,7 @@ export const Navbar = () => {
                     </span>
                   </div>
                 </Tooltip>
-                <div className="w-px h-3 bg-slate-200" />
+                <div className="w-px h-3 " />
                 <Tooltip label="Wallet Balance">
                   <div className="flex items-center gap-1">
                     <Wallet size={14} className="text-blue-600" />
@@ -109,11 +112,12 @@ export const Navbar = () => {
 
               <Indicator
                 size={20}
-                label="2"
+                label={cartItems.length.toString()} // <-- Hook up real count dynamic value
                 color="blue"
                 withBorder
                 offset={4}
                 radius="xl"
+                disabled={cartItems.length === 0} // Hide indicator badge if nothing is inside
                 inline
                 styles={{
                   indicator: {
@@ -123,8 +127,15 @@ export const Navbar = () => {
                 }}
               >
                 <Tooltip label="Your Cart">
-                  <UnstyledButton className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors">
-                    <ShoppingCart size={18} className="text-slate-600" />
+                  {/* Simple redirect link to a customized checkout panel */}
+                  <UnstyledButton
+                    onClick={() => router.push('/cart')}
+                    className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
+                  >
+                    <ShoppingCart
+                      size={18}
+                      className="text-slate-600 dark:text-slate-400"
+                    />
                   </UnstyledButton>
                 </Tooltip>
               </Indicator>
@@ -132,9 +143,27 @@ export const Navbar = () => {
               <Menu
                 shadow="md"
                 width={240}
-                radius="xl"
+                radius="lg"
                 transitionProps={{ transition: 'pop-top-right' }}
                 offset={12}
+                styles={{
+                  dropdown: {
+                    backgroundColor: 'var(--background)',
+                    borderColor: 'var(--border)',
+                    padding: '6px',
+                  },
+                  item: {
+                    color: 'var(--foreground)',
+                    transition: 'background-color 0.15s ease, color 0.15s ease',
+                  },
+                  label: {
+                    color: 'var(--foreground)',
+                    opacity: 0.4 /* Instead of text-slate-400, this creates perfect contrast on any background */,
+                  },
+                  divider: {
+                    borderColor: 'var(--border)',
+                  },
+                }}
               >
                 <Menu.Target>
                   <UnstyledButton className="group">
@@ -145,6 +174,12 @@ export const Navbar = () => {
                       position="bottom-end"
                       color="green"
                       withBorder
+                      /* Ensures the green indicator dot border matches the surface behind it */
+                      styles={{
+                        indicator: {
+                          borderColor: 'var(--surface) !important',
+                        },
+                      }}
                     >
                       <Avatar
                         src={user.avatar}
@@ -154,38 +189,64 @@ export const Navbar = () => {
                     </Indicator>
                   </UnstyledButton>
                 </Menu.Target>
+
                 <Menu.Dropdown>
-                  <Menu.Label className="text-[10px] uppercase tracking-tighter font-black text-slate-400">
+                  <Menu.Label className="text-[10px] uppercase tracking-tighter font-black">
                     Account
                   </Menu.Label>
+
                   <Menu.Item
                     component={Link}
                     href="/dashboard"
+                    className="hover:bg-foreground/5"
                     leftSection={
-                      <LayoutDashboard size={14} className="text-blue-600" />
+                      <LayoutDashboard
+                        size={14}
+                        className="text-blue-600 dark:text-blue-400"
+                      />
                     }
                   >
                     <span className="text-xs font-bold">Dashboard</span>
                   </Menu.Item>
-                  <Menu.Item leftSection={<User size={14} />}>
+
+                  <Menu.Item
+                    leftSection={<User size={14} className="opacity-70" />}
+                    className="hover:bg-foreground/5"
+                  >
                     <span className="text-xs font-bold">My Profile</span>
                   </Menu.Item>
+
                   <Menu.Item
-                    leftSection={<Zap size={14} className="text-orange-500" />}
+                    className="hover:bg-foreground/5"
+                    leftSection={
+                      <Zap
+                        size={14}
+                        className="text-orange-500 dark:text-orange-400"
+                      />
+                    }
                   >
                     <span className="text-xs font-bold">Upgrade to Pro</span>
                   </Menu.Item>
+
                   <Menu.Divider />
-                  <Menu.Label className="text-[10px] uppercase tracking-tighter font-black text-slate-400">
+
+                  <Menu.Label className="text-[10px] uppercase tracking-tighter font-black">
                     Settings
                   </Menu.Label>
-                  <Menu.Item leftSection={<Settings size={14} />}>
+
+                  <Menu.Item
+                    leftSection={<Settings size={14} className="opacity-70" />}
+                    className="hover:bg-foreground/5"
+                  >
                     <span className="text-xs font-bold">Account Settings</span>
                   </Menu.Item>
+
                   <Menu.Item
                     onClick={logout}
                     color="red"
                     leftSection={<LogOut size={14} />}
+                    /* Mantine handles color="red" nicely, but we can make it look extra clean on hover */
+                    className="hover:bg-red-500/10"
                   >
                     <span className="text-xs font-bold">Sign Out</span>
                   </Menu.Item>
@@ -194,12 +255,14 @@ export const Navbar = () => {
             </div>
           ) : (
             <button
-              className="bg-slate-900 text-white px-5 py-2 rounded-xl text-sm! font-black uppercase tracking-widest hover:bg-blue-600 transition-all shadow-md active:scale-95 cursor-pointer"
+              className="hidden! md:flex! btn-primary"
               onClick={() => router.push('/auth')}
             >
               Sign In
             </button>
           )}
+
+          <ThemeToggle />
 
           <div className="md:hidden">
             <Menu
@@ -209,6 +272,17 @@ export const Navbar = () => {
               radius={0}
               opened={opened}
               onClose={close}
+              styles={{
+                dropdown: {
+                  backgroundColor: 'var(--background)',
+                  borderColor: 'var(--border)',
+                },
+                item: {
+                  '&:hover': {
+                    backgroundColor: 'rgba(var(--foreground), 0.05)',
+                  },
+                },
+              }}
             >
               <Menu.Target>
                 <Burger
@@ -216,25 +290,32 @@ export const Navbar = () => {
                   onClick={toggle}
                   size="sm"
                   lineSize={2}
-                  className="text-slate-900"
+                  className="text-foreground"
                 />
               </Menu.Target>
-              <Menu.Dropdown className="h-[calc(100vh-64px)] md:h-auto p-4">
+              <Menu.Dropdown className="h-[calc(100vh-64px)] md:h-auto p-4 bg-surface border-border pt-10!">
                 {NAV_LINKS.map((link) => (
                   <Menu.Item
                     key={link.label}
                     component={Link}
                     href={link.href}
                     onClick={close}
+                    className="hover:bg-foreground/5 dark:hover:bg-background transition-colors rounded-lg"
                   >
-                    <span className="text-[11px] font-black uppercase tracking-widest py-2 block">
+                    <span className="text-[11px] font-black uppercase tracking-widest py-2 block text-foreground">
                       {link.label}
                     </span>
                   </Menu.Item>
                 ))}
+
                 {isAuthenticated ? (
-                  <Menu.Item component={Link} href="/dashboard" onClick={close}>
-                    <span className="text-[11px] font-black uppercase tracking-widest text-blue-600 py-2 block">
+                  <Menu.Item
+                    component={Link}
+                    href="/dashboard"
+                    onClick={close}
+                    className="hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors rounded-lg"
+                  >
+                    <span className="text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 py-2 block">
                       Go to Dashboard
                     </span>
                   </Menu.Item>
@@ -244,8 +325,9 @@ export const Navbar = () => {
                       router.push('/auth')
                       close()
                     }}
+                    className="hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors rounded-lg"
                   >
-                    <span className="text-[11px] font-black uppercase tracking-widest text-blue-600 py-2 block">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 py-2 block">
                       Sign In
                     </span>
                   </Menu.Item>

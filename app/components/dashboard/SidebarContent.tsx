@@ -1,3 +1,5 @@
+// /app/components/dashboard/SidebarContent.tsx
+
 'use client'
 
 import React from 'react'
@@ -36,7 +38,7 @@ export function SidebarContent({
             component={Link}
             href={item.href}
             label={isCollapsed ? null : item.label}
-            onClick={handleLinkClick} // Condition handles mobile vs desktop
+            onClick={handleLinkClick}
             leftSection={
               <item.icon size={20} strokeWidth={isActive ? 2.5 : 2} />
             }
@@ -52,8 +54,8 @@ export function SidebarContent({
             color="blue"
             className={`rounded-xl py-3! transition-all duration-200 ${
               isActive
-                ? 'font-bold uppercase tracking-widest text-[10px]! bg-blue-50 text-blue-700'
-                : 'font-semibold uppercase tracking-widest text-[10px]! text-slate-500 hover:bg-slate-50'
+                ? 'font-bold uppercase tracking-widest text-[10px]! bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-400'
+                : 'font-semibold uppercase tracking-widest text-[10px]! text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50'
             }`}
           />
         )
@@ -76,12 +78,12 @@ export function SidebarContent({
         )
       })}
 
-      <div className="mt-8 pt-8 border-t border-slate-100">
+      <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800">
         <NavLink
           label={isCollapsed ? null : 'Help Center'}
           leftSection={<HelpCircle size={20} />}
           onClick={handleLinkClick}
-          className="rounded-xl py-3! font-semibold uppercase tracking-widest text-[10px]! text-slate-400 hover:text-slate-600"
+          className="rounded-xl py-3! font-semibold uppercase tracking-widest text-[10px]! text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300"
         />
       </div>
     </Stack>

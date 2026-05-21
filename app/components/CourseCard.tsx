@@ -44,9 +44,9 @@ export const CourseCard = ({ course }: { course: Course }) => {
         }
       }}
     >
-      <div className="bg-white border border-foreground/20 rounded-2xl p-4 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5 transition-all duration-500 flex flex-col h-full">
+      <div className="bg-background border border-slate-300! dark:border-slate-600! rounded-xl p-4 hover:border-blue-500/30 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500 flex flex-col h-full">
         <div
-          className={`relative aspect-[16/10] rounded-[24px] overflow-hidden mb-6 bg-gradient-to-br ${course.color}`}
+          className={`relative aspect-16/10 rounded-2xl overflow-hidden mb-6 bg-linear-to-br ${course.color}`}
         >
           <Image
             src={course.image}
@@ -66,20 +66,16 @@ export const CourseCard = ({ course }: { course: Course }) => {
           )}
 
           <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
-            <div className="flex gap-2">
-              <span className="px-2.5 py-1 rounded-lg bg-white/90 backdrop-blur text-[8px] font-black uppercase tracking-widest border border-foreground/5">
+            <div className="flex items-center w-full">
+              <span className="px-2.5 py-1 rounded-lg bg-surface backdrop-blur text-[8px] font-black uppercase tracking-widest border border-foreground/5 text-foreground">
                 {course.level}
               </span>
+
               {course.tag && (
-                <span className="px-2.5 py-1 rounded-lg bg-blue-600 text-white text-[8px] font-black uppercase tracking-widest">
+                <span className="ml-auto px-2.5 py-1 rounded-lg bg-blue-600 dark:bg-blue-500 text-white text-[8px] font-black uppercase tracking-widest shadow-sm">
                   {course.tag}
                 </span>
               )}
-            </div>
-            <div
-              className={`w-8 h-8 rounded-full bg-white/90 flex items-center justify-center transition-all ${isHovered ? 'opacity-100' : 'opacity-0'}`}
-            >
-              <ArrowUpRight size={14} className="text-blue-600" />
             </div>
           </div>
         </div>
