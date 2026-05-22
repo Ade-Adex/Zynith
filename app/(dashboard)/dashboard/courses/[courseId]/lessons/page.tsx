@@ -1,11 +1,15 @@
 // /app/(dashboard)/dashboard/courses/[courseId]/lessons/page.tsx
+
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { useCourses } from '@/app/hooks/useCourses'
 import { useAuthStore } from '@/app/store/authStore'
-import { getEnrollmentProgressAction } from '@/app/services/enrollmentActions' // Import the action
+import {
+  getEnrollmentProgressAction,
+  SerializedEnrollment,
+} from '@/app/services/enrollmentActions'
 import { Course, Module, Lesson } from '@/app/types'
 import { UserType } from '@/app/types/user'
 import {
@@ -41,7 +45,9 @@ export default function CourseLessonsWorkspace() {
   const { courses, loading: coursesLoading } = useCourses()
 
   // Live Database Sync States
-  const [dbEnrollment, setDbEnrollment] = useState<any | null>(null)
+  const [dbEnrollment, setDbEnrollment] = useState<SerializedEnrollment | null>(
+    null,
+  )
   const [enrollmentLoading, setEnrollmentLoading] = useState<boolean>(true)
 
   // Functional Workspace Active Engine
@@ -51,6 +57,9 @@ export default function CourseLessonsWorkspace() {
     Record<string, boolean>
   >({})
 
+  // Ref locks to secure single-fire state setups and eliminate cascading render loops
+  const progressLoadedRef = useRef<boolean>(false)
+
   // Find exact targeted course information
   const course: Course | undefined = courses.find(
     (c) => String(c._id) === String(courseId),
@@ -59,7 +68,7 @@ export default function CourseLessonsWorkspace() {
   // 1. Fetch live database verification parameters upon valid initialization requirements
   useEffect(() => {
     async function syncWorkspaceContext() {
-      if (!user || !courseId) return
+      if (!user?._id || !courseId || user._id === 'undefined') return
 
       try {
         const result = await getEnrollmentProgressAction(
@@ -78,16 +87,22 @@ export default function CourseLessonsWorkspace() {
 
     if (!coursesLoading && course) {
       if (course.type === 'Free') {
-        setEnrollmentLoading(false) // Free courses bypass transactional verification metrics
+        setEnrollmentLoading(false)
       } else {
         syncWorkspaceContext()
       }
     }
   }, [user, courseId, coursesLoading, course])
 
-  // 2. Process routing checkpoints and layout state distribution
+  // 2. Process routing checkpoints and baseline layout distributions cleanly
   useEffect(() => {
-    if (coursesLoading || enrollmentLoading || !course) return
+    if (
+      coursesLoading ||
+      enrollmentLoading ||
+      !course ||
+      progressLoadedRef.current
+    )
+      return
 
     // Security Interceptor: Redirect if Premium and no active enrollment document returned
     if (course.type === 'Premium' && !dbEnrollment) {
@@ -100,7 +115,6 @@ export default function CourseLessonsWorkspace() {
       let targetModule = course.modules[0]
       let targetLesson = targetModule.lessons && targetModule.lessons[0]
 
-      // Prioritize the live database record fields over client session memory
       const currentModuleIdFromDb = dbEnrollment?.currentModuleId
       const currentLessonIdFromDb = dbEnrollment?.currentLessonId
 
@@ -111,7 +125,6 @@ export default function CourseLessonsWorkspace() {
         if (matchingMod) {
           targetModule = matchingMod
           if (matchingMod.lessons && matchingMod.lessons.length > 0) {
-            // Find current progress milestone lesson or default fallback to module beginning
             const matchingLes = matchingMod.lessons.find(
               (l) => String(l.id) === String(currentLessonIdFromDb),
             )
@@ -121,6 +134,7 @@ export default function CourseLessonsWorkspace() {
       }
 
       if (targetLesson) {
+        progressLoadedRef.current = true // Set ref lock immediately before dispatching state changes
         setActiveLesson(targetLesson)
         setActiveModuleId(targetModule.id)
         setExpandedModules((prev) => ({ ...prev, [targetModule.id]: true }))
@@ -394,6 +408,7 @@ export default function CourseLessonsWorkspace() {
                     </UnstyledButton>
 
                     {/* Lesson Rows List Mapping */}
+                    {/* Explicit boolean check ensures no fallback string or unmapped property is pushed to the DOM */}
                     <Collapse in={isExpanded}>
                       <div className="bg-slate-900/60 p-1.5 border-t border-slate-800/40 space-y-1">
                         {mod.lessons?.map((les: Lesson) => {
@@ -436,15 +451,19 @@ export default function CourseLessonsWorkspace() {
                               <div className="flex-1 min-w-0">
                                 <Text
                                   size="xs"
-                                  fw={isCurrent ? 800 : 600}
-                                  className="truncate leading-tight"
+                                  fw={700}
+                                  className={`uppercase truncate calculation-layout ${
+                                    isCurrent
+                                      ? 'text-blue-400 font-extrabold'
+                                      : 'text-slate-300'
+                                  }`}
                                 >
                                   {les.title}
                                 </Text>
                                 <Text
-                                  size="9px"
-                                  fw={700}
-                                  className="text-slate-500 uppercase tracking-wider mt-0.5 block"
+                                  size="10px"
+                                  c="dimmed"
+                                  className="font-semibold mt-0.5"
                                 >
                                   {les.duration}
                                 </Text>
@@ -452,23 +471,6 @@ export default function CourseLessonsWorkspace() {
                             </UnstyledButton>
                           )
                         })}
-
-                        {/* Module Quizzes block mapping item container */}
-                        {mod.quiz && (
-                          <UnstyledButton className="w-full p-2.5 rounded-lg flex items-center gap-3 text-slate-400 hover:text-amber-400 hover:bg-slate-800/30 transition-all">
-                            <HelpCircle
-                              size={12}
-                              className="text-amber-500/80"
-                            />
-                            <Text
-                              size="xs"
-                              fw={700}
-                              className="uppercase tracking-tight text-[11px]"
-                            >
-                              Module Challenge Quiz
-                            </Text>
-                          </UnstyledButton>
-                        )}
                       </div>
                     </Collapse>
                   </div>

@@ -80,18 +80,52 @@ export async function enrollUserAfterPaymentAction(
 }
 
 
-
-
+// Define a type match representing your Lean MongoDB Enrollment document structure
+export interface SerializedEnrollment {
+  _id: string
+  userId: string
+  courseId: string
+  status: string
+  currentModuleId?: string
+  currentLessonId?: string
+  enrolledAt: string | null
+  lastAccessedAt: string | null
+  [key: string]: unknown // Gracefully handles additional dynamic schema keys
+}
 
 /**
  * Fetches a single active enrollment record for a user to synchronize live progress.
  */
 export async function getEnrollmentProgressAction(
   userId: string,
-  courseId: string
-): Promise<{ success: boolean; data: any | null; message: string }> {
-  if (!userId || !courseId) {
-    return { success: false, data: null, message: 'Missing tracking parameters.' }
+  courseId: string,
+): Promise<{
+  success: boolean
+  data: SerializedEnrollment | null
+  message: string
+}> {
+  // Catch both baseline falsy items and literal stringified 'undefined' drop-ins
+  if (
+    !userId ||
+    userId === 'undefined' ||
+    !courseId ||
+    courseId === 'undefined'
+  ) {
+    return {
+      success: false,
+      data: null,
+      message: 'Missing tracking parameters.',
+    }
+  }
+
+  // Enforce rigid 24-character hex-string checks before passing down to BSON compilers
+  const hexRegex = /^[0-9a-fA-F]{24}$/
+  if (!hexRegex.test(userId) || !hexRegex.test(courseId)) {
+    return {
+      success: false,
+      data: null,
+      message: 'Invalid relational identification sequences.',
+    }
   }
 
   try {
@@ -103,21 +137,31 @@ export async function getEnrollmentProgressAction(
     const enrollment = await EnrollmentModel.findOne({
       userId: userObjectId,
       courseId: courseObjectId,
-      status: 'active'
-    }).lean() // Using lean for high-performance read-only payload sizing
+      status: 'active',
+    }).lean()
 
     if (!enrollment) {
-      return { success: false, data: null, message: 'No active workspace sequence found.' }
+      return {
+        success: false,
+        data: null,
+        message: 'No active workspace sequence found.',
+      }
     }
 
     // Convert MongoDB ObjectIds cleanly to plain strings for safe Next.js Server Action boundary transit
-    const serializedEnrollment = {
+    const serializedEnrollment: SerializedEnrollment = {
       ...enrollment,
       _id: enrollment._id.toString(),
       userId: enrollment.userId.toString(),
       courseId: enrollment.courseId.toString(),
-      enrolledAt: enrollment.enrolledAt?.toISOString() || null,
-      lastAccessedAt: enrollment.lastAccessedAt?.toISOString() || null,
+      enrolledAt: enrollment.enrolledAt
+        ? new Date(enrollment.enrolledAt).toISOString()
+        : null,
+      lastAccessedAt: enrollment.lastAccessedAt
+        ? new Date(enrollment.lastAccessedAt).toISOString()
+        : null,
+      currentModuleId: enrollment.currentModuleId?.toString(),
+      currentLessonId: enrollment.currentLessonId?.toString(),
     }
 
     return {
