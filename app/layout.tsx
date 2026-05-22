@@ -2,6 +2,8 @@
 
 
 import type { Metadata } from 'next'
+// Import the script directly from Mantine core
+import { ColorSchemeScript } from '@mantine/core'
 import { jakarta, inter, jetbrains } from './fonts'
 import './globals.css'
 import { AppProviders } from './providers'
@@ -22,6 +24,9 @@ export default function RootLayout({
       className={`scroll-smooth ${jakarta.variable} ${inter.variable} ${jetbrains.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        <ColorSchemeScript defaultColorScheme="auto" />
+      </head>
       <body
         className="min-h-screen font-sans antialiased"
         suppressHydrationWarning

@@ -1,10 +1,10 @@
 // /app/(marketing)/cart/page.tsx
 
-
 'use client'
 
 import React, { useState, useEffect } from 'react'
 import LinkComponent from 'next/link'
+import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
 import {
   ShoppingBag,
@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { useCartStore } from '@/app/store/cartStore'
 import { useAuthStore } from '@/app/store/authStore'
+import { enrollUserAfterPaymentAction } from '@/app/services/enrollmentActions'
 
 interface PaystackTransactionResponse {
   reference: string
@@ -30,6 +31,7 @@ interface PaystackTransactionOptions {
   email: string
   amount: number
   currency: string
+  ref?: string
   metadata: {
     custom_fields: Array<{
       display_name: string
@@ -41,14 +43,19 @@ interface PaystackTransactionOptions {
   onClose: () => void
 }
 
-interface PaystackPopInstance {
-  setup: (options: PaystackTransactionOptions) => { open: () => void }
+// Model both possible method signatures that Paystack inline SDKs utilize
+interface PaystackLegacyHandler {
+  open: () => void
 }
 
-declare global {
-  interface Window {
-    PaystackPop?: PaystackPopInstance
-  }
+interface PaystackIframeHandler {
+  openIframe: () => void
+}
+
+type PaystackHandler = PaystackLegacyHandler | PaystackIframeHandler
+
+interface PaystackPopInstance {
+  setup: (options: PaystackTransactionOptions) => PaystackHandler
 }
 
 export default function CartPage() {
@@ -104,8 +111,18 @@ export default function CartPage() {
 
   const loadPaystackScript = (): Promise<boolean> => {
     return new Promise((resolve) => {
-      if (window.PaystackPop) {
+      if (
+        typeof window !== 'undefined' &&
+        window['PaystackPop' as keyof Window]
+      ) {
         resolve(true)
+        return
+      }
+      const existingScript = document.querySelector(
+        'script[src="https://js.paystack.co/v1/inline.js"]',
+      )
+      if (existingScript) {
+        existingScript.addEventListener('load', () => resolve(true))
         return
       }
       const script = document.createElement('script')
@@ -129,22 +146,28 @@ export default function CartPage() {
     try {
       await loadPaystackScript()
 
-      if (
-        !window.PaystackPop ||
-        typeof window.PaystackPop.setup !== 'function'
-      ) {
+      const paystackInstance =
+        typeof window !== 'undefined'
+          ? (window[
+              'PaystackPop' as keyof Window
+            ] as unknown as PaystackPopInstance)
+          : undefined
+
+      if (!paystackInstance || typeof paystackInstance.setup !== 'function') {
         throw new Error('Paystack SDK failed to initialize.')
       }
 
       const courseIdsStaged = cartItems.map((item) => String(item._id))
+      const generatedReference = `BKP-${Date.now()}-${Math.floor(Math.random() * 10000)}`
 
-      const handler = window.PaystackPop.setup({
+      const handler = paystackInstance.setup({
         key:
           process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY ||
           'pk_test_your_public_key_here',
         email: user.email,
         amount: Math.round(finalTotal * 100),
         currency: 'NGN',
+        ref: generatedReference,
         metadata: {
           custom_fields: [
             {
@@ -164,18 +187,35 @@ export default function CartPage() {
             },
           ],
         },
-        callback: (response) => {
-          clearCart()
-          router.push(
-            `/dashboard?payment=success&reference=${response.reference}`,
-          )
+        callback: async (response: PaystackTransactionResponse) => {
+          try {
+            // Unpack all string keys within the current cart storage map instance
+            await enrollUserAfterPaymentAction(
+              user._id,
+              courseIdsStaged,
+              response.reference,
+            )
+          } catch (err) {
+            console.error('Bulk processing background sync failure:', err)
+          } finally {
+            clearCart()
+            setIsProcessingPayment(false)
+            router.push(
+              `/dashboard?payment=success&reference=${response.reference}`,
+            )
+          }
         },
         onClose: () => {
           setIsProcessingPayment(false)
         },
       })
 
-      handler.open()
+      // Type-safe property guard evaluation without using 'any'
+      if ('open' in handler) {
+        handler.open()
+      } else if ('openIframe' in handler) {
+        handler.openIframe()
+      }
     } catch (error) {
       console.error('Cart payment workspace runtime error.', error)
       setIsProcessingPayment(false)
@@ -183,14 +223,14 @@ export default function CartPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#ffffff] dark:bg-[#0a0a0a] text-[#171717] dark:text-[#ededed] pt-32 pb-24 px-5 md:px-16 transition-colors duration-200">
+    <div className="min-h-screen bg-[#ffffff] dark:bg-[#0a0a0a] text-[#171717] dark:text-[#ededed] pt-24 pb-16 px-5 md:px-16 transition-colors duration-200">
       <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-200 dark:border-zinc-800 pb-8 mb-12 gap-4">
+        <div className="flex flex-col md:flex-row md:items-end justify-between border-b border-slate-200 dark:border-zinc-800 pb-8 mb-8 gap-4">
           <div>
             <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600 dark:text-blue-400 mb-2">
               Review Selection
             </p>
-            <h1 className="text-3xl md:text-5xl font-black uppercase tracking-tighter leading-none">
+            <h1 className="text-2xl md:text-4xl font-black uppercase tracking-tighter leading-none">
               Your Cart
             </h1>
           </div>
@@ -200,7 +240,7 @@ export default function CartPage() {
         </div>
 
         <div className="grid lg:grid-cols-3 gap-12 items-start">
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-2 space-y-4">
             {cartItems.map((item) => (
               <div
                 key={item._id}
@@ -209,10 +249,12 @@ export default function CartPage() {
                 <div className="flex items-center gap-5 w-full sm:w-auto">
                   <div className="relative w-16 h-16 sm:w-20 sm:h-20 rounded-2xl overflow-hidden bg-slate-100 dark:bg-zinc-800 shrink-0 border border-slate-200 dark:border-zinc-800">
                     {item.image && (
-                      <img
+                      <Image
                         src={item.image}
                         alt={item.title}
-                        className="object-cover w-full h-full filter brightness-95 group-hover:scale-105 transition-transform duration-500"
+                        fill
+                        unoptimized
+                        className="object-cover filter brightness-95 group-hover:scale-105 transition-transform duration-500"
                       />
                     )}
                   </div>
@@ -237,7 +279,7 @@ export default function CartPage() {
 
                 <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto border-t sm:border-t-0 border-slate-100 dark:border-zinc-800/80 pt-4 sm:pt-0 shrink-0 gap-4">
                   <span className="text-sm md:text-base font-black tracking-tight text-slate-900 dark:text-zinc-100 italic">
-                    ₦{parseFloat(item.price || '0').toLocaleString()}
+                    ₦{parseFloat(item.price ?? '0').toLocaleString()}
                   </span>
                   <button
                     onClick={() => removeFromCart(String(item._id))}
@@ -258,7 +300,7 @@ export default function CartPage() {
             </LinkComponent>
           </div>
 
-          <aside className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-zinc-800 p-6 md:p-8 rounded-3xl shadow-xl dark:shadow-black/10 space-y-6">
+          <aside className="bg-white dark:bg-[#0f0f0f] border border-slate-200 dark:border-zinc-800 p-4 md:p-6 rounded-3xl shadow-xl dark:shadow-black/10 space-y-6">
             <h3 className="font-black uppercase tracking-tight text-base border-b border-slate-100 dark:border-zinc-800 pb-4">
               Order Summary
             </h3>
@@ -283,19 +325,19 @@ export default function CartPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-50 dark:bg-zinc-900/50 rounded-xl px-3 border border-slate-200 dark:border-zinc-800 focus-within:ring-2 focus-within:ring-blue-500/20 transition-all">
+            <div className="flex items-center gap-2 bg-surface focus:outline-none! focus:border-none! focus:ring-0! focus-visible:ring-0! focus-visible:outline-none! rounded-xl px-3 border border-slate-200 dark:border-zinc-800 transition-all">
               <Tag size={14} className="text-slate-400" />
               <input
                 type="text"
                 placeholder="PROMO CODE"
-                className="bg-transparent border-none py-2.5 outline-none font-black text-xs tracking-wider placeholder:text-slate-400 uppercase w-full"
+                className="bg-transparent! border-none! py-2.5 outline-none! focus:outline-none! focus:border-none! focus:ring-0! focus-visible:ring-0! focus-visible:outline-none! font-black text-sm! tracking-wider placeholder:text-slate-400 uppercase w-full"
               />
             </div>
 
             <button
               onClick={handleCartPaymentCheckout}
               disabled={isProcessingPayment}
-              className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-3.5 rounded-2xl font-black uppercase text-[12px] tracking-wider transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
+              className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-3.5 rounded-2xl font-black! uppercase text-sm! tracking-wider transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
             >
               {isProcessingPayment ? (
                 'Initializing Gateways...'

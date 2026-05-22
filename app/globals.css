@@ -1,4 +1,3 @@
-/* /app/globals.css */
 @import "tailwindcss";
 
 /* 
@@ -22,7 +21,6 @@
 html[data-mantine-color-scheme="dark"] {
   --background: #030110;
   --foreground: #ededed;
-
   --primary: #3b82f6;
   
   /* Form & Surface Token Defaults (Dark Mode) */
@@ -44,20 +42,34 @@ html[data-mantine-color-scheme="dark"] {
 }
 
 /* ======================================================= */
-/* GLOBAL REBOOT FOR NATIVE BASE STRUCTURES                */
+/* THE BULLETPROOF MANTINE + TAILWIND TRANSITION ENGINE    */
 /* ======================================================= */
+
+/* 
+  CRUCIAL FIX: We target the specific attribute Mantine toggles on the HTML tag.
+  By selecting everything under that specific state container, we override 
+  Mantine's internal style updates and force a global transition window.
+*/
+html[data-mantine-color-scheme],
+html[data-mantine-color-scheme] *,
+html[data-mantine-color-scheme] ::before,
+html[data-mantine-color-scheme] ::after {
+  transition-property: background-color, color, border-color, fill, stroke !important;
+  transition-duration: 600ms !important;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Ensure body respects our layout values */
 body {
   background-color: var(--background);
   color: var(--foreground);
   font-family: var(--font-inter), ui-sans-serif, system-ui;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 /* 
-  BEST PRACTICE 1: Automated capture purely for data data-entry fields.
-  Notice 'button' is completely stripped out of this rule block!
+  Automated capture purely for data data-entry fields.
 */
 input, 
 textarea, 
@@ -69,7 +81,7 @@ select {
   padding: 0.5rem 0.75rem;
   font-family: inherit;
   font-size: 0.875rem;
-  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  transition: background-color 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 /* Native Dropdowns option matching */
@@ -93,7 +105,6 @@ select:focus {
 /* ======================================================= */
 
 .btn-primary {
-  /* display: inline-flex; */
   align-items: center;
   justify-content: center;
   font-size: 0.65rem !important;   /* text-xs! */
@@ -103,7 +114,7 @@ select:focus {
   border-radius: 0.75rem;          /* rounded-xl */
   padding: 0.625rem 1.25rem;       
   box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.12);
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
   cursor: pointer;
   
   /* Shared Base across both modes */
@@ -114,14 +125,13 @@ select:focus {
 
 /* ── LIGHT MODE HOVER ── */
 html:not([data-mantine-color-scheme="dark"]) .btn-primary:hover {
-  background-color: #1d4ed8 !important; /* Slightly deeper royal blue (blue-700) */
+  background-color: #1d4ed8 !important; 
   border-color: #1d4ed8;
   transform: translateY(-1px);
   box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.25);
 }
 
 /* ── DARK MODE HOVER ── */
-/* In dark mode, we shift to a slightly brighter/vibrant blue on hover for beautiful glow */
 html[data-mantine-color-scheme="dark"] .btn-primary {
   background-color: #2563eb !important; 
   border-color: #2563eb;
@@ -129,7 +139,7 @@ html[data-mantine-color-scheme="dark"] .btn-primary {
 }
 
 html[data-mantine-color-scheme="dark"] .btn-primary:hover {
-  background-color: #3b82f6 !important; /* Lighter bright blue (blue-500) so it pops out */
+  background-color: #3b82f6 !important; 
   border-color: #3b82f6;
   transform: translateY(-1px);
   box-shadow: 0 10px 20px -3px rgba(59, 130, 246, 0.4);
