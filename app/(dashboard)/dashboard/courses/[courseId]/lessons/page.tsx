@@ -1,555 +1,489 @@
-// /app/(dashboard)/dashboard/courses/[courseId]/lessons/page.tsx
-
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useTransition, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { useCourses } from '@/app/hooks/useCourses'
-import { useAuthStore } from '@/app/store/authStore'
-import {
-  getEnrollmentProgressAction,
-  SerializedEnrollment,
+import { 
+  getEnrollmentProgressAction, 
+  updateEnrollmentProgressAction, 
+  SerializedEnrollment 
 } from '@/app/services/enrollmentActions'
-import { Course, Module, Lesson } from '@/app/types'
-import { UserType } from '@/app/types/user'
-import {
-  Loader,
-  Text,
-  Badge,
-  ScrollArea,
-  Collapse,
-  UnstyledButton,
-  Group,
-  ThemeIcon,
-  Paper,
-} from '@mantine/core'
-import {
-  Play,
-  FileText,
-  ChevronDown,
-  ChevronRight,
-  ArrowLeft,
-  HelpCircle,
-  FolderLock,
-  FileCode,
-} from 'lucide-react'
+import { useAuthStore } from '@/app/store/authStore'
+import { useCourses } from '@/app/hooks/useCourses'
+import { 
+  Module, 
+  Lesson, 
+  Quiz, 
+  QuizQuestion 
+} from '@/app/types'
 
-export default function CourseLessonsWorkspace() {
+export default function CourseWorkspacePage() {
   const params = useParams()
   const router = useRouter()
+  
+  // Use your production hooks
+  const { user } = useAuthStore()
+  const { courses, isLoading: isCoursesLoading } = useCourses()
+  
   const courseId = params.courseId as string
+  const course = useMemo(() => courses?.find(c => c.id === courseId), [courses, courseId])
 
-  // Global Store & States
-  const store = useAuthStore()
-  const user = store.user as UserType | null | undefined
-  const { courses, loading: coursesLoading } = useCourses()
-
-  // Live Database Sync States
-  const [dbEnrollment, setDbEnrollment] = useState<SerializedEnrollment | null>(
-    null,
-  )
-  const [enrollmentLoading, setEnrollmentLoading] = useState<boolean>(true)
-
-  // Functional Workspace Active Engine
+  // State
+  const [dbEnrollment, setDbEnrollment] = useState<SerializedEnrollment | null>(null)
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null)
-  const [activeModuleId, setActiveModuleId] = useState<string | null>(null)
-  const [expandedModules, setExpandedModules] = useState<
-    Record<string, boolean>
-  >({})
+  const [activeModule, setActiveModule] = useState<Module | null>(null)
+  
+  const [activeTab, setActiveTab] = useState<'content' | 'quiz' | 'assignment' | 'forum'>('content')
+  const [contentTypeToggle, setContentTypeToggle] = useState<'video' | 'text'>('video')
+  const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({})
+  const [quizSubmitted, setQuizSubmitted] = useState(false)
+  const [quizResult, setQuizResult] = useState<{ score: number; passed: boolean } | null>(null)
+  const [assignmentUrl, setAssignmentUrl] = useState('')
+  const [assignmentSubmitted, setAssignmentSubmitted] = useState(false)
 
-  // Ref locks to secure single-fire state setups and eliminate cascading render loops
-  const progressLoadedRef = useRef<boolean>(false)
+  const [isPending, startTransition] = useTransition()
 
-  // Find exact targeted course information
-  const course: Course | undefined = courses.find(
-    (c) => String(c._id) === String(courseId),
-  )
-
+  // Sync Enrollment
   useEffect(() => {
-    async function syncWorkspaceContext() {
-      if (!user?._id || !courseId || user._id === 'undefined') return
-
+    async function syncEnrollment() {
+      if (!user?.id || !courseId || !course) return
+      
       try {
-        const result = await getEnrollmentProgressAction(
-          String(user._id),
-          courseId,
-        )
-        if (result.success) {
-          setDbEnrollment(result.data)
-        }
-      } catch (err) {
-        console.error('Failed to resolve database progress layer:', err)
-      } finally {
-        // Use a timeout to push the state update out of the render phase
-        setTimeout(() => setEnrollmentLoading(false), 0)
-      }
-    }
+        const syncBlock = await getEnrollmentProgressAction(user.id, courseId)
+        if (syncBlock.success && syncBlock.data) {
+          setDbEnrollment(syncBlock.data)
+          
+          const savedModId = syncBlock.data.currentModuleId
+          const savedLesId = syncBlock.data.currentLessonId
 
-    // Guard clause
-    if (coursesLoading) return
+          const initialModule = course.modules.find(m => m.id === savedModId) || course.modules[0]
+          const initialLesson = initialModule?.lessons.find(l => l.id === savedLesId) || initialModule?.lessons[0]
 
-    if (course?.type === 'Free') {
-      setTimeout(() => setEnrollmentLoading(false), 0)
-    } else if (course?.type === 'Premium') {
-      syncWorkspaceContext()
-    }
-  }, [user?._id, courseId, coursesLoading, course?.type])
-  // 2. Process routing checkpoints and baseline layout distributions cleanly
-  useEffect(() => {
-    if (
-      coursesLoading ||
-      enrollmentLoading ||
-      !course ||
-      progressLoadedRef.current
-    )
-      return
-
-    // Security Interceptor: Redirect if Premium and no active enrollment document returned
-    if (course.type === 'Premium' && !dbEnrollment) {
-      router.push(`/courses/${courseId}`)
-      return
-    }
-
-    // Auto-select baseline layout or continuous lesson state from db parameters
-    if (course.modules && course.modules.length > 0) {
-      let targetModule = course.modules[0]
-      let targetLesson = targetModule.lessons && targetModule.lessons[0]
-
-      const currentModuleIdFromDb = dbEnrollment?.currentModuleId
-      const currentLessonIdFromDb = dbEnrollment?.currentLessonId
-
-      if (currentModuleIdFromDb) {
-        const matchingMod = course.modules.find(
-          (m) => String(m.id) === String(currentModuleIdFromDb),
-        )
-        if (matchingMod) {
-          targetModule = matchingMod
-          if (matchingMod.lessons && matchingMod.lessons.length > 0) {
-            const matchingLes = matchingMod.lessons.find(
-              (l) => String(l.id) === String(currentLessonIdFromDb),
-            )
-            targetLesson = matchingLes || matchingMod.lessons[0]
+          setActiveModule(initialModule || null)
+          setActiveLesson(initialLesson || null)
+          if (initialLesson) {
+            setContentTypeToggle(initialLesson.contentType === 'text' ? 'text' : 'video')
           }
         }
-      }
-
-      if (targetLesson) {
-        progressLoadedRef.current = true // Set ref lock immediately before scheduling state mutations
-
-        // Using queueMicrotask or setTimeout breaks the synchronous render cascade rule beautifully
-        queueMicrotask(() => {
-          setActiveLesson(targetLesson)
-          setActiveModuleId(targetModule.id)
-          setExpandedModules((prev) => ({ ...prev, [targetModule.id]: true }))
-        })
+      } catch (err) {
+        console.error('Workspace sync fault:', err)
       }
     }
-  }, [
-    course,
-    dbEnrollment,
-    coursesLoading,
-    enrollmentLoading,
-    courseId,
-    router,
-  ])
+    syncEnrollment()
+  }, [courseId, user?.id, course])
 
-  const toggleModuleAccordion = (modId: string) => {
-    setExpandedModules((prev) => ({ ...prev, [modId]: !prev[modId] }))
+  const flatLessonsList = useMemo(() => {
+    if (!course) return []
+    return course.modules.flatMap(m => m.lessons.map(l => ({ ...l, moduleId: m.id })))
+  }, [course])
+
+  const isModuleUnlocked = (moduleId: string) => {
+    if (!course || !dbEnrollment) return false
+    if (course.type === 'Free') return true
+    const currentModIndex = course.modules.findIndex(m => m.id === moduleId)
+    if (currentModIndex === 0) return true
+    const previousModule = course.modules[currentModIndex - 1]
+    return dbEnrollment.completedModules.includes(previousModule.id)
   }
 
-  // Unified loading screen handling synchronization metrics
-  const isHydrating =
-    coursesLoading || (enrollmentLoading && course?.type === 'Premium')
+  const checkIsLessonUnlocked = (lessonId: string, modId: string) => {
+    if (!course || !dbEnrollment) return false
+    if (course.type === 'Free') return true
+    if (!isModuleUnlocked(modId)) return false
+    const positionIndex = flatLessonsList.findIndex(l => l.id === lessonId)
+    if (positionIndex === 0) return true
+    const previousLessonItem = flatLessonsList[positionIndex - 1]
+    return dbEnrollment.completedLessons.includes(previousLessonItem.id)
+  }
 
-  if (isHydrating || !course) {
+  const handleLessonSelection = (lesson: Lesson, targetModule: Module) => {
+    if (!checkIsLessonUnlocked(lesson.id, targetModule.id)) return
+    
+    setActiveLesson(lesson)
+    setActiveModule(targetModule)
+    setSelectedAnswers({})
+    setQuizSubmitted(false)
+    setQuizResult(null)
+    setActiveTab('content')
+    setContentTypeToggle(lesson.contentType === 'text' ? 'text' : 'video')
+
+    if (!user?.id || !courseId) return
+    startTransition(async () => {
+      const update = await updateEnrollmentProgressAction(user.id, courseId, {
+        currentModuleId: targetModule.id,
+        currentLessonId: lesson.id
+      })
+      if (update.success && update.data) setDbEnrollment(update.data)
+    })
+  }
+
+  const handleAnswerSelect = (questionId: string, option: string) => {
+    if (quizSubmitted && quizResult?.passed) return // Lock down if already cleared
+    setSelectedAnswers(prev => ({ ...prev, [questionId]: option }))
+  }
+
+  const handleSubmitQuiz = async (quiz: Quiz, isModuleLevel = false) => {
+    if (!user?.id || !courseId) return
+
+    let correctCount = 0
+    const itemizedAnswers = quiz.questions.slice(0, 3).map(q => {
+      const chosen = selectedAnswers[q.id] || ''
+      const isCorrect = chosen.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()
+      if (isCorrect) correctCount++
+      return {
+        questionId: q.id,
+        selectedOption: chosen,
+        isCorrect
+      }
+    })
+
+    const calculatedScore = Math.round((correctCount / Math.min(quiz.questions.length, 3)) * 100)
+    const passedStatus = calculatedScore >= quiz.passingScore
+
+    setQuizResult({ score: calculatedScore, passed: passedStatus })
+    setQuizSubmitted(true)
+
+    startTransition(async () => {
+      const updatesPayload: any = {
+        quizAttempt: {
+          quizId: quiz.id,
+          score: calculatedScore,
+          passed: passedStatus,
+          answers: itemizedAnswers
+        }
+      }
+
+      if (passedStatus) {
+        if (isModuleLevel && activeModule) {
+          updatesPayload.newCompletedModuleId = activeModule.id
+        } else if (activeLesson) {
+          updatesPayload.newCompletedLessonId = activeLesson.id
+        }
+      }
+
+      const syncResult = await updateEnrollmentProgressAction(user.id, courseId, updatesPayload)
+      if (syncResult.success && syncResult.data) {
+        setDbEnrollment(syncResult.data)
+      }
+    })
+  }
+
+  if (isCoursesLoading || !course) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-950 text-white">
-        <Loader size="md" color="blue" variant="dots" />
-        <Text
-          size="xs"
-          fw={850}
-          className="uppercase tracking-[0.25em] text-slate-500"
-        >
-          Syncing Content Vault...
-        </Text>
+      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-white">
+        <div className="animate-pulse font-mono text-xs tracking-widest text-neutral-400">INITIALIZING CLASSROOM...</div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col font-sans selection:bg-blue-500/30 py-24">
-      {/* Top Application Ribbon */}
-      <header className="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={() => router.push('/dashboard')}
-            className="p-2 hover:bg-slate-800 rounded-xl transition-all text-slate-400 hover:text-white cursor-pointer"
-          >
-            <ArrowLeft size={16} />
-          </button>
-          <div className="border-l border-slate-800 h-6 hidden sm:block" />
-          <div>
-            <h1 className="text-xs sm:text-sm font-black tracking-tight uppercase truncate max-w-[240px] sm:max-w-md text-slate-200">
-              {course.title}
-            </h1>
-            <Text
-              size="10px"
-              fw={700}
-              className="text-blue-500 uppercase tracking-widest hidden sm:block"
-            >
-              Instructor: {course.instructor}
-            </Text>
+    <div className="flex h-screen w-full overflow-hidden bg-white dark:bg-[#0a0a0a] text-neutral-900 dark:text-[#ededed]">
+      
+      {/* SIDEBAR NAVIGATION ENGINE */}
+      <aside className="w-80 border-r border-neutral-200 dark:border-neutral-800 flex flex-col h-full bg-neutral-50 dark:bg-[#0d0d0d] flex-shrink-0">
+        <div className="p-4 border-b border-neutral-200 dark:border-neutral-800">
+          <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500">{course.level} Workspace</span>
+          <h2 className="text-sm font-bold truncate mt-2 tracking-tight">{course.title}</h2>
+          
+          <div className="mt-4 w-full bg-neutral-200 dark:bg-neutral-800 h-1.5 rounded-full overflow-hidden">
+            <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${dbEnrollment?.progressPercentage || 0}%` }} />
+          </div>
+          <div className="flex justify-between text-[10px] mt-1.5 font-mono text-neutral-400">
+            <span>Course Progress</span>
+            <span>{dbEnrollment?.progressPercentage || 0}%</span>
           </div>
         </div>
-        <Badge
-          variant="filled"
-          color="blue"
-          radius="sm"
-          className="font-black tracking-widest text-[9px] uppercase"
-        >
-          {course.type === 'Premium' ? 'Premium Access' : 'Free Class'}
-        </Badge>
-      </header>
 
-      {/* Main Workspace Frame split into Video Content & Sidebar Navigation */}
-      <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-        {/* Playback & Core Material Viewer Viewport Pane */}
-        <main className="flex-1 overflow-y-auto bg-slate-950 p-4 sm:p-8">
-          {activeLesson ? (
-            <div className="max-w-4xl mx-auto space-y-8">
-              {/* Media Renderer Window */}
-              {activeLesson.contentType !== 'text' && activeLesson.videoUrl && (
-                <div className="aspect-video w-full rounded-2xl overflow-hidden shadow-2xl bg-black border border-slate-800 relative group">
-                  <iframe
-                    src={activeLesson.videoUrl}
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                    className="w-full h-full object-cover"
-                  />
+        <nav className="flex-1 overflow-y-auto p-2 space-y-4">
+          {course.modules.map((mod) => {
+            const modUnlocked = isModuleUnlocked(mod.id)
+            return (
+              <div key={mod.id} className={`space-y-1 ${!modUnlocked ? 'opacity-50' : ''}`}>
+                <div className="px-2 py-1 flex items-center justify-between">
+                  <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 font-mono truncate max-w-[80%]">
+                    {mod.title}
+                  </h3>
+                  {!modUnlocked && (
+                    <svg className="w-3 h-3 text-neutral-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                  )}
                 </div>
-              )}
 
-              {/* Lesson Text Header Context */}
-              <div className="border-b border-slate-800 pb-6">
-                <Group justify="space-between" align="start">
-                  <div>
-                    <Badge
-                      variant="dot"
-                      color="blue"
-                      className="text-[9px] uppercase font-bold tracking-wider mb-2"
-                    >
-                      {activeLesson.duration} Runtime Unit
-                    </Badge>
-                    <h2 className="text-xl sm:text-2xl font-black tracking-tight text-white uppercase">
-                      {activeLesson.title}
-                    </h2>
-                  </div>
-                </Group>
-                <p className="text-sm text-slate-400 mt-3 font-medium leading-relaxed max-w-2xl">
-                  {activeLesson.summary}
-                </p>
-              </div>
+                <div className="space-y-0.5">
+                  {mod.lessons.map((les) => {
+                    const isUnlocked = checkIsLessonUnlocked(les.id, mod.id)
+                    const isCurrent = activeLesson?.id === les.id
+                    const isFinished = dbEnrollment?.completedLessons.includes(les.id)
 
-              {/* Lesson Document/Body Section */}
-              {activeLesson.markdownBody && (
-                <Paper className="bg-slate-900/40 border border-slate-800/80 rounded-2xl p-6 sm:p-8 shadow-sm">
-                  <div className="prose prose-invert prose-slate max-w-none prose-headings:font-black prose-headings:uppercase prose-headings:tracking-tight prose-p:text-slate-300 prose-p:leading-relaxed prose-code:text-blue-400">
-                    <div className="whitespace-pre-line text-sm sm:text-base font-normal">
-                      {activeLesson.markdownBody}
-                    </div>
-                  </div>
-                </Paper>
-              )}
-
-              {/* Supplemental Task Interceptors for Quizzes or Assignments */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8">
-                {activeLesson.quiz && (
-                  <Paper
-                    withBorder
-                    p="lg"
-                    className="bg-slate-900/20 border-slate-800 rounded-xl flex items-start gap-4"
-                  >
-                    <ThemeIcon
-                      color="blue"
-                      variant="light"
-                      size="lg"
-                      radius="md"
-                    >
-                      <HelpCircle size={18} />
-                    </ThemeIcon>
-                    <div>
-                      <Text
-                        size="sm"
-                        fw={800}
-                        className="text-white uppercase tracking-tight"
+                    return (
+                      <button
+                        key={les.id}
+                        disabled={!isUnlocked}
+                        onClick={() => handleLessonSelection(les, mod)}
+                        className={`w-full text-left px-3 py-2 rounded-lg flex items-start gap-2.5 transition-all ${
+                          isCurrent 
+                            ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-900 dark:text-neutral-50 font-medium' 
+                            : isUnlocked 
+                              ? 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900' 
+                              : 'cursor-not-allowed'
+                        }`}
                       >
-                        Lesson Challenge Quiz
-                      </Text>
-                      <Text
-                        size="xs"
-                        c="dimmed"
-                        className="mt-1 font-medium mb-3"
-                      >
-                        Test comprehension to secure reward points.
-                      </Text>
-                      <button className="text-[10px] bg-blue-600 font-black tracking-widest text-white uppercase px-4 py-1.5 rounded-lg hover:bg-blue-500 transition-all cursor-pointer">
-                        Initialize Quiz
+                        <span className="mt-0.5 flex-shrink-0">
+                          {isFinished ? (
+                            <svg className="w-3.5 h-3.5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          ) : (
+                            <div className="w-3.5 h-3.5 rounded-full border border-neutral-400 dark:border-neutral-600" />
+                          )}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs truncate">{les.title}</p>
+                          <span className="text-[9px] font-mono opacity-50 block">{les.contentType.toUpperCase()} • {les.duration}</span>
+                        </div>
                       </button>
-                    </div>
-                  </Paper>
-                )}
-                {activeLesson.isDownloadable && activeLesson.downloadUrl && (
-                  <Paper
-                    withBorder
-                    p="lg"
-                    className="bg-slate-900/20 border-slate-800 rounded-xl flex items-start gap-4"
-                  >
-                    <ThemeIcon
-                      color="green"
-                      variant="light"
-                      size="lg"
-                      radius="md"
-                    >
-                      <FileCode size={18} />
-                    </ThemeIcon>
-                    <div>
-                      <Text
-                        size="sm"
-                        fw={800}
-                        className="text-white uppercase tracking-tight"
-                      >
-                        Source Resources
-                      </Text>
-                      <Text
-                        size="xs"
-                        c="dimmed"
-                        className="mt-1 font-medium mb-3"
-                      >
-                        Local deployment project material attachments.
-                      </Text>
-                      <a
-                        href={activeLesson.downloadUrl}
-                        download
-                        className="inline-block text-[10px] bg-slate-800 font-black tracking-widest text-slate-200 uppercase px-4 py-1.5 rounded-lg hover:bg-slate-700 transition-all"
-                      >
-                        Fetch Files
-                      </a>
-                    </div>
-                  </Paper>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="h-full flex flex-col items-center justify-center text-center">
-              <FolderLock
-                size={36}
-                className="text-slate-700 mb-2 animate-pulse"
-              />
-              <Text
-                size="sm"
-                fw={800}
-                className="text-slate-400 uppercase tracking-widest"
-              >
-                No Lesson Segment Selected
-              </Text>
-            </div>
-          )}
-        </main>
+                    )
+                  })}
 
-        {/* Course Index & Progression Navigation Drawer Bar Panel */}
-        <aside className="w-full lg:w-80 border-t lg:border-t-0 lg:border-l border-slate-800 bg-slate-900 flex flex-col h-[50vh] lg:h-auto">
-          <div className="p-4 border-b border-slate-800 bg-slate-900/50">
-            <Text
-              size="xs"
-              fw={900}
-              className="text-slate-400 uppercase tracking-widest"
-            >
-              Course Structure Syllabus
-            </Text>
+                  {/* MODULE CAPSTONE ASSESSMENT DECK */}
+                  {mod.quiz && modUnlocked && (
+                    <button 
+                      onClick={() => { setActiveModule(mod); setActiveLesson(null); setActiveTab('quiz'); }}
+                      className="w-full text-left px-3 py-2 rounded-lg flex items-center gap-2.5 text-amber-500 dark:text-amber-400/90 font-mono text-[11px] hover:bg-neutral-100 dark:hover:bg-neutral-900"
+                    >
+                      <svg className="w-3.5 h-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                      </svg>
+                      <span className="truncate">{mod.title} Exam Gate</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </nav>
+      </aside>
+
+      {/* CORE WORKSPACE VIEWPORT */}
+      <main className="flex-1 flex flex-col h-full overflow-hidden">
+        <header className="px-6 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between h-16 flex-shrink-0 bg-white dark:bg-[#0a0a0a]">
+          <div className="min-w-0">
+            <span className="text-[10px] font-mono tracking-widest uppercase opacity-40">{activeModule?.title || 'Capstone Assessment'}</span>
+            <h1 className="text-sm font-bold truncate">{activeLesson ? activeLesson.title : 'Module Capstone System Verification'}</h1>
           </div>
 
-          <ScrollArea className="flex-1 p-3">
-            <div className="space-y-2">
-              {course.modules?.map((mod: Module, modIndex: number) => {
-                const isExpanded = !!expandedModules[mod.id]
-                return (
-                  <div
-                    key={mod.id}
-                    className="border border-slate-800/60 rounded-xl overflow-hidden bg-slate-950/20"
-                  >
-                    {/* Module Accordion Interactive Header */}
-                    <UnstyledButton
-                      onClick={() => toggleModuleAccordion(mod.id)}
-                      className="w-full p-3.5 flex items-center justify-between gap-2 hover:bg-slate-800/40 transition-all"
-                    >
-                      <div className="flex-1 min-w-0">
-                        <Text
-                          size="10px"
-                          fw={800}
-                          className="text-blue-500 uppercase tracking-wider block mb-0.5"
-                        >
-                          Module {modIndex + 1}
-                        </Text>
-                        <Text
-                          size="xs"
-                          fw={800}
-                          className="text-slate-200 uppercase truncate leading-snug"
-                        >
-                          {mod.title}
-                        </Text>
+          <div className="flex items-center gap-2">
+            <div className="flex gap-0.5 bg-neutral-100 dark:bg-neutral-900 p-0.5 rounded-lg font-mono text-[11px]">
+              <button 
+                onClick={() => setActiveTab('content')}
+                disabled={!activeLesson}
+                className={`px-2.5 py-1 rounded-md transition-all ${activeTab === 'content' ? 'bg-white dark:bg-neutral-800 shadow-sm font-bold text-neutral-900 dark:text-white' : 'opacity-60 disabled:hidden'}`}
+              >
+                Lesson Body
+              </button>
+              {(activeLesson?.quiz || (!activeLesson && activeModule?.quiz)) && (
+                <button 
+                  onClick={() => setActiveTab('quiz')}
+                  className={`px-2.5 py-1 rounded-md transition-all ${activeTab === 'quiz' ? 'bg-white dark:bg-neutral-800 shadow-sm font-bold text-neutral-900 dark:text-white' : 'opacity-60'}`}
+                >
+                  Assessment Gate
+                </button>
+              )}
+              {activeModule?.assignment && (
+                <button 
+                  onClick={() => setActiveTab('assignment')}
+                  className={`px-2.5 py-1 rounded-md transition-all ${activeTab === 'assignment' ? 'bg-white dark:bg-neutral-800 shadow-sm font-bold text-neutral-900 dark:text-white' : 'opacity-60'}`}
+                >
+                  Peer Assignment
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <div className="flex-1 overflow-y-auto p-6 bg-white dark:bg-[#0a0a0a]">
+          <div className="max-w-3xl mx-auto space-y-6">
+            
+            {/* TAB WINDOW A: CURRICULUM WORKSPACE PLAYER */}
+            {activeTab === 'content' && activeLesson && (
+              <div className="space-y-6">
+                {/* OPTIONAL HYBRID CONFIGURATION TOGGLE SWITCH */}
+                {activeLesson.contentType === 'hybrid' && (
+                  <div className="flex justify-end">
+                    <div className="flex bg-neutral-100 dark:bg-neutral-900 p-0.5 rounded-md font-mono text-[10px]">
+                      <button onClick={() => setContentTypeToggle('video')} className={`px-2 py-0.5 rounded ${contentTypeToggle === 'video' ? 'bg-white dark:bg-neutral-800 font-bold' : 'opacity-50'}`}>Video View</button>
+                      <button onClick={() => setContentTypeToggle('text')} className={`px-2 py-0.5 rounded ${contentTypeToggle === 'text' ? 'bg-white dark:bg-neutral-800 font-bold' : 'opacity-50'}`}>Text Document</button>
+                    </div>
+                  </div>
+                )}
+
+                {activeLesson.videoUrl && contentTypeToggle === 'video' && (
+                  <div className="aspect-video w-full rounded-xl overflow-hidden bg-black shadow-md border border-neutral-200 dark:border-neutral-800 relative">
+                    <iframe src={activeLesson.videoUrl} className="w-full h-full" allowFullScreen />
+                  </div>
+                )}
+
+                {/* ASYNC SECURE DOWNLOAD ACTION LINE */}
+                {activeLesson.isDownloadable && activeLesson.downloadUrl && (
+                  <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center justify-between">
+                    <div className="text-xs">
+                      <p className="font-bold text-emerald-500">Offline Study Asset Available</p>
+                      <p className="text-[10px] text-neutral-400">Download media package directly to local device workspace.</p>
+                    </div>
+                    <a href={activeLesson.downloadUrl} download className="px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg text-xs font-mono transition-all">
+                      Download
+                    </a>
+                  </div>
+                )}
+
+                {(activeLesson.contentType === 'text' || contentTypeToggle === 'text') && (
+                  <article className="prose prose-neutral dark:prose-invert max-w-none text-sm leading-relaxed whitespace-pre-wrap font-sans text-neutral-700 dark:text-neutral-300">
+                    {activeLesson.markdownBody || activeLesson.summary}
+                  </article>
+                )}
+              </div>
+            )}
+
+            {/* TAB WINDOW B: SYSTEM PERSISTENT VERIFICATION INTERACTIVE QUIZ ASSESSMENT */}
+            {activeTab === 'quiz' && (
+              <div className="space-y-6 bg-neutral-50 dark:bg-[#0d0d0d] p-6 rounded-xl border border-neutral-200 dark:border-neutral-800">
+                {(() => {
+                  const targetQuiz = activeLesson ? activeLesson.quiz : activeModule?.quiz
+                  if (!targetQuiz) return null
+
+                  // Cap rendering directly at 3 questions max for strict verification compliance
+                  const activeQuestions = targetQuiz.questions.slice(0, 3)
+
+                  return (
+                    <>
+                      <div className="flex justify-between items-start border-b border-neutral-200 dark:border-neutral-800 pb-4">
+                        <div>
+                          <h3 className="text-sm font-bold tracking-tight">{targetQuiz.title}</h3>
+                          <p className="text-[10px] text-neutral-400 font-mono mt-0.5">Passing Threshold: {targetQuiz.passingScore}%</p>
+                        </div>
+                        {quizSubmitted && (
+                          <span className={`px-2 py-0.5 rounded text-[11px] font-mono ${quizResult?.passed ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                            {quizResult?.passed ? 'GATEWAY UNLOCKED' : 'VERIFICATION FAILED'}
+                          </span>
+                        )}
                       </div>
-                      {isExpanded ? (
-                        <ChevronDown
-                          size={14}
-                          className="text-slate-500 flex-shrink-0"
-                        />
-                      ) : (
-                        <ChevronRight
-                          size={14}
-                          className="text-slate-500 flex-shrink-0"
-                        />
+
+                      <div className="space-y-5">
+                        {activeQuestions.map((q: QuizQuestion, index: number) => {
+                          const userSelected = selectedAnswers[q.id]
+                          const isCorrectChoice = userSelected?.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()
+
+                          return (
+                            <div key={q.id} className="space-y-2">
+                              <label className="text-xs font-bold block text-neutral-400 font-mono">
+                                Question 0{index + 1}
+                              </label>
+                              <p className="text-sm font-medium">{q.question}</p>
+                              
+                              <div className="grid grid-cols-1 gap-1.5">
+                                {q.options.map((option) => {
+                                  const isOptionSelected = userSelected === option
+                                  return (
+                                    <button
+                                      key={option}
+                                      disabled={quizSubmitted && quizResult?.passed}
+                                      onClick={() => handleAnswerSelect(q.id, option)}
+                                      className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all border ${
+                                        isOptionSelected 
+                                          ? 'border-neutral-900 dark:border-neutral-100 bg-neutral-100 dark:bg-neutral-800' 
+                                          : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-900'
+                                      }`}
+                                    >
+                                      {option}
+                                    </button>
+                                  )
+                                })}
+                              </div>
+
+                              {/* CONDITIONAL RETROSPECTIVE INDUSTRIAL ANSWER REVIEW COMPARTMENT */}
+                              {quizSubmitted && (
+                                <div className={`p-3 rounded-lg text-xs font-mono mt-2 ${isCorrectChoice ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/5 text-red-600 dark:text-red-400'}`}>
+                                  <div className="flex items-center gap-1.5 font-bold">
+                                    <span>{isCorrectChoice ? '✓ Correct Choice' : '✗ Incorrect Response'}</span>
+                                    {!isCorrectChoice && <span className="opacity-60 text-[10px]">(Expected: {q.correctAnswer})</span>}
+                                  </div>
+                                  <p className="mt-1 opacity-80 text-[11px] leading-relaxed font-sans">{q.explanation}</p>
+                                </div>
+                              )}
+                            </div>
+                          )
+                        })}
+                      </div>
+
+                      {(!quizSubmitted || !quizResult?.passed) && (
+                        <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 flex justify-end">
+                          <button
+                            onClick={() => handleSubmitQuiz(targetQuiz, !activeLesson)}
+                            disabled={Object.keys(selectedAnswers).length < activeQuestions.length || isPending}
+                            className="px-4 py-2 bg-neutral-900 dark:bg-neutral-50 text-white dark:text-neutral-950 font-mono text-xs font-bold rounded-lg transition-all hover:opacity-90 disabled:opacity-30"
+                          >
+                            {isPending ? 'PROCESSING EVALUATION...' : quizSubmitted ? 'RETRY ASSESSMENT GATE' : 'SUBMIT ANSWERS'}
+                          </button>
+                        </div>
                       )}
-                    </UnstyledButton>
+                    </>
+                  )
+                })()}
+              </div>
+            )}
 
-                    {/* <Collapse opened={!!isExpanded}>
-                      <div className="bg-slate-900/60 p-1.5 border-t border-slate-800/40 space-y-1">
-                        {mod.lessons?.map((les: Lesson) => {
-                          const isCurrent = activeLesson?.id === les.id
-                          return (
-                            <UnstyledButton
-                              key={les.id}
-                              onClick={() => {
-                                setActiveLesson(les)
-                                setActiveModuleId(mod.id)
-                              }}
-                              className={`w-full p-2.5 rounded-lg flex items-start gap-3 transition-all cursor-pointer ${
-                                isCurrent
-                                  ? 'bg-blue-600/15 border border-blue-500/30 text-white'
-                                  : 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-200 border border-transparent'
-                              }`}
-                            >
-                              <div className="mt-0.5">
-                                {les.contentType === 'video' ||
-                                les.contentType === 'hybrid' ? (
-                                  <Play
-                                    size={12}
-                                    className={
-                                      isCurrent
-                                        ? 'text-blue-400 fill-blue-400'
-                                        : 'text-slate-500'
-                                    }
-                                  />
-                                ) : (
-                                  <FileText
-                                    size={12}
-                                    className={
-                                      isCurrent
-                                        ? 'text-blue-400'
-                                        : 'text-slate-500'
-                                    }
-                                  />
-                                )}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <Text
-                                  size="xs"
-                                  fw={700}
-                                  className={`uppercase truncate calculation-layout ${
-                                    isCurrent
-                                      ? 'text-blue-400 font-extrabold'
-                                      : 'text-slate-300'
-                                  }`}
-                                >
-                                  {les.title}
-                                </Text>
-                                <Text
-                                  size="10px"
-                                  c="dimmed"
-                                  className="font-semibold mt-0.5"
-                                >
-                                  {les.duration}
-                                </Text>
-                              </div>
-                            </UnstyledButton>
-                          )
-                        })}
-                      </div>
-                    </Collapse> */}
+            {/* TAB WINDOW C: PEER REVIEW ASSIGNMENT HUB */}
+            {activeTab === 'assignment' && activeModule?.assignment && (
+              <div className="space-y-6 bg-neutral-50 dark:bg-[#0d0d0d] p-6 rounded-xl border border-neutral-200 dark:border-neutral-800">
+                <div className="border-b border-neutral-200 dark:border-neutral-800 pb-4">
+                  <h3 className="text-sm font-bold tracking-tight">{activeModule.assignment.title}</h3>
+                  <p className="text-[10px] text-neutral-400 font-mono mt-0.5">Required Peer Approvals: {activeModule.assignment.peerReviewsRequired} • Target Grade: {activeModule.assignment.minPeerScoreToPass}%</p>
+                </div>
 
-                    {isExpanded && (
-                      <div className="bg-slate-900/60 p-1.5 border-t border-slate-800/40 space-y-1">
-                        {mod.lessons?.map((les: Lesson) => {
-                          const isCurrent = activeLesson?.id === les.id
+                <div className="space-y-4">
+                  <div className="text-xs space-y-1.5">
+                    <span className="font-mono text-neutral-400 font-bold block uppercase">Problem Statement</span>
+                    <p className="text-sm text-neutral-700 dark:text-neutral-300 leading-relaxed font-sans">{activeModule.assignment.problemStatement}</p>
+                  </div>
 
-                          return (
-                            <UnstyledButton
-                              key={les.id}
-                              onClick={() => {
-                                setActiveLesson(les)
-                                setActiveModuleId(mod.id)
-                              }}
-                              className={`w-full p-2.5 rounded-lg flex items-start gap-3 transition-all cursor-pointer ${
-                                isCurrent
-                                  ? 'bg-blue-600/15 border border-blue-500/30 text-white'
-                                  : 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-200 border border-transparent'
-                              }`}
-                            >
-                              <div className="mt-0.5">
-                                {les.contentType === 'video' ||
-                                les.contentType === 'hybrid' ? (
-                                  <Play
-                                    size={12}
-                                    className={
-                                      isCurrent
-                                        ? 'text-blue-400 fill-blue-400'
-                                        : 'text-slate-500'
-                                    }
-                                  />
-                                ) : (
-                                  <FileText
-                                    size={12}
-                                    className={
-                                      isCurrent
-                                        ? 'text-blue-400'
-                                        : 'text-slate-500'
-                                    }
-                                  />
-                                )}
-                              </div>
+                  {activeModule.assignment.submissionTemplateUrl && (
+                    <a href={activeModule.assignment.submissionTemplateUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-xs font-mono text-amber-500 hover:underline">
+                      <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                      Download Project Starter Template File
+                    </a>
+                  )}
 
-                              <div className="flex-1 min-w-0">
-                                <Text
-                                  size="xs"
-                                  fw={700}
-                                  className={`uppercase truncate calculation-layout ${
-                                    isCurrent
-                                      ? 'text-blue-400 font-extrabold'
-                                      : 'text-slate-300'
-                                  }`}
-                                >
-                                  {les.title}
-                                </Text>
-
-                                <Text
-                                  size="10px"
-                                  c="dimmed"
-                                  className="font-semibold mt-0.5"
-                                >
-                                  {les.duration}
-                                </Text>
-                              </div>
-                            </UnstyledButton>
-                          )
-                        })}
+                  <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3">
+                    <label className="text-xs font-mono text-neutral-400 font-bold block uppercase">Submit Workspace Solution URL</summary>
+                    <input 
+                      type="url" 
+                      placeholder="https://github.com/... or cloud repository link"
+                      value={assignmentUrl}
+                      onChange={(e) => setAssignmentUrl(e.target.value)}
+                      disabled={assignmentSubmitted}
+                      className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-lg px-3 py-2 text-xs font-mono focus:outline-none focus:border-neutral-400 disabled:opacity-40"
+                    />
+                    {!assignmentSubmitted ? (
+                      <button 
+                        onClick={() => setAssignmentSubmitted(true)}
+                        disabled={!assignmentUrl}
+                        className="px-4 py-2 bg-amber-500 text-neutral-950 font-mono text-xs font-bold rounded-lg hover:bg-amber-600 transition-all disabled:opacity-40"
+                      >
+                        Dispatch Code to Peer Review Queue
+                      </button>
+                    ) : (
+                      <div className="p-3 bg-amber-500/5 border border-amber-500/20 rounded-lg font-mono text-[11px] text-amber-600 dark:text-amber-400">
+                        ✓ Solution submitted. Tracking distribution across peers. You must grade 3 other student submissions to expedite your evaluation matrix.
                       </div>
                     )}
                   </div>
-                )
-              })}
-            </div>
-          </ScrollArea>
-        </aside>
-      </div>
+                </div>
+              </div>
+            )}
+
+          </div>
+        </div>
+      </main>
     </div>
   )
-}
+      }
