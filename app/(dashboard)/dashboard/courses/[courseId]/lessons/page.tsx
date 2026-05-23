@@ -18,18 +18,34 @@ import {
   QuizQuestion 
 } from '@/app/types'
 
+// Type-safe contract for progress state changes
+interface ProgressUpdatePayload {
+  quizAttempt?: {
+    quizId: string
+    score: number
+    passed: boolean
+    answers: Array<{
+      questionId: string
+      selectedOption: string
+      isCorrect: boolean
+    }>
+  }
+  newCompletedModuleId?: string
+  newCompletedLessonId?: string
+}
+
 export default function CourseWorkspacePage() {
   const params = useParams()
   const router = useRouter()
   
-  // Use your production hooks
+  // Custom global domain states
   const { user } = useAuthStore()
   const { courses, loading: isCoursesLoading } = useCourses()
   
   const courseId = params.courseId as string
   const course = useMemo(() => courses?.find(c => c._id === courseId), [courses, courseId])
 
-  // State
+  // Context Interface states
   const [dbEnrollment, setDbEnrollment] = useState<SerializedEnrollment | null>(null)
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null)
   const [activeModule, setActiveModule] = useState<Module | null>(null)
@@ -44,7 +60,7 @@ export default function CourseWorkspacePage() {
 
   const [isPending, startTransition] = useTransition()
 
-  // Sync Enrollment
+  // Sync Remote Progress Engine
   useEffect(() => {
     async function syncEnrollment() {
       if (!user?._id || !courseId || !course) return
@@ -119,7 +135,7 @@ export default function CourseWorkspacePage() {
   }
 
   const handleAnswerSelect = (questionId: string, option: string) => {
-    if (quizSubmitted && quizResult?.passed) return // Lock down if already cleared
+    if (quizSubmitted && quizResult?.passed) return 
     setSelectedAnswers(prev => ({ ...prev, [questionId]: option }))
   }
 
@@ -145,7 +161,7 @@ export default function CourseWorkspacePage() {
     setQuizSubmitted(true)
 
     startTransition(async () => {
-      const updatesPayload: any = {
+      const updatesPayload: ProgressUpdatePayload = {
         quizAttempt: {
           quizId: quiz.id,
           score: calculatedScore,
@@ -162,7 +178,7 @@ export default function CourseWorkspacePage() {
         }
       }
 
-      const syncResult = await updateEnrollmentProgressAction(user.id, courseId, updatesPayload)
+      const syncResult = await updateEnrollmentProgressAction(user._id, courseId, updatesPayload)
       if (syncResult.success && syncResult.data) {
         setDbEnrollment(syncResult.data)
       }
@@ -247,7 +263,6 @@ export default function CourseWorkspacePage() {
                     )
                   })}
 
-                  {/* MODULE CAPSTONE ASSESSMENT DECK */}
                   {mod.quiz && modUnlocked && (
                     <button 
                       onClick={() => { setActiveModule(mod); setActiveLesson(null); setActiveTab('quiz'); }}
@@ -309,7 +324,6 @@ export default function CourseWorkspacePage() {
             {/* TAB WINDOW A: CURRICULUM WORKSPACE PLAYER */}
             {activeTab === 'content' && activeLesson && (
               <div className="space-y-6">
-                {/* OPTIONAL HYBRID CONFIGURATION TOGGLE SWITCH */}
                 {activeLesson.contentType === 'hybrid' && (
                   <div className="flex justify-end">
                     <div className="flex bg-neutral-100 dark:bg-neutral-900 p-0.5 rounded-md font-mono text-[10px]">
@@ -325,7 +339,6 @@ export default function CourseWorkspacePage() {
                   </div>
                 )}
 
-                {/* ASYNC SECURE DOWNLOAD ACTION LINE */}
                 {activeLesson.isDownloadable && activeLesson.downloadUrl && (
                   <div className="p-3 bg-emerald-500/5 border border-emerald-500/20 rounded-xl flex items-center justify-between">
                     <div className="text-xs">
@@ -346,14 +359,12 @@ export default function CourseWorkspacePage() {
               </div>
             )}
 
-            {/* TAB WINDOW B: SYSTEM PERSISTENT VERIFICATION INTERACTIVE QUIZ ASSESSMENT */}
+            {/* TAB WINDOW B: QUIZ ASSESSMENT */}
             {activeTab === 'quiz' && (
               <div className="space-y-6 bg-neutral-50 dark:bg-[#0d0d0d] p-6 rounded-xl border border-neutral-200 dark:border-neutral-800">
                 {(() => {
                   const targetQuiz = activeLesson ? activeLesson.quiz : activeModule?.quiz
                   if (!targetQuiz) return null
-
-                  // Cap rendering directly at 3 questions max for strict verification compliance
                   const activeQuestions = targetQuiz.questions.slice(0, 3)
 
                   return (
@@ -402,7 +413,6 @@ export default function CourseWorkspacePage() {
                                 })}
                               </div>
 
-                              {/* CONDITIONAL RETROSPECTIVE INDUSTRIAL ANSWER REVIEW COMPARTMENT */}
                               {quizSubmitted && (
                                 <div className={`p-3 rounded-lg text-xs font-mono mt-2 ${isCorrectChoice ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400' : 'bg-red-500/5 text-red-600 dark:text-red-400'}`}>
                                   <div className="flex items-center gap-1.5 font-bold">
@@ -456,7 +466,6 @@ export default function CourseWorkspacePage() {
                   )}
 
                   <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3">
-                    {/* Fixed tag closing mismatch here from </summary> to </label> */}
                     <label className="text-xs font-mono text-neutral-400 font-bold block uppercase">Submit Workspace Solution URL</label>
                     <input 
                       type="url" 
@@ -489,4 +498,4 @@ export default function CourseWorkspacePage() {
       </main>
     </div>
   )
-          }
+}
