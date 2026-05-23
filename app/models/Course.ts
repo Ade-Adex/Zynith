@@ -68,7 +68,7 @@ const CourseSchema = new Schema(
     slug: { type: String, required: true, unique: true },
     type: { type: String, enum: ['Free', 'Premium'], required: true },
     tag: { type: String, required: true },
-    price: { type: Number, required: true }, // Changed to Number for calculations
+    price: { type: Number, required: true },
     discountPrice: { type: Number, default: 0 },
     currency: { type: String, default: 'USD' },
     instructor: { type: String, required: true },
@@ -80,19 +80,19 @@ const CourseSchema = new Schema(
     },
     rating: { type: Number, default: 5.0 },
     students: { type: Number, default: 0 },
-    duration: { type: String, required: true }, // Total runtime summary
+    duration: { type: String, required: true },
     level: {
       type: String,
       enum: ['Beginner', 'Intermediate', 'Expert'],
       required: true,
     },
-    color: { type: String, required: true }, // UI Theme Accent Color Hex
-    image: { type: String, required: true }, // Main Banner Card Asset
+    color: { type: String, required: true }, 
+    image: { type: String, required: true },
     previewVideo: { type: String, required: true },
-    forumId: { type: String, required: true }, // References external Forum Entity Collection ID
+    forumId: { type: String, required: true },
     chatId: { type: String, required: true },
     learningObjectives: [{ type: String }], // What the student will learn
-    requirements: [{ type: String }], // Prerequisites
+    requirements: [{ type: String }], 
     features: [{ type: String }],
     testimonies: [TestimonySchema],
     modules: [CourseModuleSchema],
