@@ -189,9 +189,17 @@ export default function CartPage() {
         },
         callback: async (response: PaystackTransactionResponse) => {
           try {
-            // Unpack all string keys within the current cart storage map instance
+            const activeUserId = user?._id
+
+            if (!activeUserId) {
+              console.error(
+                'Bulk enrollment aborted: User session identifier lost.',
+              )
+              return
+            }
+
             await enrollUserAfterPaymentAction(
-              user._id,
+              String(activeUserId),
               courseIdsStaged,
               response.reference,
             )

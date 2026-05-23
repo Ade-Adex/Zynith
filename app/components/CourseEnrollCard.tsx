@@ -107,6 +107,12 @@ export function CourseEnrollCard({
   const currentCourseId = String(course._id)
   const itemInCart = mounted ? isInCart(currentCourseId) : false
 
+  const activeUserId = user?._id
+  if (!activeUserId) {
+    router.push(`/auth?redirect=${encodeURIComponent(pathname)}`)
+    return
+  }
+
   const handleCartToggle = async () => {
     if (isAdding) return
 
@@ -186,9 +192,8 @@ export function CourseEnrollCard({
         },
         onSuccess: async (response: PaystackTransactionResponse) => {
           try {
-            // Trigger structural backend fulfillment
             const result = await enrollUserAfterPaymentAction(
-              user._id,
+              activeUserId,
               [currentCourseId],
               response.reference,
             )

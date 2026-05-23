@@ -65,7 +65,6 @@ export default function CourseLessonsWorkspace() {
     (c) => String(c._id) === String(courseId),
   )
 
-  // 1. Fetch live database verification parameters upon valid initialization requirements
   useEffect(() => {
     async function syncWorkspaceContext() {
       if (!user?._id || !courseId || user._id === 'undefined') return
@@ -81,19 +80,20 @@ export default function CourseLessonsWorkspace() {
       } catch (err) {
         console.error('Failed to resolve database progress layer:', err)
       } finally {
-        setEnrollmentLoading(false)
+        // Use a timeout to push the state update out of the render phase
+        setTimeout(() => setEnrollmentLoading(false), 0)
       }
     }
 
-    if (!coursesLoading && course) {
-      if (course.type === 'Free') {
-        setEnrollmentLoading(false)
-      } else {
-        syncWorkspaceContext()
-      }
-    }
-  }, [user, courseId, coursesLoading, course])
+    // Guard clause
+    if (coursesLoading) return
 
+    if (course?.type === 'Free') {
+      setTimeout(() => setEnrollmentLoading(false), 0)
+    } else if (course?.type === 'Premium') {
+      syncWorkspaceContext()
+    }
+  }, [user?._id, courseId, coursesLoading, course?.type])
   // 2. Process routing checkpoints and baseline layout distributions cleanly
   useEffect(() => {
     if (
@@ -134,10 +134,14 @@ export default function CourseLessonsWorkspace() {
       }
 
       if (targetLesson) {
-        progressLoadedRef.current = true // Set ref lock immediately before dispatching state changes
-        setActiveLesson(targetLesson)
-        setActiveModuleId(targetModule.id)
-        setExpandedModules((prev) => ({ ...prev, [targetModule.id]: true }))
+        progressLoadedRef.current = true // Set ref lock immediately before scheduling state mutations
+
+        // Using queueMicrotask or setTimeout breaks the synchronous render cascade rule beautifully
+        queueMicrotask(() => {
+          setActiveLesson(targetLesson)
+          setActiveModuleId(targetModule.id)
+          setExpandedModules((prev) => ({ ...prev, [targetModule.id]: true }))
+        })
       }
     }
   }, [
@@ -173,7 +177,7 @@ export default function CourseLessonsWorkspace() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-slate-100 flex flex-col font-sans selection:bg-blue-500/30">
+    <div className="min-h-screen bg-background flex flex-col font-sans selection:bg-blue-500/30 py-24">
       {/* Top Application Ribbon */}
       <header className="h-16 border-b border-slate-800 bg-slate-900/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-40">
         <div className="flex items-center gap-4">
@@ -407,9 +411,7 @@ export default function CourseLessonsWorkspace() {
                       )}
                     </UnstyledButton>
 
-                    {/* Lesson Rows List Mapping */}
-                    {/* Explicit boolean check ensures no fallback string or unmapped property is pushed to the DOM */}
-                    <Collapse in={isExpanded}>
+                    {/* <Collapse opened={!!isExpanded}>
                       <div className="bg-slate-900/60 p-1.5 border-t border-slate-800/40 space-y-1">
                         {mod.lessons?.map((les: Lesson) => {
                           const isCurrent = activeLesson?.id === les.id
@@ -472,7 +474,75 @@ export default function CourseLessonsWorkspace() {
                           )
                         })}
                       </div>
-                    </Collapse>
+                    </Collapse> */}
+
+                    {isExpanded && (
+                      <div className="bg-slate-900/60 p-1.5 border-t border-slate-800/40 space-y-1">
+                        {mod.lessons?.map((les: Lesson) => {
+                          const isCurrent = activeLesson?.id === les.id
+
+                          return (
+                            <UnstyledButton
+                              key={les.id}
+                              onClick={() => {
+                                setActiveLesson(les)
+                                setActiveModuleId(mod.id)
+                              }}
+                              className={`w-full p-2.5 rounded-lg flex items-start gap-3 transition-all cursor-pointer ${
+                                isCurrent
+                                  ? 'bg-blue-600/15 border border-blue-500/30 text-white'
+                                  : 'hover:bg-slate-800/50 text-slate-400 hover:text-slate-200 border border-transparent'
+                              }`}
+                            >
+                              <div className="mt-0.5">
+                                {les.contentType === 'video' ||
+                                les.contentType === 'hybrid' ? (
+                                  <Play
+                                    size={12}
+                                    className={
+                                      isCurrent
+                                        ? 'text-blue-400 fill-blue-400'
+                                        : 'text-slate-500'
+                                    }
+                                  />
+                                ) : (
+                                  <FileText
+                                    size={12}
+                                    className={
+                                      isCurrent
+                                        ? 'text-blue-400'
+                                        : 'text-slate-500'
+                                    }
+                                  />
+                                )}
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <Text
+                                  size="xs"
+                                  fw={700}
+                                  className={`uppercase truncate calculation-layout ${
+                                    isCurrent
+                                      ? 'text-blue-400 font-extrabold'
+                                      : 'text-slate-300'
+                                  }`}
+                                >
+                                  {les.title}
+                                </Text>
+
+                                <Text
+                                  size="10px"
+                                  c="dimmed"
+                                  className="font-semibold mt-0.5"
+                                >
+                                  {les.duration}
+                                </Text>
+                              </div>
+                            </UnstyledButton>
+                          )
+                        })}
+                      </div>
+                    )}
                   </div>
                 )
               })}

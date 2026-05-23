@@ -159,7 +159,7 @@ export async function verifyTokenAndLoginAction(
       success: true,
       message: 'Access cleared.',
       userData: JSON.stringify({
-        id: matchingUser._id.toString(),
+        _id: matchingUser._id.toString(),
         name: matchingUser.name,
         firstName: matchingUser.firstName,
         lastName: matchingUser.lastName,

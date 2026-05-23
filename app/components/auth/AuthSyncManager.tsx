@@ -1,4 +1,5 @@
-// /app/components/auth/AuthSyncManager.tsx
+// /app/components/auth/AuthSyncManager.tsx'
+
 'use client'
 
 import { useEffect } from 'react'
@@ -38,7 +39,11 @@ export function AuthSyncManager({ children }: { children: React.ReactNode }) {
             enqueueSnackbar('Authenticated from another tab. Welcome back!', {
               variant: 'success',
             })
-            router.replace('/dashboard')
+            
+            // ALLOW TO ANY DASHBOARD ROUTE: Only redirect if they are stuck on the auth page
+            if (pathname === '/auth') {
+              router.replace('/dashboard')
+            }
           }
         } catch (err) {
           console.error('Failed to parse cross-tab sync package.', err)
@@ -75,7 +80,9 @@ export function AuthSyncManager({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // 3. Proactive Route Guards
-    if (isAuthenticated && (pathname === '/auth')) {
+    // ALLOW TO ANY DASHBOARD ROUTE: If authenticated and visiting /auth, kick to main dashboard. 
+    // If they are visiting /dashboard/anything else, let them stay.
+    if (isAuthenticated && pathname === '/auth') {
       router.replace('/dashboard')
     }
     if (!isAuthenticated && pathname.startsWith('/dashboard')) {
