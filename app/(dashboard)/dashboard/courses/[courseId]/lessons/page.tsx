@@ -47,10 +47,10 @@ export default function CourseWorkspacePage() {
   // Sync Enrollment
   useEffect(() => {
     async function syncEnrollment() {
-      if (!user?.id || !courseId || !course) return
+      if (!user?._id || !courseId || !course) return
       
       try {
-        const syncBlock = await getEnrollmentProgressAction(user.id, courseId)
+        const syncBlock = await getEnrollmentProgressAction(user._id, courseId)
         if (syncBlock.success && syncBlock.data) {
           setDbEnrollment(syncBlock.data)
           
@@ -71,7 +71,7 @@ export default function CourseWorkspacePage() {
       }
     }
     syncEnrollment()
-  }, [courseId, user?.id, course])
+  }, [courseId, user?._id, course])
 
   const flatLessonsList = useMemo(() => {
     if (!course) return []
@@ -108,9 +108,9 @@ export default function CourseWorkspacePage() {
     setActiveTab('content')
     setContentTypeToggle(lesson.contentType === 'text' ? 'text' : 'video')
 
-    if (!user?.id || !courseId) return
+    if (!user?._id || !courseId) return
     startTransition(async () => {
-      const update = await updateEnrollmentProgressAction(user.id, courseId, {
+      const update = await updateEnrollmentProgressAction(user._id, courseId, {
         currentModuleId: targetModule.id,
         currentLessonId: lesson.id
       })
@@ -124,7 +124,7 @@ export default function CourseWorkspacePage() {
   }
 
   const handleSubmitQuiz = async (quiz: Quiz, isModuleLevel = false) => {
-    if (!user?.id || !courseId) return
+    if (!user?._id || !courseId) return
 
     let correctCount = 0
     const itemizedAnswers = quiz.questions.slice(0, 3).map(q => {
