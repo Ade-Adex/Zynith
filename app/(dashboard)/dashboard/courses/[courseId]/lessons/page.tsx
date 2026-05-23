@@ -24,7 +24,7 @@ export default function CourseWorkspacePage() {
   
   // Use your production hooks
   const { user } = useAuthStore()
-  const { courses, isLoading: isCoursesLoading } = useCourses()
+  const { courses, loading: isCoursesLoading } = useCourses()
   
   const courseId = params.courseId as string
   const course = useMemo(() => courses?.find(c => c.id === courseId), [courses, courseId])
