@@ -27,7 +27,7 @@ export default function CourseWorkspacePage() {
   const { courses, loading: isCoursesLoading } = useCourses()
   
   const courseId = params.courseId as string
-  const course = useMemo(() => courses?.find(c => c.id === courseId), [courses, courseId])
+  const course = useMemo(() => courses?.find(c => c._id === courseId), [courses, courseId])
 
   // State
   const [dbEnrollment, setDbEnrollment] = useState<SerializedEnrollment | null>(null)
