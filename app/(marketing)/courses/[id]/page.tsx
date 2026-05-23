@@ -53,7 +53,7 @@ export default async function CourseDetails({ params }: Props) {
   if (!course) notFound()
 
   const userSession = await getCurrentUserSession()
-  const parsedPrice = parseFloat(course.price || '0')
+  const parsedPrice = (course.price || '0')
   const isFree = parsedPrice === 0
   const hasAccess = isFree || userSession.purchasedCourseIds.includes(String(course._id))
   const isInWishlist = userSession.wishlistCourseIds.includes(String(course._id))
