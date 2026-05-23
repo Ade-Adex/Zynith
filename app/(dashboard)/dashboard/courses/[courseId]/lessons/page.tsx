@@ -1,3 +1,5 @@
+// /app/(dashboard)/dashboard/courses/[courseId]/lessons/page.tsx
+
 'use client'
 
 import React, { useState, useEffect, useTransition, useMemo } from 'react'
@@ -454,7 +456,8 @@ export default function CourseWorkspacePage() {
                   )}
 
                   <div className="pt-4 border-t border-neutral-200 dark:border-neutral-800 space-y-3">
-                    <label className="text-xs font-mono text-neutral-400 font-bold block uppercase">Submit Workspace Solution URL</summary>
+                    {/* Fixed tag closing mismatch here from </summary> to </label> */}
+                    <label className="text-xs font-mono text-neutral-400 font-bold block uppercase">Submit Workspace Solution URL</label>
                     <input 
                       type="url" 
                       placeholder="https://github.com/... or cloud repository link"
@@ -486,4 +489,4 @@ export default function CourseWorkspacePage() {
       </main>
     </div>
   )
-      }
+          }
