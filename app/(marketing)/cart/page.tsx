@@ -287,7 +287,7 @@ export default function CartPage() {
 
                 <div className="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto border-t sm:border-t-0 border-slate-100 dark:border-zinc-800/80 pt-4 sm:pt-0 shrink-0 gap-4">
                   <span className="text-sm md:text-base font-black tracking-tight text-slate-900 dark:text-zinc-100 italic">
-                    ₦{parseFloat(item.price ?? '0').toLocaleString()}
+                    ₦{(item.price ?? 0).toLocaleString()}
                   </span>
                   <button
                     onClick={() => removeFromCart(String(item._id))}
