@@ -53,16 +53,18 @@ export default async function CourseDetails({ params }: Props) {
   if (!course) notFound()
 
   const userSession = await getCurrentUserSession()
-  const parsedPrice = (course.price || '0')
+
+  const parsedPrice = course.price ?? 0
   const isFree = parsedPrice === 0
   const hasAccess = isFree || userSession.purchasedCourseIds.includes(String(course._id))
   const isInWishlist = userSession.wishlistCourseIds.includes(String(course._id))
 
   const features = course.features || []
-  const price = course.price || '0'
+  const price = course.price ?? 0
   const type = course.type || 'Premium'
   const modules = course.modules || []
 
+  
   return (
     <div className="min-h-screen bg-background text-foreground transition-colors duration-200">
       {/* Hero Header Section */}
