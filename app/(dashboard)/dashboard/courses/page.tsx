@@ -158,7 +158,7 @@ export default function MyLearningPage() {
   }
 
   return (
-    <div className="py-6 max-w-7xl mx-auto space-y-10 px-4 min-h-screen bg-background">
+    <div className="py-6 max-w-7xl mx-auto space-y-10 min-h-screen bg-background">
       {/* HEADER BLOCK */}
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-neutral-100 dark:border-neutral-800 pb-6">
         <div>
