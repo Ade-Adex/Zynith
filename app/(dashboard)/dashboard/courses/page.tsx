@@ -142,7 +142,7 @@ export default function MyLearningPage() {
 
   if (globalLoading) {
     return (
-      <Center className="py-32 bg-[#0a0a0a] min-h-[50vh]">
+      <Center className="py-32 bg-background min-h-[50vh]">
         <div className="flex flex-col items-center gap-4">
           <Loader size="sm" color="blue" />
           <Text
@@ -158,7 +158,7 @@ export default function MyLearningPage() {
   }
 
   return (
-    <div className="py-6 max-w-7xl mx-auto space-y-10 px-4 min-h-screen bg text-neutral-900 dark:text-[#ededed]">
+    <div className="py-6 max-w-7xl mx-auto space-y-10 px-4 min-h-screen bg-background">
       {/* HEADER BLOCK */}
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-neutral-100 dark:border-neutral-800 pb-6">
         <div>
@@ -170,13 +170,13 @@ export default function MyLearningPage() {
             fw={600}
             className="uppercase tracking-widest text-[10px] md:text-xs mt-1.5 font-mono opacity-80"
           >
-            Securely synchronized 
+            Securely synchronized
           </Text>
         </div>
 
         <Link
           href="/courses"
-          className="inline-flex h-10 items-center justify-center rounded-xl bg-neutral-900 px-5 text-xs font-mono font-bold text-white shadow-sm transition-all hover:bg-neutral-800 dark:bg-neutral-100 dark:text-neutral-950 dark:hover:bg-neutral-200 self-start md:self-auto"
+          className="flex w-fit items-center gap-3 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-8 py-3 rounded-2xl font-semibold uppercase text-xs! transition-all shadow-lg shadow-blue-600/10 active:scale-95"
         >
           Explore Catalog
         </Link>
@@ -184,7 +184,7 @@ export default function MyLearningPage() {
 
       {/* METRIC MATRIX GRID */}
       <section className="grid grid-cols-2 md:grid-cols-3 gap-4">
-        <div className="p-5 rounded-2xl bg-neutral-50 dark:bg-[#0d0d0d] border border-neutral-200 dark:border-neutral-800">
+        <div className="p-5 rounded-2xl bg-surface border border-neutral-200 dark:border-neutral-800">
           <span className="text-[10px] font-mono uppercase font-bold text-neutral-400 tracking-wider">
             Active Workspace Streams
           </span>
@@ -192,7 +192,7 @@ export default function MyLearningPage() {
             {learningMatrix.active.length}
           </p>
         </div>
-        <div className="p-5 rounded-2xl bg-neutral-50 dark:bg-[#0d0d0d] border border-neutral-200 dark:border-neutral-800">
+        <div className="p-5 rounded-2xl bg-surface border border-neutral-200 dark:border-neutral-800">
           <span className="text-[10px] font-mono uppercase font-bold text-neutral-400 tracking-wider">
             Completed Vault
           </span>
@@ -200,7 +200,7 @@ export default function MyLearningPage() {
             {learningMatrix.completed.length}
           </p>
         </div>
-        <div className="col-span-2 md:col-span-1 p-5 rounded-2xl bg-neutral-50 dark:bg-[#0d0d0d] border border-neutral-200 dark:border-neutral-800">
+        <div className="col-span-2 md:col-span-1 p-5 rounded-2xl bg-surface border border-neutral-200 dark:border-neutral-800">
           <span className="text-[10px] font-mono uppercase font-bold text-neutral-400 tracking-wider">
             Saved Shortlists
           </span>
