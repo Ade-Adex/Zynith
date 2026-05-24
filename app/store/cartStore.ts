@@ -45,7 +45,7 @@ export const useCartStore = create<CartState>()(
 
       getCartTotal: () => {
         return get().cartItems.reduce(
-          (total, item) => total + parseFloat(item.price || '0'),
+          (total, item) => total + (item.price ?? 0),
           0,
         )
       },

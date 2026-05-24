@@ -254,7 +254,9 @@ export function CourseEnrollCard({
               </span>
               <div className="flex items-baseline gap-3">
                 <span className="text-2xl md:text-3xl font-black tracking-tighter italic text-slate-900 dark:text-zinc-100">
-                  {isFree ? 'FREE' : `₦${finalTotal.toLocaleString()}`}
+                  {isFree
+                    ? 'FREE'
+                    : `₦${finalTotal.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })}`}
                 </span>
                 {!isFree && (
                   <span className="text-slate-300 dark:text-zinc-600 font-bold line-through text-sm md:text-base">
@@ -270,13 +272,21 @@ export function CourseEnrollCard({
                 <div className="flex justify-between items-center text-xs text-slate-500 dark:text-zinc-400">
                   <span>Course Base Amount</span>
                   <span className="font-bold text-slate-700 dark:text-zinc-300">
-                    ₦{numericPrice.toLocaleString()}
+                    ₦
+                    {numericPrice.toLocaleString(undefined, {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    })}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs text-slate-500 dark:text-zinc-400">
                   <span>7.5% VAT</span>
                   <span className="font-bold text-slate-700 dark:text-zinc-300">
-                    ₦{(finalTotal - numericPrice).toLocaleString()}
+                    ₦
+                    {(finalTotal - numericPrice).toLocaleString(undefined, {
+                      minimumFractionDigits: 1,
+                      maximumFractionDigits: 1,
+                    })}
                   </span>
                 </div>
               </div>
