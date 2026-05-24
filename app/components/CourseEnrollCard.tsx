@@ -58,7 +58,7 @@ interface ModernPaystackPopConstructor {
 
 interface CourseEnrollCardProps {
   course: Course
-  price: string
+  price: number 
   type: string
   hasAccess: boolean
   isLoggedIn: boolean
@@ -82,8 +82,10 @@ export function CourseEnrollCard({
   const { addToCart, removeFromCart, isInCart } = useCartStore()
   const { user, isAuthenticated } = useAuthStore()
 
-  const isFree = type === 'Free' || price === 'FREE'
-  const numericPrice = parseFloat(price) || 0
+  const isFree = type === 'Free' || price === 0
+  
+  // 2. Remove parseFloat since price is already a number
+  const numericPrice = price 
 
   // Calculate consistent Tax matches with Cart page (7.5% VAT)
   const vatValue = isFree ? 0 : numericPrice * 0.075
