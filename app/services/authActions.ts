@@ -27,8 +27,8 @@ export async function sendMagicLinkAction(
   try {
     await connectDB()
     const cleanEmail = email.toLowerCase().trim()
-    const generatedToken = crypto.randomBytes(32).toString('hex')
-    const expirationWindow = new Date(Date.now() + 15 * 60 * 1000)
+   const generatedToken = crypto.randomBytes(32).toString('hex')
+   const expirationWindow = new Date(Date.now() + 24 * 60 * 60 * 1000)
 
     let targetUser: IUser | null = await User.findOne({ email: cleanEmail })
 
