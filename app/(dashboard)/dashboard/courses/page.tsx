@@ -266,7 +266,10 @@ export default function MyLearningPage() {
                   key={String(course._id)}
                   className="relative group space-y-2"
                 >
-                  <CourseCard course={course} />
+                  <CourseCard
+                    course={course}
+                    href={`/dashboard/courses/${course._id}/lessons`}
+                  />
                   <div className="px-1 flex justify-between items-center font-mono text-[10px] text-neutral-400">
                     <span>Progress Metric</span>
                     <span className="font-bold text-neutral-900 dark:text-white">
@@ -295,7 +298,10 @@ export default function MyLearningPage() {
             <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="xl">
               {learningMatrix.completed.map((course) => (
                 <div key={String(course._id)} className="opacity-90">
-                  <CourseCard course={course} />
+                  <CourseCard
+                    course={course}
+                    href={`/dashboard/courses/${course._id}/lessons`}
+                  />
                   <div className="mt-2 p-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 text-center font-mono text-[10px] font-bold text-emerald-500 uppercase tracking-wider">
                     ✓ Course Fully Completed
                   </div>

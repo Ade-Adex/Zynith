@@ -6,7 +6,7 @@ import { Course } from '@/app/types'
 import Image from 'next/image'
 import Link from 'next/link'
 
-export const CourseCard = ({ course }: { course: Course }) => {
+export const CourseCard = ({ course, href }: { course: Course; href?: string }) => {
   const [isHovered, setIsHovered] = useState(false)
   const [isPreviewFinished, setIsPreviewFinished] = useState(false)
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -30,9 +30,11 @@ export const CourseCard = ({ course }: { course: Course }) => {
     }
   }, [isHovered, isPreviewFinished])
 
+  const targetLink = href || `/courses/${course._id}`
+
   return (
     <Link
-      href={`/courses/${course._id}`}
+      href={targetLink}
       className="group relative h-full block no-underline text-inherit"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
