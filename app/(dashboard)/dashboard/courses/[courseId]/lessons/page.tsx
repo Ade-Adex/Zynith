@@ -26,6 +26,7 @@ import {
   UpdatePayload,
 } from '@/app/types/enrollment'
 import { Types } from 'mongoose'
+import { useSnackbar } from 'notistack'
 
 export default function CourseWorkspacePage() {
   const params = useParams()
@@ -33,6 +34,8 @@ export default function CourseWorkspacePage() {
 
   const { user } = useAuthStore()
   const { courses, loading: isCoursesLoading } = useCourses()
+
+  const { enqueueSnackbar } = useSnackbar()
 
   // Inside CourseWorkspacePage
   const {
@@ -65,8 +68,7 @@ export default function CourseWorkspacePage() {
   const [contentTypeToggle, setContentTypeToggle] = useState<'video' | 'text'>(
     'video',
   )
-  const [assignmentUrl, setAssignmentUrl] = useState('')
-  const [assignmentSubmitted, setAssignmentSubmitted] = useState(false)
+
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
   const [isAssignmentSubmitting, setIsAssignmentSubmitting] = useState(false)
@@ -74,6 +76,30 @@ export default function CourseWorkspacePage() {
   const [videoEnded, setVideoEnded] = useState(false)
   const [textRead, setTextRead] = useState(false)
   const observerTarget = useRef(null)
+
+  // Local draft for input text handling before submission
+  const [assignmentInputBuffer, setAssignmentInputBuffer] = useState('')
+
+  // 1. Dynamically derive if the current module's assignment has been submitted
+  const assignmentSubmissionInfo = useMemo(() => {
+    if (!dbEnrollment || !activeModule?.assignment) return null
+
+    return (
+      dbEnrollment.assignmentSubmissions?.find(
+        (s) => s.assignmentId === activeModule.assignment?.id,
+      ) || null
+    )
+  }, [dbEnrollment, activeModule])
+
+  const assignmentSubmitted = !!assignmentSubmissionInfo
+
+  // 2. Compute what to show in the URL box dynamically
+  const assignmentUrl = useMemo(() => {
+    if (assignmentSubmitted && assignmentSubmissionInfo) {
+      return assignmentSubmissionInfo.submissionUrl
+    }
+    return assignmentInputBuffer
+  }, [assignmentSubmitted, assignmentSubmissionInfo, assignmentInputBuffer])
 
   // Tracking Text Read State
   useEffect(() => {
@@ -89,6 +115,84 @@ export default function CourseWorkspacePage() {
     if (observerTarget.current) observer.observe(observerTarget.current)
     return () => observer.disconnect()
   }, [activeLesson])
+
+  // 3. Update useEffect sync
+  useEffect(() => {
+    async function syncEnrollment() {
+      if (dbEnrollment || !user?._id || !courseId || !course) return
+      try {
+        const syncBlock = await getEnrollmentProgressAction(user._id, courseId)
+        if (syncBlock.success && syncBlock.data) {
+          setDbEnrollment(syncBlock.data)
+
+          const savedModId = syncBlock.data.currentModuleId
+          const savedLesId = syncBlock.data.currentLessonId
+          const initialModule =
+            course.modules.find((m) => m.id === savedModId) || course.modules[0]
+          const initialLesson =
+            initialModule?.lessons.find((l) => l.id === savedLesId) ||
+            initialModule?.lessons[0]
+
+          setActiveModule(initialModule || null)
+          setActiveLesson(initialLesson || null)
+
+          // Safely wipe the local buffer on initial view load
+          setAssignmentInputBuffer('')
+        }
+      } catch (err) {
+        console.error('Workspace tracking sync fault:', err)
+      }
+    }
+    syncEnrollment()
+  }, [courseId, user?._id, dbEnrollment, course])
+
+  // Hydrate quiz state from dbEnrollment records on page refresh or active lesson shifts
+  useEffect(() => {
+    // Determine which quiz we care about based on what's active
+    const activeQuizId = activeLesson?.quiz?.id || activeModule?.quiz?.id
+
+    if (!dbEnrollment || !activeQuizId) {
+      // If there's no active quiz context, clean up the local store state safely
+      resetQuizState()
+      return
+    }
+
+    // Find all previous attempts for this specific quiz, sorted by most recent
+    const history =
+      dbEnrollment.quizAttempts?.filter(
+        (attempt) => attempt.quizId === activeQuizId,
+      ) || []
+
+    if (history.length > 0) {
+      // Nab the most recent attempt
+      const latestAttempt = history[history.length - 1]
+
+      // Turn the itemized array back into a key/value state matching the store format: { [questionId]: selectedOption }
+      const answersMap: Record<string, string> = {}
+      latestAttempt.answers.forEach((ans) => {
+        answersMap[ans.questionId] = ans.selectedOption
+      })
+
+      // Repopulate Zustand store variables so the UI reacts instantly
+      setSelectedAnswers(answersMap)
+      setQuizResult({
+        score: latestAttempt.score,
+        passed: latestAttempt.passed,
+      })
+      setQuizSubmitted(true)
+    } else {
+      // If they have never tried this specific quiz, wipe any residual state out of the workspace view
+      resetQuizState()
+    }
+  }, [
+    activeLesson?.id,
+    activeModule?.id,
+    dbEnrollment,
+    setSelectedAnswers,
+    setQuizResult,
+    setQuizSubmitted,
+    resetQuizState,
+  ])
 
   // Computed: Is the current lesson requirements met?
   const requirementsMet = useMemo(() => {
@@ -112,34 +216,6 @@ export default function CourseWorkspacePage() {
     activeModule,
   ])
 
-  // 3. Update useEffect sync
-  useEffect(() => {
-    async function syncEnrollment() {
-      if (dbEnrollment || !user?._id || !courseId || !course) return
-      try {
-        const syncBlock = await getEnrollmentProgressAction(user._id, courseId)
-        if (syncBlock.success && syncBlock.data) {
-          // No mapToSerialized needed, data is already serialized
-          setDbEnrollment(syncBlock.data)
-
-          const savedModId = syncBlock.data.currentModuleId
-          const savedLesId = syncBlock.data.currentLessonId
-          const initialModule =
-            course.modules.find((m) => m.id === savedModId) || course.modules[0]
-          const initialLesson =
-            initialModule?.lessons.find((l) => l.id === savedLesId) ||
-            initialModule?.lessons[0]
-
-          setActiveModule(initialModule || null)
-          setActiveLesson(initialLesson || null)
-        }
-      } catch (err) {
-        console.error('Workspace tracking sync fault:', err)
-      }
-    }
-    syncEnrollment()
-  }, [courseId, user?._id, dbEnrollment])
-
   const isModuleUnlocked = (moduleId: string) => {
     if (!course || !dbEnrollment) return false
     if (course.type === 'Free') return true
@@ -157,15 +233,14 @@ export default function CourseWorkspacePage() {
     setActiveLesson(lesson)
     setActiveModule(targetModule)
 
+    // Clear the assignment input buffer immediately on user switch
+    setAssignmentInputBuffer('')
+
     setSelectedAnswers({})
     setQuizSubmitted(false)
     setQuizResult(null)
-
     setActiveTab('content')
-
     setContentTypeToggle(lesson.contentType === 'text' ? 'text' : 'video')
-
-    // CLOSE SIDEBAR MOBILE
     setSidebarOpen(false)
 
     if (!user?._id || !courseId) return
@@ -215,17 +290,23 @@ export default function CourseWorkspacePage() {
           quizId: quiz.id,
           score: calculatedScore,
           passed: passedStatus,
-          answers: itemizedAnswers,
+          answers: itemizedAnswers.map((ans) => ({
+            questionId: ans.questionId,
+            selectedOption: ans.selectedOption,
+            isCorrect: ans.isCorrect,
+          })),
         },
       }
 
       if (passedStatus) {
-        if (isModuleLevel && activeModule)
+        if (isModuleLevel && activeModule) {
           updatesPayload.newCompletedModuleId = activeModule.id
-        else if (activeLesson)
+        } else if (activeLesson) {
           updatesPayload.newCompletedLessonId = activeLesson.id
+        }
       }
 
+      // Use the sanitized object
       const syncResult = await updateEnrollmentProgressAction(
         user._id,
         courseId,
@@ -237,41 +318,66 @@ export default function CourseWorkspacePage() {
     })
   }
 
-  // Add this handler for assignment submission
   const handleAssignmentSubmit = async () => {
-    if (!assignmentUrl || !activeModule?.assignment) return
+    // Read from assignmentInputBuffer instead of assignmentUrl state
+    if (!assignmentInputBuffer || !activeModule?.assignment || !user?._id) {
+      enqueueSnackbar('Please provide a valid assignment URL.', {
+        variant: 'warning',
+      })
+      return
+    }
+
+    const assignmentId = activeModule.assignment.id
+    const userId = user._id
 
     setIsAssignmentSubmitting(true)
 
-    try {
-      // Implement your submission action here
-      // Example: await submitAssignmentAction(user._id, courseId, activeModule.assignment.id, assignmentUrl);
-      alert('Assignment submitted successfully!')
-      setAssignmentSubmitted(true)
-    } catch (error) {
-      console.error('Assignment submission error:', error)
-    } finally {
-      setIsAssignmentSubmitting(false)
-    }
+    startTransition(async () => {
+      try {
+        const result = await updateEnrollmentProgressAction(userId, courseId, {
+          assignmentSubmission: {
+            assignmentId,
+            url: assignmentInputBuffer, // Use input buffer
+          },
+        })
+
+        if (result.success && result.data) {
+          setDbEnrollment(result.data)
+          setAssignmentInputBuffer('') // Reset local input buffer
+          enqueueSnackbar('Assignment submitted successfully!', {
+            variant: 'success',
+          })
+        } else {
+          throw new Error(result.message || 'Submission failed')
+        }
+      } catch (error) {
+        console.error('Assignment submission error:', error)
+        enqueueSnackbar('Failed to submit assignment. Please try again.', {
+          variant: 'error',
+        })
+      } finally {
+        setIsAssignmentSubmitting(false)
+      }
+    })
   }
 
-const handleMarkComplete = async () => {
-  if (!user?._id || !courseId || !activeLesson || !requirementsMet) return
+  const handleMarkComplete = async () => {
+    if (!user?._id || !courseId || !activeLesson || !requirementsMet) return
 
-  startTransition(async () => {
-    const result = await updateEnrollmentProgressAction(user._id, courseId, {
-      newCompletedLessonId: activeLesson.id,
+    startTransition(async () => {
+      const result = await updateEnrollmentProgressAction(user._id, courseId, {
+        newCompletedLessonId: activeLesson.id,
+      })
+
+      if (result.success && result.data) {
+        setDbEnrollment(result.data)
+      }
     })
-
-    if (result.success && result.data) {
-      setDbEnrollment(result.data) 
-    }
-  })
-}
+  }
 
   if (isCoursesLoading || !course) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] text-white">
+      <div className="flex min-h-screen items-center justify-center bg-background text-foreground">
         <div className="animate-pulse font-mono text-xs tracking-widest text-neutral-400">
           INITIALIZING CLASSROOM...
         </div>
@@ -523,104 +629,86 @@ const handleMarkComplete = async () => {
             {/* QUIZ TAB */}
             {activeTab === 'quiz' && (
               <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-7 lg:p-10 shadow-sm">
+                {/* QUESTIONS */}
                 <div className="space-y-8">
-                  {/* HEADER: Score Preview */}
-                  {isQuizSubmitted && quizResult && (
-                    <div
-                      className={`p-4 rounded-2xl border ${
-                        quizResult.passed
-                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                          : 'bg-red-50 border-red-200 text-red-800'
-                      }`}
-                    >
-                      <p className="font-bold">
-                        {quizResult.passed
-                          ? `Passed! Score: ${quizResult.score}%`
-                          : `Score: ${quizResult.score}%. You need ${
-                              activeLesson?.quiz?.passingScore ||
-                              activeModule?.quiz?.passingScore
-                            }% to pass.`}
-                      </p>
-                    </div>
-                  )}
+                  {(activeLesson?.quiz || activeModule?.quiz)?.questions.map(
+                    (q, index) => {
+                      return (
+                        <div key={q.id} className="space-y-4">
+                          <h3 className="font-bold text-base lg:text-lg">
+                            {index + 1}. {q.question}
+                          </h3>
+                          <div className="grid gap-3">
+                            {q.options.map((option) => {
+                              const isSelected =
+                                selectedAnswers[q.id] === option
+                              const isCorrectAnswer = option === q.correctAnswer
 
-                  {/* QUESTIONS */}
-                  <div className="space-y-8">
-                    {(activeLesson?.quiz || activeModule?.quiz)?.questions.map(
-                      (q, index) => {
-                        return (
-                          <div key={q.id} className="space-y-4">
-                            <h3 className="font-bold text-base lg:text-lg">
-                              {index + 1}. {q.question}
-                            </h3>
-                            <div className="grid gap-3">
-                              {q.options.map((option) => {
-                                const isSelected =
-                                  selectedAnswers[q.id] === option
-                                const isCorrectAnswer =
-                                  option === q.correctAnswer
+                              // Visual Logic: Clear fallbacks
+                              let borderClass =
+                                'border-neutral-200 dark:border-neutral-800'
+                              let bgClass = 'bg-white dark:bg-neutral-900'
 
-                                // Visual Logic: Only highlight if submitted
-                                let borderClass =
-                                  'border-neutral-200 dark:border-neutral-800'
-                                let bgClass = 'bg-white dark:bg-neutral-900'
-
-                                if (isQuizSubmitted) {
-                                  if (isSelected && isCorrectAnswer) {
-                                    borderClass = 'border-emerald-500'
-                                    bgClass =
-                                      'bg-emerald-50 dark:bg-emerald-950/20'
-                                  } else if (isSelected && !isCorrectAnswer) {
-                                    borderClass = 'border-red-500'
-                                    bgClass = 'bg-red-50 dark:bg-red-950/20'
-                                  }
-                                } else if (isSelected) {
-                                  borderClass = 'border-blue-500'
-                                  bgClass = 'bg-blue-50 dark:bg-blue-950/20'
+                              if (isQuizSubmitted) {
+                                if (isCorrectAnswer) {
+                                  // Always paint the correct answer Green once submitted
+                                  borderClass = 'border-emerald-500'
+                                  bgClass =
+                                    'bg-emerald-50 dark:bg-emerald-950/20 text-emerald-900 dark:text-emerald-200'
+                                } else if (isSelected && !isCorrectAnswer) {
+                                  // If the user picked this option and it was wrong, paint it Red
+                                  borderClass = 'border-red-500'
+                                  bgClass =
+                                    'bg-red-50 dark:bg-red-950/20 text-red-900 dark:text-red-200'
                                 }
+                              } else if (isSelected) {
+                                // Pre-submission active state blue accent border
+                                borderClass = 'border-blue-500'
+                                bgClass = 'bg-blue-50 dark:bg-blue-950/20'
+                              }
 
-                                return (
-                                  <button
-                                    key={option}
-                                    disabled={
-                                      isQuizSubmitted && quizResult?.passed
-                                    }
-                                    onClick={() =>
-                                      handleAnswerSelect(q.id, option)
-                                    }
-                                    className={`flex items-center justify-between p-4 rounded-2xl border ${borderClass} ${bgClass} transition-all`}
-                                  >
-                                    <span className="text-sm">{option}</span>
-                                  </button>
-                                )
-                              })}
-                            </div>
+                              return (
+                                <button
+                                  key={option}
+                                  disabled={
+                                    isQuizSubmitted && quizResult?.passed
+                                  }
+                                  onClick={() =>
+                                    handleAnswerSelect(q.id, option)
+                                  }
+                                  className={`flex items-center justify-between p-4 rounded-2xl border ${borderClass} ${bgClass} transition-all`}
+                                >
+                                  <span className="text-sm">{option}</span>
+                                </button>
+                              )
+                            })}
                           </div>
-                        )
-                      },
-                    )}
-                  </div>
-
-                  {/* FOOTER ACTIONS */}
-                  {!quizResult?.passed && (
-                    <button
-                      onClick={() => {
-                        if (isQuizSubmitted) {
-                          // RETRY LOGIC: Resets state using store
-                          resetQuizState()
-                        } else {
-                          handleSubmitQuiz(
-                            (activeLesson?.quiz || activeModule?.quiz)!,
-                            !activeLesson,
-                          )
-                        }
-                      }}
-                      className="w-full sm:w-auto px-8 py-2.5 rounded-2xl bg-neutral-900 text-white font-black"
-                    >
-                      {isQuizSubmitted ? 'Try Again' : 'Submit Quiz'}
-                    </button>
+                        </div>
+                      )
+                    },
                   )}
                 </div>
+                {/* FOOTER ACTIONS */}
+                {(!quizResult?.passed || !quizResult) && (
+                  <button
+                    onClick={() => {
+                      if (isQuizSubmitted && !quizResult?.passed) {
+                        // RETRY LOGIC: Clears local Zustand state so they can pick options again
+                        resetQuizState()
+                      } else {
+                        handleSubmitQuiz(
+                          (activeLesson?.quiz || activeModule?.quiz)!,
+                          !activeLesson,
+                        )
+                      }
+                    }}
+                    className="w-full sm:w-auto px-8 py-2.5 mt-5 rounded-2xl bg-neutral-900 text-white dark:bg-white dark:text-black font-black transition-all active:scale-[0.98]"
+                  >
+                    {isQuizSubmitted && !quizResult?.passed
+                      ? 'Try Again'
+                      : 'Submit Quiz'}
+                  </button>
+                )}
               </div>
             )}
             {/* ASSIGNMENT TAB */}
@@ -640,8 +728,8 @@ const handleMarkComplete = async () => {
                     <input
                       type="url"
                       placeholder="https://github.com/..."
-                      value={assignmentUrl}
-                      onChange={(e) => setAssignmentUrl(e.target.value)}
+                      value={assignmentUrl} // Stays assignmentUrl (it's derived now!)
+                      onChange={(e) => setAssignmentInputBuffer(e.target.value)} // Changes buffer
                       disabled={isAssignmentSubmitting || assignmentSubmitted}
                       className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-5 py-4 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                     />

@@ -2,6 +2,19 @@
 
 import mongoose, { Document } from 'mongoose'
 
+export interface SerializedReview {
+  reviewerId: string
+  score: number
+  feedback: string
+}
+
+export interface SerializedAssignmentSubmission {
+  assignmentId: string
+  submissionUrl: string
+  status: 'pending_reviews' | 'passed' | 'failed'
+  reviewsReceived: SerializedReview[]
+  finalScore: number
+}
 
 export interface DbQuizAttempt {
   quizId: string
@@ -93,4 +106,8 @@ export interface UpdatePayload {
   newCompletedLessonId?: string
   newCompletedModuleId?: string
   quizAttempt?: QuizAttemptInput
+  assignmentSubmission?: {
+    assignmentId: string
+    url: string
+  }
 }
