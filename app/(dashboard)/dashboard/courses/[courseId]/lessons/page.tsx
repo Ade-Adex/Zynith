@@ -154,8 +154,6 @@ export default function CourseWorkspacePage() {
   }
 
   const handleLessonSelection = (lesson: Lesson, targetModule: Module) => {
-    // if (!checkIsLessonUnlocked(lesson.id, targetModule.id)) return
-
     setActiveLesson(lesson)
     setActiveModule(targetModule)
 
@@ -257,20 +255,19 @@ export default function CourseWorkspacePage() {
     }
   }
 
-  const handleMarkComplete = async () => {
-    if (!user?._id || !courseId || !activeLesson) return
+const handleMarkComplete = async () => {
+  if (!user?._id || !courseId || !activeLesson || !requirementsMet) return
 
-    startTransition(async () => {
-      const result = await updateEnrollmentProgressAction(user._id, courseId, {
-        newCompletedLessonId: activeLesson.id,
-      })
-
-      if (result.success && result.data) {
-        setDbEnrollment(result.data)
-        // Optional: Trigger a celebration or auto-advance to next lesson
-      }
+  startTransition(async () => {
+    const result = await updateEnrollmentProgressAction(user._id, courseId, {
+      newCompletedLessonId: activeLesson.id,
     })
-  }
+
+    if (result.success && result.data) {
+      setDbEnrollment(result.data) 
+    }
+  })
+}
 
   if (isCoursesLoading || !course) {
     return (
@@ -513,7 +510,7 @@ export default function CourseWorkspacePage() {
                   <div className="flex justify-end">
                     <button
                       onClick={handleMarkComplete}
-                      disabled={isPending}
+                      disabled={isPending || !requirementsMet}
                       className="w-full sm:w-auto px-8 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-sm! text-white font-black transition-all disabled:opacity-50 active:scale-[0.98]"
                     >
                       {isPending ? 'Updating...' : 'Mark Lesson Complete'}

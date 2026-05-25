@@ -308,7 +308,7 @@ export async function updateEnrollmentProgressAction(
 
     return {
       success: true,
-      data: serializeEnrollment(updatedEnrollment),
+      data: serializeEnrollment(updatedEnrollment as IDbEnrollment),
       message: 'Progress updated successfully.',
     }
   } catch (error) {
