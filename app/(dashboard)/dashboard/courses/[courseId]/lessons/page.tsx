@@ -702,7 +702,7 @@ export default function CourseWorkspacePage() {
                         )
                       }
                     }}
-                    className="w-full sm:w-auto px-8 py-2.5 mt-5 rounded-2xl bg-neutral-900 text-white dark:bg-white dark:text-black font-black transition-all active:scale-[0.98]"
+                    className={`w-full sm:w-auto px-8 py-2.5! text-sm! mt-5 rounded-2xl bg-neutral-900 text-white dark:bg-white dark:text-black font-black transition-all active:scale-[0.98] ${isQuizSubmitted && !quizResult?.passed ? 'hover:bg-neutral-700 dark:hover:bg-neutral-200 cursor-pointer' : 'hover:bg-neutral-700 dark:hover:bg-neutral-200 cursor-pointer'}`}
                   >
                     {isQuizSubmitted && !quizResult?.passed
                       ? 'Try Again'
@@ -737,7 +737,7 @@ export default function CourseWorkspacePage() {
                     <button
                       onClick={handleAssignmentSubmit}
                       disabled={isAssignmentSubmitting || assignmentSubmitted}
-                      className="w-full sm:w-auto px-8 py-2.5 rounded-2xl text-sm! bg-amber-500 hover:bg-amber-400 text-black font-black transition-all active:scale-[0.98] disabled:opacity-50"
+                      className={`w-full sm:w-auto px-8 py-2.5 rounded-2xl text-sm! bg-amber-500 hover:bg-amber-400 text-black font-black transition-all active:scale-[0.98] disabled:opacity-50 ${assignmentSubmitted ? 'cursor-default' : 'cursor-pointer'}`}
                     >
                       {isAssignmentSubmitting
                         ? 'Submitting Assignment...'
