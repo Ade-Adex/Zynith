@@ -2,35 +2,30 @@
 
 'use client'
 
-import React, { useState, useEffect, useTransition, useMemo } from 'react'
+import React, {
+  useState,
+  useEffect,
+  useTransition,
+  useMemo,
+  useRef,
+} from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import {
   getEnrollmentProgressAction,
   updateEnrollmentProgressAction,
-  SerializedEnrollment,
 } from '@/app/services/enrollmentActions'
 import { useAuthStore } from '@/app/store/authStore'
 import { useCourses } from '@/app/hooks/useCourses'
-import { Module, Lesson, Quiz, QuizQuestion } from '@/app/types'
+import { Module, Lesson, Quiz } from '@/app/types'
 import { Drawer, Progress } from '@mantine/core'
 import { BookOpen, CheckCircle2 } from 'lucide-react'
-
-interface ProgressUpdatePayload {
-  quizAttempt?: {
-    quizId: string
-    score: number
-    passed: boolean
-    answers: Array<{
-      questionId: string
-      selectedOption: string
-      isCorrect: boolean
-    }>
-  }
-  newCompletedModuleId?: string
-  newCompletedLessonId?: string
-  currentModuleId?: string
-  currentLessonId?: string
-}
+import { useQuizStore } from '@/app/store/quizStore'
+import {
+  QuizAttemptInput,
+  SerializedEnrollment,
+  UpdatePayload,
+} from '@/app/types/enrollment'
+import { Types } from 'mongoose'
 
 export default function CourseWorkspacePage() {
   const params = useParams()
@@ -38,6 +33,19 @@ export default function CourseWorkspacePage() {
 
   const { user } = useAuthStore()
   const { courses, loading: isCoursesLoading } = useCourses()
+
+  // Inside CourseWorkspacePage
+  const {
+    selectedAnswers,
+    quizResult,
+    setAnswer,
+    setQuizResult,
+    resetQuizState,
+    setSelectedAnswers,
+    setQuizSubmitted,
+  } = useQuizStore()
+
+  const isQuizSubmitted = !!quizResult
 
   const courseId = params.courseId as string
 
@@ -49,87 +57,88 @@ export default function CourseWorkspacePage() {
   const [dbEnrollment, setDbEnrollment] = useState<SerializedEnrollment | null>(
     null,
   )
-
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null)
   const [activeModule, setActiveModule] = useState<Module | null>(null)
-
   const [activeTab, setActiveTab] = useState<
     'content' | 'quiz' | 'assignment' | 'forum'
   >('content')
-
   const [contentTypeToggle, setContentTypeToggle] = useState<'video' | 'text'>(
     'video',
   )
-
-  const [selectedAnswers, setSelectedAnswers] = useState<
-    Record<string, string>
-  >({})
-
-  const [quizSubmitted, setQuizSubmitted] = useState(false)
-
-  const [quizResult, setQuizResult] = useState<{
-    score: number
-    passed: boolean
-  } | null>(null)
-
   const [assignmentUrl, setAssignmentUrl] = useState('')
   const [assignmentSubmitted, setAssignmentSubmitted] = useState(false)
-
-  // MOBILE SIDEBAR
   const [sidebarOpen, setSidebarOpen] = useState(false)
-
   const [isPending, startTransition] = useTransition()
-
   const [isAssignmentSubmitting, setIsAssignmentSubmitting] = useState(false)
 
+  const [videoEnded, setVideoEnded] = useState(false)
+  const [textRead, setTextRead] = useState(false)
+  const observerTarget = useRef(null)
+
+  // Tracking Text Read State
+  useEffect(() => {
+    if (activeLesson?.contentType !== 'text') return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) setTextRead(true)
+      },
+      { threshold: 1.0 },
+    )
+
+    if (observerTarget.current) observer.observe(observerTarget.current)
+    return () => observer.disconnect()
+  }, [activeLesson])
+
+  // Computed: Is the current lesson requirements met?
+  const requirementsMet = useMemo(() => {
+    const isVideoDone =
+      activeLesson?.contentType === 'video' ? videoEnded : true
+    const isTextDone = activeLesson?.contentType === 'text' ? textRead : true
+    const isQuizPassed = activeLesson?.quiz
+      ? (quizResult?.passed ?? false)
+      : true
+    const isAssignmentDone = activeModule?.assignment
+      ? assignmentSubmitted
+      : true
+
+    return isVideoDone && isTextDone && isQuizPassed && isAssignmentDone
+  }, [
+    videoEnded,
+    textRead,
+    quizResult,
+    assignmentSubmitted,
+    activeLesson,
+    activeModule,
+  ])
+
+  // 3. Update useEffect sync
   useEffect(() => {
     async function syncEnrollment() {
-      // if (!user?._id || !courseId || !course) return
       if (dbEnrollment || !user?._id || !courseId || !course) return
-
       try {
         const syncBlock = await getEnrollmentProgressAction(user._id, courseId)
-
         if (syncBlock.success && syncBlock.data) {
+          // No mapToSerialized needed, data is already serialized
           setDbEnrollment(syncBlock.data)
 
           const savedModId = syncBlock.data.currentModuleId
           const savedLesId = syncBlock.data.currentLessonId
-
           const initialModule =
             course.modules.find((m) => m.id === savedModId) || course.modules[0]
-
           const initialLesson =
             initialModule?.lessons.find((l) => l.id === savedLesId) ||
             initialModule?.lessons[0]
 
           setActiveModule(initialModule || null)
           setActiveLesson(initialLesson || null)
-
-          if (initialLesson) {
-            setContentTypeToggle(
-              initialLesson.contentType === 'text' ? 'text' : 'video',
-            )
-          }
         }
       } catch (err) {
         console.error('Workspace tracking sync fault:', err)
       }
     }
-
     syncEnrollment()
   }, [courseId, user?._id, dbEnrollment])
-
-  const flatLessonsList = useMemo(() => {
-    if (!course) return []
-
-    return course.modules.flatMap((m) =>
-      m.lessons.map((l) => ({
-        ...l,
-        moduleId: m.id,
-      })),
-    )
-  }, [course])
 
   const isModuleUnlocked = (moduleId: string) => {
     if (!course || !dbEnrollment) return false
@@ -142,20 +151,6 @@ export default function CourseWorkspacePage() {
     const previousModule = course.modules[currentModIndex - 1]
 
     return dbEnrollment.completedModules.includes(previousModule.id)
-  }
-
-  const checkIsLessonUnlocked = (lessonId: string, modId: string) => {
-    if (!course || !dbEnrollment) return false
-    if (course.type === 'Free') return true
-    if (!isModuleUnlocked(modId)) return false
-
-    const positionIndex = flatLessonsList.findIndex((l) => l.id === lessonId)
-
-    if (positionIndex === 0) return true
-
-    const previousLessonItem = flatLessonsList[positionIndex - 1]
-
-    return dbEnrollment.completedLessons.includes(previousLessonItem.id)
   }
 
   const handleLessonSelection = (lesson: Lesson, targetModule: Module) => {
@@ -190,49 +185,34 @@ export default function CourseWorkspacePage() {
   }
 
   const handleAnswerSelect = (questionId: string, option: string) => {
-    if (quizSubmitted && quizResult?.passed) return
+    // Use the new derived variable
+    if (isQuizSubmitted && quizResult?.passed) return
 
-    setSelectedAnswers((prev) => ({
-      ...prev,
-      [questionId]: option,
-    }))
+    setAnswer(questionId, option)
   }
 
   const handleSubmitQuiz = async (quiz: Quiz, isModuleLevel = false) => {
     if (!user?._id || !courseId) return
 
     let correctCount = 0
-
-    const itemizedAnswers = quiz.questions.slice(0, 3).map((q) => {
+    const itemizedAnswers = quiz.questions.map((q) => {
       const chosen = selectedAnswers[q.id] || ''
-
       const isCorrect =
         chosen.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()
-
       if (isCorrect) correctCount++
-
-      return {
-        questionId: q.id,
-        selectedOption: chosen,
-        isCorrect,
-      }
+      return { questionId: q.id, selectedOption: chosen, isCorrect }
     })
 
     const calculatedScore = Math.round(
-      (correctCount / Math.min(quiz.questions.length, 3)) * 100,
+      (correctCount / quiz.questions.length) * 100,
     )
-
     const passedStatus = calculatedScore >= quiz.passingScore
 
-    setQuizResult({
-      score: calculatedScore,
-      passed: passedStatus,
-    })
-
-    setQuizSubmitted(true)
+    // NEW: Update persistent store
+    setQuizResult({ score: calculatedScore, passed: passedStatus })
 
     startTransition(async () => {
-      const updatesPayload: ProgressUpdatePayload = {
+      const updatesPayload: UpdatePayload = {
         quizAttempt: {
           quizId: quiz.id,
           score: calculatedScore,
@@ -242,11 +222,10 @@ export default function CourseWorkspacePage() {
       }
 
       if (passedStatus) {
-        if (isModuleLevel && activeModule) {
+        if (isModuleLevel && activeModule)
           updatesPayload.newCompletedModuleId = activeModule.id
-        } else if (activeLesson) {
+        else if (activeLesson)
           updatesPayload.newCompletedLessonId = activeLesson.id
-        }
       }
 
       const syncResult = await updateEnrollmentProgressAction(
@@ -254,7 +233,6 @@ export default function CourseWorkspacePage() {
         courseId,
         updatesPayload,
       )
-
       if (syncResult.success && syncResult.data) {
         setDbEnrollment(syncResult.data)
       }
@@ -549,78 +527,105 @@ export default function CourseWorkspacePage() {
             {activeTab === 'quiz' && (
               <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-7 lg:p-10 shadow-sm">
                 <div className="space-y-8">
-                  <div>
-                    <h2 className="text-xl lg:text-2xl font-black tracking-tight">
-                      Assessment Quiz
-                    </h2>
+                  {/* HEADER: Score Preview */}
+                  {isQuizSubmitted && quizResult && (
+                    <div
+                      className={`p-4 rounded-2xl border ${
+                        quizResult.passed
+                          ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                          : 'bg-red-50 border-red-200 text-red-800'
+                      }`}
+                    >
+                      <p className="font-bold">
+                        {quizResult.passed
+                          ? `Passed! Score: ${quizResult.score}%`
+                          : `Score: ${quizResult.score}%. You need ${
+                              activeLesson?.quiz?.passingScore ||
+                              activeModule?.quiz?.passingScore
+                            }% to pass.`}
+                      </p>
+                    </div>
+                  )}
 
-                    <p className="mt-2 text-sm text-neutral-500">
-                      Complete the following quiz questions.
-                    </p>
-                  </div>
-
-                  {(() => {
-                    const targetQuiz = activeLesson
-                      ? activeLesson.quiz
-                      : activeModule?.quiz
-
-                    if (!targetQuiz) return null
-
-                    return (
-                      <div className="space-y-8">
-                        {targetQuiz.questions.slice(0, 3).map((q, index) => (
+                  {/* QUESTIONS */}
+                  <div className="space-y-8">
+                    {(activeLesson?.quiz || activeModule?.quiz)?.questions.map(
+                      (q, index) => {
+                        return (
                           <div key={q.id} className="space-y-4">
-                            <h3 className="font-bold text-base lg:text-lg leading-relaxed">
+                            <h3 className="font-bold text-base lg:text-lg">
                               {index + 1}. {q.question}
                             </h3>
-
                             <div className="grid gap-3">
                               {q.options.map((option) => {
                                 const isSelected =
                                   selectedAnswers[q.id] === option
+                                const isCorrectAnswer =
+                                  option === q.correctAnswer
+
+                                // Visual Logic: Only highlight if submitted
+                                let borderClass =
+                                  'border-neutral-200 dark:border-neutral-800'
+                                let bgClass = 'bg-white dark:bg-neutral-900'
+
+                                if (isQuizSubmitted) {
+                                  if (isSelected && isCorrectAnswer) {
+                                    borderClass = 'border-emerald-500'
+                                    bgClass =
+                                      'bg-emerald-50 dark:bg-emerald-950/20'
+                                  } else if (isSelected && !isCorrectAnswer) {
+                                    borderClass = 'border-red-500'
+                                    bgClass = 'bg-red-50 dark:bg-red-950/20'
+                                  }
+                                } else if (isSelected) {
+                                  borderClass = 'border-blue-500'
+                                  bgClass = 'bg-blue-50 dark:bg-blue-950/20'
+                                }
+
                                 return (
                                   <button
                                     key={option}
+                                    disabled={
+                                      isQuizSubmitted && quizResult?.passed
+                                    }
                                     onClick={() =>
                                       handleAnswerSelect(q.id, option)
                                     }
-                                    disabled={isPending || quizSubmitted} // Disable if submitting or already done
-                                    className={`flex items-center justify-between text-left p-4 rounded-2xl border transition-all ${
-                                      isSelected
-                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-                                        : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400'
-                                    } ${quizSubmitted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    className={`flex items-center justify-between p-4 rounded-2xl border ${borderClass} ${bgClass} transition-all`}
                                   >
-                                    <span className="text-sm font-medium">
-                                      {option}
-                                    </span>
-                                    {isSelected && (
-                                      <CheckCircle2 className="w-4 h-4 text-blue-500" />
-                                    )}
+                                    <span className="text-sm">{option}</span>
                                   </button>
                                 )
                               })}
                             </div>
                           </div>
-                        ))}
+                        )
+                      },
+                    )}
+                  </div>
 
-                        {/* Submit Button */}
-                        <button
-                          onClick={() =>
-                            handleSubmitQuiz(targetQuiz, !activeLesson)
-                          }
-                          disabled={isPending || quizSubmitted}
-                          className="w-full sm:w-auto px-8 py-2.5 rounded-2xl text-sm! bg-neutral-900 dark:bg-white text-white dark:text-black font-black transition-all active:scale-[0.98] disabled:opacity-50"
-                        >
-                          {isPending ? 'Submitting Quiz...' : 'Submit Quiz'}
-                        </button>
-                      </div>
-                    )
-                  })()}
+                  {/* FOOTER ACTIONS */}
+                  {!quizResult?.passed && (
+                    <button
+                      onClick={() => {
+                        if (isQuizSubmitted) {
+                          // RETRY LOGIC: Resets state using store
+                          resetQuizState()
+                        } else {
+                          handleSubmitQuiz(
+                            (activeLesson?.quiz || activeModule?.quiz)!,
+                            !activeLesson,
+                          )
+                        }
+                      }}
+                      className="w-full sm:w-auto px-8 py-2.5 rounded-2xl bg-neutral-900 text-white font-black"
+                    >
+                      {isQuizSubmitted ? 'Try Again' : 'Submit Quiz'}
+                    </button>
+                  )}
                 </div>
               </div>
             )}
-
             {/* ASSIGNMENT TAB */}
             {activeTab === 'assignment' && activeModule?.assignment && (
               <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-7 lg:p-10 shadow-sm">

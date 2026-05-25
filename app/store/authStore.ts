@@ -19,7 +19,9 @@ export interface UserData {
 interface AuthState {
   user: UserData | null
   isAuthenticated: boolean
-  authenticatedAt: number | null // Tracks exact login instance
+  hasHydrated: boolean // Add this flag
+  authenticatedAt: number | null
+  setHasHydrated: (val: boolean) => void // Add this setter
   login: (userData: UserData) => void
   logout: () => void
 }
@@ -29,14 +31,25 @@ export const useAuthStore = create<AuthState>()(
     (set) => ({
       user: null,
       isAuthenticated: false,
+      hasHydrated: false, // Default to false
       authenticatedAt: null,
+      setHasHydrated: (val) => set({ hasHydrated: val }),
       login: (userData) =>
-        set({ user: userData, isAuthenticated: true, authenticatedAt: Date.now() }),
-      logout: () => set({ user: null, isAuthenticated: false, authenticatedAt: null }),
+        set({
+          user: userData,
+          isAuthenticated: true,
+          authenticatedAt: Date.now(),
+        }),
+      logout: () =>
+        set({ user: null, isAuthenticated: false, authenticatedAt: null }),
     }),
     {
       name: 'zynith-auth-storage',
       storage: createJSONStorage(() => localStorage),
-    }
-  )
+      // This ensures we know when the store is fully loaded
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true)
+      },
+    },
+  ),
 )

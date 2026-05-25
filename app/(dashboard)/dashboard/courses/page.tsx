@@ -10,9 +10,9 @@ import { useCourses } from '@/app/hooks/useCourses'
 import { useAuthStore } from '@/app/store/authStore'
 import {
   getEnrollmentProgressAction,
-  SerializedEnrollment,
 } from '@/app/services/enrollmentActions'
 import { Course } from '@/app/types'
+import { SerializedEnrollment } from '@/app/types/enrollment'
 
 interface DashboardUserExtension {
   _id: string
