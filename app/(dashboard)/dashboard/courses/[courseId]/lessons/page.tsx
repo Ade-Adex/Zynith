@@ -12,6 +12,8 @@ import {
 import { useAuthStore } from '@/app/store/authStore'
 import { useCourses } from '@/app/hooks/useCourses'
 import { Module, Lesson, Quiz, QuizQuestion } from '@/app/types'
+import { Drawer, Progress } from '@mantine/core'
+import { BookOpen, CheckCircle2 } from 'lucide-react'
 
 interface ProgressUpdatePayload {
   quizAttempt?: {
@@ -44,8 +46,9 @@ export default function CourseWorkspacePage() {
     [courses, courseId],
   )
 
-  const [dbEnrollment, setDbEnrollment] =
-    useState<SerializedEnrollment | null>(null)
+  const [dbEnrollment, setDbEnrollment] = useState<SerializedEnrollment | null>(
+    null,
+  )
 
   const [activeLesson, setActiveLesson] = useState<Lesson | null>(null)
   const [activeModule, setActiveModule] = useState<Module | null>(null)
@@ -54,9 +57,9 @@ export default function CourseWorkspacePage() {
     'content' | 'quiz' | 'assignment' | 'forum'
   >('content')
 
-  const [contentTypeToggle, setContentTypeToggle] = useState<
-    'video' | 'text'
-  >('video')
+  const [contentTypeToggle, setContentTypeToggle] = useState<'video' | 'text'>(
+    'video',
+  )
 
   const [selectedAnswers, setSelectedAnswers] = useState<
     Record<string, string>
@@ -79,13 +82,11 @@ export default function CourseWorkspacePage() {
 
   useEffect(() => {
     async function syncEnrollment() {
-      if (!user?._id || !courseId || !course) return
+      // if (!user?._id || !courseId || !course) return
+      if (dbEnrollment || !user?._id || !courseId || !course) return
 
       try {
-        const syncBlock = await getEnrollmentProgressAction(
-          user._id,
-          courseId,
-        )
+        const syncBlock = await getEnrollmentProgressAction(user._id, courseId)
 
         if (syncBlock.success && syncBlock.data) {
           setDbEnrollment(syncBlock.data)
@@ -94,8 +95,7 @@ export default function CourseWorkspacePage() {
           const savedLesId = syncBlock.data.currentLessonId
 
           const initialModule =
-            course.modules.find((m) => m.id === savedModId) ||
-            course.modules[0]
+            course.modules.find((m) => m.id === savedModId) || course.modules[0]
 
           const initialLesson =
             initialModule?.lessons.find((l) => l.id === savedLesId) ||
@@ -116,7 +116,7 @@ export default function CourseWorkspacePage() {
     }
 
     syncEnrollment()
-  }, [courseId, user?._id, course])
+  }, [courseId, user?._id, dbEnrollment])
 
   const flatLessonsList = useMemo(() => {
     if (!course) return []
@@ -133,9 +133,7 @@ export default function CourseWorkspacePage() {
     if (!course || !dbEnrollment) return false
     if (course.type === 'Free') return true
 
-    const currentModIndex = course.modules.findIndex(
-      (m) => m.id === moduleId,
-    )
+    const currentModIndex = course.modules.findIndex((m) => m.id === moduleId)
 
     if (currentModIndex === 0) return true
 
@@ -149,9 +147,7 @@ export default function CourseWorkspacePage() {
     if (course.type === 'Free') return true
     if (!isModuleUnlocked(modId)) return false
 
-    const positionIndex = flatLessonsList.findIndex(
-      (l) => l.id === lessonId,
-    )
+    const positionIndex = flatLessonsList.findIndex((l) => l.id === lessonId)
 
     if (positionIndex === 0) return true
 
@@ -160,10 +156,7 @@ export default function CourseWorkspacePage() {
     return dbEnrollment.completedLessons.includes(previousLessonItem.id)
   }
 
-  const handleLessonSelection = (
-    lesson: Lesson,
-    targetModule: Module,
-  ) => {
+  const handleLessonSelection = (lesson: Lesson, targetModule: Module) => {
     if (!checkIsLessonUnlocked(lesson.id, targetModule.id)) return
 
     setActiveLesson(lesson)
@@ -175,9 +168,7 @@ export default function CourseWorkspacePage() {
 
     setActiveTab('content')
 
-    setContentTypeToggle(
-      lesson.contentType === 'text' ? 'text' : 'video',
-    )
+    setContentTypeToggle(lesson.contentType === 'text' ? 'text' : 'video')
 
     // CLOSE SIDEBAR MOBILE
     setSidebarOpen(false)
@@ -185,14 +176,10 @@ export default function CourseWorkspacePage() {
     if (!user?._id || !courseId) return
 
     startTransition(async () => {
-      const update = await updateEnrollmentProgressAction(
-        user._id,
-        courseId,
-        {
-          currentModuleId: targetModule.id,
-          currentLessonId: lesson.id,
-        },
-      )
+      const update = await updateEnrollmentProgressAction(user._id, courseId, {
+        currentModuleId: targetModule.id,
+        currentLessonId: lesson.id,
+      })
 
       if (update.success && update.data) {
         setDbEnrollment(update.data)
@@ -200,10 +187,7 @@ export default function CourseWorkspacePage() {
     })
   }
 
-  const handleAnswerSelect = (
-    questionId: string,
-    option: string,
-  ) => {
+  const handleAnswerSelect = (questionId: string, option: string) => {
     if (quizSubmitted && quizResult?.passed) return
 
     setSelectedAnswers((prev) => ({
@@ -212,10 +196,7 @@ export default function CourseWorkspacePage() {
     }))
   }
 
-  const handleSubmitQuiz = async (
-    quiz: Quiz,
-    isModuleLevel = false,
-  ) => {
+  const handleSubmitQuiz = async (quiz: Quiz, isModuleLevel = false) => {
     if (!user?._id || !courseId) return
 
     let correctCount = 0
@@ -224,8 +205,7 @@ export default function CourseWorkspacePage() {
       const chosen = selectedAnswers[q.id] || ''
 
       const isCorrect =
-        chosen.trim().toLowerCase() ===
-        q.correctAnswer.trim().toLowerCase()
+        chosen.trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()
 
       if (isCorrect) correctCount++
 
@@ -240,8 +220,7 @@ export default function CourseWorkspacePage() {
       (correctCount / Math.min(quiz.questions.length, 3)) * 100,
     )
 
-    const passedStatus =
-      calculatedScore >= quiz.passingScore
+    const passedStatus = calculatedScore >= quiz.passingScore
 
     setQuizResult({
       score: calculatedScore,
@@ -262,23 +241,35 @@ export default function CourseWorkspacePage() {
 
       if (passedStatus) {
         if (isModuleLevel && activeModule) {
-          updatesPayload.newCompletedModuleId =
-            activeModule.id
+          updatesPayload.newCompletedModuleId = activeModule.id
         } else if (activeLesson) {
-          updatesPayload.newCompletedLessonId =
-            activeLesson.id
+          updatesPayload.newCompletedLessonId = activeLesson.id
         }
       }
 
-      const syncResult =
-        await updateEnrollmentProgressAction(
-          user._id,
-          courseId,
-          updatesPayload,
-        )
+      const syncResult = await updateEnrollmentProgressAction(
+        user._id,
+        courseId,
+        updatesPayload,
+      )
 
       if (syncResult.success && syncResult.data) {
         setDbEnrollment(syncResult.data)
+      }
+    })
+  }
+
+  const handleMarkComplete = async () => {
+    if (!user?._id || !courseId || !activeLesson) return
+
+    startTransition(async () => {
+      const result = await updateEnrollmentProgressAction(user._id, courseId, {
+        newCompletedLessonId: activeLesson.id,
+      })
+
+      if (result.success && result.data) {
+        setDbEnrollment(result.data)
+        // Optional: Trigger a celebration or auto-advance to next lesson
       }
     })
   }
@@ -294,281 +285,186 @@ export default function CourseWorkspacePage() {
   }
 
   return (
-    <div className="flex h-dvh w-full overflow-hidden bg-background relative">
-      {/* MOBILE OVERLAY */}
-      {sidebarOpen && (
-        <div
-          onClick={() => setSidebarOpen(false)}
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-        />
-      )}
+    <div className="flex flex-col h-[calc(100dvh-70px)] overflow-hidden bg-background text-foreground">
+      {/* DRAWER */}
+      <Drawer
+        opened={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        title={
+          <div className="flex flex-col px-5 py-3">
+            <span className="text-[10px] uppercase tracking-[0.25em] text-neutral-400 font-black">
+              Course Outline
+            </span>
 
-      {/* SIDEBAR */}
-      <aside
-        className={`
-          fixed lg:relative z-50 lg:z-auto
-          top-0 left-0 h-full
-          w-[85%] max-w-[320px]
-          lg:w-80
-          border-r border-neutral-200 dark:border-neutral-800
-          bg-background
-          flex flex-col flex-shrink-0
-          transition-transform duration-300
-          ${
-            sidebarOpen
-              ? 'translate-x-0'
-              : '-translate-x-full'
-          }
-          lg:translate-x-0
-        `}
+            <span className="text-sm font-black line-clamp-2 mt-2">
+              {course.title}
+            </span>
+          </div>
+        }
+        padding={0}
+        size={340}
+        overlayProps={{
+          backgroundOpacity: 0.55,
+          blur: 4,
+        }}
+        classNames={{
+          content:
+            'bg-white dark:bg-[#0a0a0a] border-r border-neutral-200 dark:border-neutral-800',
+          header:
+            'border-b border-neutral-200 dark:border-neutral-800 px-5 py-4',
+          body: 'p-0 h-full',
+        }}
       >
-        <div className="py-8 border-b border-neutral-200 dark:border-neutral-800">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <span className="text-[10px] uppercase font-mono tracking-wider px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-500">
-                {course.level} Workspace
+        <div className="h-full flex flex-col overflow-hidden">
+          {/* PROGRESS */}
+          <div className="px-5 py-4 border-b border-neutral-200 dark:border-neutral-800">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-[11px] font-black uppercase tracking-widest text-neutral-400">
+                Progress
               </span>
 
-              <h2 className="text-sm font-bold mt-2 tracking-tight line-clamp-2">
-                {course.title}
-              </h2>
+              <span className="text-xs font-black text-blue-600">
+                {dbEnrollment?.progressPercentage || 0}%
+              </span>
             </div>
 
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="lg:hidden p-2 rounded-lg hover:bg-neutral-200 dark:hover:bg-neutral-800"
-            >
-              ✕
-            </button>
-          </div>
-
-          <div className="mt-4 w-[93%] bg-neutral-200 dark:bg-neutral-800 h-1 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-emerald-500 transition-all duration-500"
-              style={{
-                width: `${
-                  dbEnrollment?.progressPercentage || 0
-                }%`,
-              }}
+            <Progress
+              value={dbEnrollment?.progressPercentage || 0}
+              radius="xl"
+              size="md"
             />
           </div>
 
-          <div className="flex justify-between text-[10px] pr-5 mt-1.5 font-mono text-neutral-400">
-            <span>Course Progress</span>
-            <span className="">
-              {dbEnrollment?.progressPercentage || 0}%
-            </span>
+          {/* MODULES */}
+          <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+            {course.modules.map((mod) => {
+              const modUnlocked = isModuleUnlocked(mod.id)
+
+              return (
+                <div
+                  key={mod.id}
+                  className={`${!modUnlocked ? 'opacity-50' : ''}`}
+                >
+                  <div className="px-2 mb-2">
+                    <h3 className="text-[10px] font-black uppercase tracking-[0.2em] text-neutral-400">
+                      {mod.title}
+                    </h3>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {mod.lessons.map((les) => {
+                      const isUnlocked = checkIsLessonUnlocked(les.id, mod.id)
+
+                      const isCurrent = activeLesson?.id === les.id
+
+                      const isFinished =
+                        dbEnrollment?.completedLessons.includes(les.id)
+
+                      return (
+                        <button
+                          key={les.id}
+                          disabled={!isUnlocked}
+                          onClick={() => {
+                            handleLessonSelection(les, mod)
+                            setSidebarOpen(false)
+                          }}
+                          className={`w-full text-left rounded-2xl p-3 transition-all duration-200 border ${
+                            isCurrent
+                              ? 'bg-blue-100 dark:bg-blue-950/20 border-blue-200 dark:border-blue-900'
+                              : 'border-transparent hover:border-neutral-200 dark:hover:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-900'
+                          }`}
+                        >
+                          <div className="flex gap-3 items-start">
+                            <div className="mt-0.5 shrink-0">
+                              {isFinished ? (
+                                <CheckCircle2 className="w-4 h-4 text-emerald-500 fill-emerald-500" />
+                              ) : (
+                                <div className="w-4 h-4 rounded-full border border-neutral-400 dark:border-neutral-700" />
+                              )}
+                            </div>
+
+                            <div className="min-w-0 flex-1">
+                              <p className="text-sm font-semibold line-clamp-2">
+                                {les.title}
+                              </p>
+
+                              <span className="block mt-1 text-[10px] font-black uppercase tracking-wider text-neutral-400">
+                                {les.contentType} • {les.duration}
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </Drawer>
+
+      {/* WORKSPACE HEADER */}
+      <header className="sticky top-0 z-30 border-b border-neutral-200 dark:border-neutral-800 bg-white/80 dark:bg-[#0a0a0a]/80 backdrop-blur-xl">
+        <div className="flex items-center justify-between gap-4 px-0 lg:px-8 py-4">
+          {/* TITLE */}
+          <div className="min-w-0">
+            <p className="text-[10px] uppercase tracking-[0.25em] text-neutral-400 font-black truncate">
+              {activeModule?.title || 'Course Workspace'}
+            </p>
+
+            <h1 className="text-base sm:text-lg lg:text-2xl font-black tracking-tight truncate">
+              {activeLesson?.title || 'Learning Workspace'}
+            </h1>
+          </div>
+
+          {/* ACTIONS */}
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-neutral-50 dark:hover:bg-neutral-900 transition-all cursor-pointer"
+            >
+              <BookOpen className="w-4 h-4" />
+
+              <span className="text-sm font-bold hidden sm:block">Lessons</span>
+            </button>
           </div>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-2 space-y-4">
-          {course.modules.map((mod) => {
-            const modUnlocked = isModuleUnlocked(mod.id)
-
-            return (
-              <div
-                key={mod.id}
-                className={`space-y-1 ${
-                  !modUnlocked ? 'opacity-50' : ''
-                }`}
-              >
-                <div className="px-2 py-1 flex items-center justify-between gap-2">
-                  <h3 className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 font-mono truncate">
-                    {mod.title}
-                  </h3>
-                </div>
-
-                <div className="space-y-1">
-                  {mod.lessons.map((les) => {
-                    const isUnlocked =
-                      checkIsLessonUnlocked(
-                        les.id,
-                        mod.id,
-                      )
-
-                    const isCurrent =
-                      activeLesson?.id === les.id
-
-                    const isFinished =
-                      dbEnrollment?.completedLessons.includes(
-                        les.id,
-                      )
-
-                    return (
-                      <button
-                        key={les.id}
-                        disabled={!isUnlocked}
-                        onClick={() =>
-                          handleLessonSelection(les, mod)
-                        }
-                        className={`w-full text-left px-3 py-3 rounded-xl flex items-start gap-3 transition-all ${
-                          isCurrent
-                            ? 'bg-neutral-200 dark:bg-surface font-medium'
-                            : isUnlocked
-                              ? 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-900'
-                              : 'cursor-not-allowed'
-                        }`}
-                      >
-                        <span className="mt-1 flex-shrink-0">
-                          {isFinished ? (
-                            <svg
-                              className="w-4 h-4 text-emerald-500"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={3}
-                                d="M5 13l4 4L19 7"
-                              />
-                            </svg>
-                          ) : (
-                            <div className="w-4 h-4 rounded-full border border-neutral-400 dark:border-neutral-600" />
-                          )}
-                        </span>
-
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs sm:text-sm truncate">
-                            {les.title}
-                          </p>
-
-                          <span className="text-[10px] font-mono opacity-50 block mt-1">
-                            {les.contentType.toUpperCase()} •{' '}
-                            {les.duration}
-                          </span>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-            )
-          })}
-        </nav>
-      </aside>
-
-      {/* MAIN */}
-      <main className="flex-1 flex flex-col h-full overflow-hidden min-w-0">
-        {/* HEADER */}
-        <header className="px-3 sm:px-4 lg:px-6 border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between gap-3 min-h-16 flex-shrink-0 bg-white dark:bg-[#0a0a0a]">
-          <div className="flex items-center gap-3 min-w-0">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg border border-neutral-200 dark:border-neutral-800"
-            >
-              <svg
-                className="w-5 h-5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            </button>
-
-            <div className="min-w-0">
-              <span className="text-[10px] font-mono tracking-widest uppercase opacity-40 line-clamp-1">
-                {activeModule?.title ||
-                  'Capstone Assessment'}
-              </span>
-
-              <h1 className="text-sm sm:text-base font-bold truncate">
-                {activeLesson
-                  ? activeLesson.title
-                  : 'Module Capstone System Verification'}
-              </h1>
-            </div>
-          </div>
-
-          {/* DESKTOP TABS */}
-          <div className="hidden md:flex items-center gap-2">
-            <div className="flex flex-wrap gap-1 bg-neutral-100 dark:bg-neutral-900 p-1 rounded-xl font-mono text-[11px]">
-              <button
-                onClick={() => setActiveTab('content')}
-                disabled={!activeLesson}
-                className={`px-3 py-2 rounded-lg transition-all ${
-                  activeTab === 'content'
-                    ? 'bg-white dark:bg-neutral-800 shadow-sm font-bold'
-                    : 'opacity-60'
-                }`}
-              >
-                Lesson
-              </button>
-
-              {(activeLesson?.quiz ||
-                (!activeLesson &&
-                  activeModule?.quiz)) && (
-                <button
-                  onClick={() => setActiveTab('quiz')}
-                  className={`px-3 py-2 rounded-lg transition-all ${
-                    activeTab === 'quiz'
-                      ? 'bg-white dark:bg-neutral-800 shadow-sm font-bold'
-                      : 'opacity-60'
-                  }`}
-                >
-                  Quiz
-                </button>
-              )}
-
-              {activeModule?.assignment && (
-                <button
-                  onClick={() =>
-                    setActiveTab('assignment')
-                  }
-                  className={`px-3 py-2 rounded-lg transition-all ${
-                    activeTab === 'assignment'
-                      ? 'bg-white dark:bg-neutral-800 shadow-sm font-bold'
-                      : 'opacity-60'
-                  }`}
-                >
-                  Assignment
-                </button>
-              )}
-            </div>
-          </div>
-        </header>
-
-        {/* MOBILE TABS */}
-        <div className="md:hidden border-b border-neutral-200 dark:border-neutral-800 p-2 overflow-x-auto">
-          <div className="flex gap-2 min-w-max">
+        {/* TABS */}
+        <div className="px-0 lg:px-8 pb-4">
+          <div className="flex gap-2 overflow-x-auto scrollbar-none">
             <button
               onClick={() => setActiveTab('content')}
-              className={`px-3 py-2 rounded-lg text-xs font-mono whitespace-nowrap ${
+              className={`px-5 py-2 rounded-2xl text-sm! font-bold whitespace-nowrap transition-all cursor-pointer ${
                 activeTab === 'content'
                   ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
-                  : 'bg-neutral-100 dark:bg-neutral-900'
+                  : 'bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800'
               }`}
             >
               Lesson
             </button>
 
-            <button
-              onClick={() => setActiveTab('quiz')}
-              className={`px-3 py-2 rounded-lg text-xs font-mono whitespace-nowrap ${
-                activeTab === 'quiz'
-                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
-                  : 'bg-neutral-100 dark:bg-neutral-900'
-              }`}
-            >
-              Quiz
-            </button>
+            {(activeLesson?.quiz || (!activeLesson && activeModule?.quiz)) && (
+              <button
+                onClick={() => setActiveTab('quiz')}
+                className={`px-5 py-2 rounded-2xl text-sm! font-bold whitespace-nowrap transition-all cursor-pointer ${
+                  activeTab === 'quiz'
+                    ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
+                    : 'bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800'
+                }`}
+              >
+                Quiz
+              </button>
+            )}
 
             {activeModule?.assignment && (
               <button
-                onClick={() =>
-                  setActiveTab('assignment')
-                }
-                className={`px-3 py-2 rounded-lg text-xs font-mono whitespace-nowrap ${
+                onClick={() => setActiveTab('assignment')}
+                className={`px-5 py-2 rounded-2xl text-sm! font-bold whitespace-nowrap transition-all cursor-pointer ${
                   activeTab === 'assignment'
                     ? 'bg-neutral-900 text-white dark:bg-white dark:text-black'
-                    : 'bg-neutral-100 dark:bg-neutral-900'
+                    : 'bg-neutral-100 dark:bg-neutral-900 hover:bg-neutral-200 dark:hover:bg-neutral-800'
                 }`}
               >
                 Assignment
@@ -576,136 +472,158 @@ export default function CourseWorkspacePage() {
             )}
           </div>
         </div>
+      </header>
 
-        {/* CONTENT */}
-        <div className="flex-1 overflow-y-auto px-3 py-4 sm:px-5 sm:py-5 lg:p-6 bg-white dark:bg-[#0a0a0a]">
-          <div className="w-full max-w-4xl mx-auto space-y-4 sm:space-y-6">
-            {/* CONTENT */}
-            {activeTab === 'content' &&
-              activeLesson && (
-                <div className="space-y-4 sm:space-y-6">
-                  {activeLesson.videoUrl && (
-                    <div className="aspect-video w-full rounded-xl overflow-hidden bg-black border border-neutral-200 dark:border-neutral-800">
-                      <iframe
-                        src={activeLesson.videoUrl}
-                        className="w-full h-full"
-                        allowFullScreen
-                      />
+      {/* BODY */}
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto">
+          <div className="max-w-5xl mx-auto py-5 lg:py-8">
+            {/* CONTENT TAB */}
+            {activeTab === 'content' && activeLesson && (
+              <div className="space-y-6 lg:space-y-8">
+                {/* VIDEO */}
+                {activeLesson.videoUrl && (
+                  <div className="overflow-hidden rounded-3xl border border-neutral-200 dark:border-neutral-800 bg-neutral-950 shadow-2xl">
+                    <div className="aspect-video w-full">
+                      {activeLesson.videoUrl.endsWith('.mp4') ||
+                      activeLesson.videoUrl.endsWith('.webm') ? (
+                        <video
+                          src={activeLesson.videoUrl}
+                          controls
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <iframe
+                          src={activeLesson.videoUrl}
+                          className="w-full h-full"
+                          allowFullScreen
+                        />
+                      )}
                     </div>
-                  )}
+                  </div>
+                )}
 
-                  <article className="prose prose-sm sm:prose-base dark:prose-invert max-w-none">
-                    {activeLesson.markdownBody ||
-                      activeLesson.summary}
+                {/* LESSON CONTENT */}
+                <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-7 lg:p-10 shadow-sm">
+                  <article className="prose prose-sm sm:prose-base lg:prose-lg dark:prose-invert max-w-none">
+                    {activeLesson.markdownBody || activeLesson.summary}
                   </article>
                 </div>
-              )}
 
-            {/* QUIZ */}
+                {/* COMPLETE BUTTON */}
+                {!dbEnrollment?.completedLessons.includes(activeLesson.id) && (
+                  <div className="flex justify-end">
+                    <button
+                      onClick={handleMarkComplete}
+                      disabled={isPending}
+                      className="w-full sm:w-auto px-8 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-sm! text-white font-black transition-all disabled:opacity-50 active:scale-[0.98]"
+                    >
+                      {isPending ? 'Updating...' : 'Mark Lesson Complete'}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* QUIZ TAB */}
             {activeTab === 'quiz' && (
-              <div className="space-y-6 bg-neutral-50 dark:bg-[#0d0d0d] p-4 sm:p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800">
-                <h3 className="text-base sm:text-lg font-bold">
-                  Assessment Quiz
-                </h3>
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-7 lg:p-10 shadow-sm">
+                <div className="space-y-8">
+                  <div>
+                    <h2 className="text-xl lg:text-2xl font-black tracking-tight">
+                      Assessment Quiz
+                    </h2>
 
-                {(() => {
-                  const targetQuiz = activeLesson
-                    ? activeLesson.quiz
-                    : activeModule?.quiz
+                    <p className="mt-2 text-sm text-neutral-500">
+                      Complete the following quiz questions.
+                    </p>
+                  </div>
 
-                  if (!targetQuiz) return null
+                  {(() => {
+                    const targetQuiz = activeLesson
+                      ? activeLesson.quiz
+                      : activeModule?.quiz
 
-                  return (
-                    <div className="space-y-5">
-                      {targetQuiz.questions
-                        .slice(0, 3)
-                        .map((q, index) => (
-                          <div
-                            key={q.id}
-                            className="space-y-3"
-                          >
-                            <p className="font-medium text-sm sm:text-base">
+                    if (!targetQuiz) return null
+
+                    return (
+                      <div className="space-y-8">
+                        {targetQuiz.questions.slice(0, 3).map((q, index) => (
+                          <div key={q.id} className="space-y-4">
+                            <h3 className="font-bold text-base lg:text-lg leading-relaxed">
                               {index + 1}. {q.question}
-                            </p>
+                            </h3>
 
-                            <div className="grid gap-2">
+                            <div className="grid gap-3">
                               {q.options.map((option) => (
                                 <button
                                   key={option}
                                   onClick={() =>
-                                    handleAnswerSelect(
-                                      q.id,
-                                      option,
-                                    )
+                                    handleAnswerSelect(q.id, option)
                                   }
-                                  className={`text-left px-4 py-3 rounded-xl border text-sm transition-all ${
-                                    selectedAnswers[q.id] ===
-                                    option
-                                      ? 'border-neutral-900 dark:border-white bg-neutral-100 dark:bg-neutral-800'
-                                      : 'border-neutral-200 dark:border-neutral-700'
+                                  className={`text-left p-4 rounded-2xl border transition-all ${
+                                    selectedAnswers[q.id] === option
+                                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                                      : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400'
                                   }`}
                                 >
-                                  {option}
+                                  <span className="text-sm font-medium">
+                                    {option}
+                                  </span>
                                 </button>
                               ))}
                             </div>
                           </div>
                         ))}
 
-                      <button
-                        onClick={() =>
-                          handleSubmitQuiz(
-                            targetQuiz,
-                            !activeLesson,
-                          )
-                        }
-                        className="w-full sm:w-auto px-5 py-3 rounded-xl bg-neutral-900 dark:bg-white text-white dark:text-black font-medium"
-                      >
-                        Submit Quiz
-                      </button>
-                    </div>
-                  )
-                })()}
+                        <button
+                          onClick={() =>
+                            handleSubmitQuiz(targetQuiz, !activeLesson)
+                          }
+                          className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-neutral-900 dark:bg-white text-white dark:text-black font-black transition-all active:scale-[0.98]"
+                        >
+                          Submit Quiz
+                        </button>
+                      </div>
+                    )
+                  })()}
+                </div>
               </div>
             )}
 
-            {/* ASSIGNMENT */}
-            {activeTab === 'assignment' &&
-              activeModule?.assignment && (
-                <div className="space-y-6 bg-neutral-50 dark:bg-[#0d0d0d] p-4 sm:p-6 rounded-2xl border border-neutral-200 dark:border-neutral-800">
-                  <h3 className="text-base sm:text-lg font-bold">
-                    {activeModule.assignment.title}
-                  </h3>
+            {/* ASSIGNMENT TAB */}
+            {activeTab === 'assignment' && activeModule?.assignment && (
+              <div className="bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-5 sm:p-7 lg:p-10 shadow-sm">
+                <div className="space-y-8">
+                  <div>
+                    <h2 className="text-xl lg:text-2xl font-black tracking-tight">
+                      {activeModule.assignment.title}
+                    </h2>
 
-                  <p className="text-sm leading-relaxed text-neutral-600 dark:text-neutral-300">
-                    {
-                      activeModule.assignment
-                        .problemStatement
-                    }
-                  </p>
+                    <p className="mt-4 text-sm sm:text-base leading-relaxed text-neutral-600 dark:text-neutral-300">
+                      {activeModule.assignment.problemStatement}
+                    </p>
+                  </div>
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <input
                       type="url"
                       placeholder="https://github.com/..."
                       value={assignmentUrl}
-                      onChange={(e) =>
-                        setAssignmentUrl(
-                          e.target.value,
-                        )
-                      }
-                      className="w-full rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-3 text-sm outline-none"
+                      onChange={(e) => setAssignmentUrl(e.target.value)}
+                      className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-5 py-4 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                     />
 
-                    <button className="w-full sm:w-auto px-5 py-3 rounded-xl bg-amber-500 text-black font-medium">
+                    <button className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black transition-all active:scale-[0.98]">
                       Submit Assignment
                     </button>
                   </div>
                 </div>
-              )}
+              </div>
+            )}
           </div>
         </div>
-      </main>
+      </div>
     </div>
   )
 }

@@ -6,7 +6,7 @@ import connectDB from '@/app/lib/db'
 import { EnrollmentModel, IEnrollment } from '@/app/models/Enrollment'
 import { CourseModel } from '@/app/models/Course'
 import { Module } from '@/app/types'
-import mongoose, { UpdateQuery } from 'mongoose'
+import mongoose, { UpdateQuery, Types } from 'mongoose'
 
 export type EnrollmentActionResult = {
   success: boolean
@@ -227,9 +227,143 @@ export async function getEnrollmentProgressAction(
   }
 }
 
-/**
- * Atomic persistence handler for progression updates, navigation states, and quiz attempts.
- */
+// export async function updateEnrollmentProgressAction(
+//   userId: string,
+//   courseId: string,
+//   updates: {
+//     currentModuleId?: string
+//     currentLessonId?: string
+//     newCompletedLessonId?: string
+//     newCompletedModuleId?: string
+//     quizAttempt?: {
+//       quizId: string
+//       score: number
+//       passed: boolean
+//       answers: Array<{
+//         questionId: string
+//         selectedOption: string
+//         isCorrect: boolean
+//       }>
+//     }
+//   },
+// ): Promise<{
+//   success: boolean
+//   data: SerializedEnrollment | null
+//   message: string
+// }> {
+//   if (!userId || !courseId) {
+//     return { success: false, data: null, message: 'Missing validation params.' }
+//   }
+
+//   try {
+//     await connectDB()
+
+//     const userObjectId = new Types.ObjectId(userId)
+//     const courseObjectId = new Types.ObjectId(courseId)
+
+//     // 1. Properly Typed Update Fields (Using Partial<IEnrollment>)
+//     const updateFields: Partial<IEnrollment> = { lastAccessedAt: new Date() }
+//     if (updates.currentModuleId) updateFields.currentModuleId = updates.currentModuleId
+//     if (updates.currentLessonId) updateFields.currentLessonId = updates.currentLessonId
+
+//     const updateQuery: UpdateQuery<IEnrollment> = { $set: updateFields }
+
+//     // 2. Properly Typed Array Operators (Using Record<string, string>)
+//     const arrayOperators: Record<string, string> = {}
+//     if (updates.newCompletedLessonId) arrayOperators.completedLessons = updates.newCompletedLessonId
+//     if (updates.newCompletedModuleId) arrayOperators.completedModules = updates.newCompletedModuleId
+
+//     if (Object.keys(arrayOperators).length > 0) {
+//       updateQuery.$addToSet = arrayOperators
+//     }
+
+//     if (updates.quizAttempt) {
+//       updateQuery.$push = {
+//         quizAttempts: { ...updates.quizAttempt, attemptedAt: new Date() },
+//       }
+//     }
+
+//     // 3. Update & Retrieve
+//     const enrollment = await EnrollmentModel.findOneAndUpdate(
+//       { userId: userObjectId, courseId: courseObjectId },
+//       updateQuery,
+//       { new: true }
+//     )
+
+//     if (!enrollment) return { success: false, data: null, message: 'Enrollment missing.' }
+
+//     // 4. Calculate Progression
+//     const course = await CourseModel.findById(courseObjectId).lean<{ modules: Module[] }>()
+//     if (course && course.modules) {
+//       const totalLessons = course.modules.reduce((acc: number, m: Module) => acc + (m.lessons?.length || 0), 0)
+//       const completedCount = enrollment.completedLessons?.length || 0
+
+//       const newPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0
+
+//       enrollment.progressPercentage = newPercentage
+//       await enrollment.save()
+//     }
+
+//     // 5. Construct Serialized Data Manually (No "as" cast)
+//     const serializedData: SerializedEnrollment = {
+//       _id: enrollment._id.toString(),
+//       userId: enrollment.userId.toString(),
+//       courseId: enrollment.courseId.toString(),
+//       status: enrollment.status,
+//       progressPercentage: enrollment.progressPercentage ?? 0,
+//       currentModuleId: enrollment.currentModuleId || '',
+//       currentLessonId: enrollment.currentLessonId || '',
+//       completedLessons: enrollment.completedLessons || [],
+//       completedModules: enrollment.completedModules || [],
+
+//       // Explicitly map nested arrays to fix the "Types are incompatible" error
+//       quizAttempts: (enrollment.quizAttempts || []).map((q) => ({
+//         quizId: q.quizId,
+//         score: q.score,
+//         passed: q.passed,
+//         answers: q.answers,
+//         attemptedAt:
+//           q.attemptedAt instanceof Date
+//             ? q.attemptedAt.toISOString()
+//             : new Date(q.attemptedAt).toISOString(),
+//       })),
+
+//       assignmentSubmissions: (enrollment.assignmentSubmissions || []).map(
+//         (sub) => ({
+//           assignmentId: sub.assignmentId,
+//           submissionUrl: sub.submissionUrl,
+//           status: sub.status,
+//           // Fix: Explicitly map the inner array to convert ObjectId to string
+//           reviewsReceived: (sub.reviewsReceived || []).map((review) => ({
+//             reviewerId: review.reviewerId.toString(),
+//             score: review.score,
+//             feedback: review.feedback,
+//           })),
+//           finalScore: sub.finalScore,
+//         }),
+//       ),
+
+//       enrolledAt:
+//         enrollment.enrolledAt instanceof Date
+//           ? enrollment.enrolledAt.toISOString()
+//           : null,
+//       lastAccessedAt:
+//         enrollment.lastAccessedAt instanceof Date
+//           ? enrollment.lastAccessedAt.toISOString()
+//           : null,
+//     }
+
+//     return {
+//       success: true,
+//       data: serializedData,
+//       message: 'Progression updated.',
+//     }
+//   } catch (error) {
+//     console.error(error)
+//     return { success: false, data: null, message: 'System error updating progress.' }
+//   }
+// }
+
 export async function updateEnrollmentProgressAction(
   userId: string,
   courseId: string,
@@ -261,31 +395,28 @@ export async function updateEnrollmentProgressAction(
   try {
     await connectDB()
 
-    const userObjectId = new mongoose.Types.ObjectId(userId)
-    const courseObjectId = new mongoose.Types.ObjectId(courseId)
+    const userObjectId = new Types.ObjectId(userId)
+    const courseObjectId = new Types.ObjectId(courseId)
 
-    // Build fields using precise types
-    const updateFields: EnrollmentUpdateFields = {
-      lastAccessedAt: new Date(),
+    // 1. Build Update Query safely
+    const updateQuery: UpdateQuery<IEnrollment> = {
+      $set: { lastAccessedAt: new Date() },
     }
+
     if (updates.currentModuleId)
-      updateFields.currentModuleId = updates.currentModuleId
+      updateQuery.$set!.currentModuleId = updates.currentModuleId
     if (updates.currentLessonId)
-      updateFields.currentLessonId = updates.currentLessonId
+      updateQuery.$set!.currentLessonId = updates.currentLessonId
 
-    const arrayOperators: EnrollmentArrayOperators = {}
-    if (updates.newCompletedLessonId) {
-      arrayOperators.completedLessons = updates.newCompletedLessonId
-    }
-    if (updates.newCompletedModuleId) {
-      arrayOperators.completedModules = updates.newCompletedModuleId
-    }
+    // Handle Set Operators (must be initialized if keys exist)
+    const addToSet: Record<string, string> = {}
+    if (updates.newCompletedLessonId)
+      addToSet.completedLessons = updates.newCompletedLessonId
+    if (updates.newCompletedModuleId)
+      addToSet.completedModules = updates.newCompletedModuleId
 
-    // Explicit Mongoose UpdateQuery layout mapping
-    const updateQuery: UpdateQuery<IEnrollment> = { $set: updateFields }
-
-    if (Object.keys(arrayOperators).length > 0) {
-      updateQuery.$addToSet = arrayOperators
+    if (Object.keys(addToSet).length > 0) {
+      updateQuery.$addToSet = addToSet
     }
 
     if (updates.quizAttempt) {
@@ -294,83 +425,102 @@ export async function updateEnrollmentProgressAction(
       }
     }
 
-    // Perform operational updates
-    const enrollment = await EnrollmentModel.findOneAndUpdate(
+    // 2. Perform Atomic Update
+    // Using lean() here to get a POJO directly, avoiding heavy Mongoose Document overhead
+    const updatedEnrollment = await EnrollmentModel.findOneAndUpdate(
       { userId: userObjectId, courseId: courseObjectId },
       updateQuery,
-      { new: true },
-    )
+      { returnDocument: 'after' },
+    ).lean<IEnrollment | null>()
 
-    if (!enrollment) {
-      return {
-        success: false,
-        data: null,
-        message: 'Enrollment sequence missing.',
-      }
+    if (!updatedEnrollment) {
+      return { success: false, data: null, message: 'Enrollment missing.' }
     }
 
-    // Recalculate progression dynamically based on total course lesson configurations
-    const course = (await CourseModel.findById(courseObjectId).lean()) as {
-      modules?: Module[]
-    } | null
-    if (course && course.modules) {
-      const totalLessonsCount = course.modules.reduce(
-        (acc: number, curr: Module) =>
-          acc + (curr.lessonsCount || curr.lessons?.length || 0),
+    // 3. Calculate Progression
+    // Fetch lean course to get module data
+    const course = await CourseModel.findById(courseObjectId).lean<{
+      modules: Module[]
+    }>()
+
+    let finalPercentage = updatedEnrollment.progressPercentage
+
+    if (course?.modules) {
+      const totalLessons = course.modules.reduce(
+        (acc: number, m: Module) => acc + (m.lessons?.length || 0),
         0,
       )
+      const completedCount = updatedEnrollment.completedLessons?.length || 0
 
-      if (totalLessonsCount > 0) {
-        const uniqueCompletedCount = enrollment.completedLessons.length
-        const rawPercentage = (uniqueCompletedCount / totalLessonsCount) * 100
-        enrollment.progressPercentage = Math.min(Math.round(rawPercentage), 100)
+      finalPercentage =
+        totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0
 
-        if (enrollment.progressPercentage === 100) {
-          enrollment.status = 'completed'
-        }
-        await enrollment.save()
+      // Update progress in DB if it changed
+      if (finalPercentage !== updatedEnrollment.progressPercentage) {
+        await EnrollmentModel.updateOne(
+          { _id: updatedEnrollment._id },
+          { $set: { progressPercentage: finalPercentage } },
+        )
+        updatedEnrollment.progressPercentage = finalPercentage
       }
     }
 
-    const enrollmentObject = enrollment.toObject()
-
-    const serializedEnrollment: SerializedEnrollment = {
-      _id: enrollmentObject._id.toString(),
-      userId: enrollmentObject.userId.toString(),
-      courseId: enrollmentObject.courseId.toString(),
-      status: enrollmentObject.status,
-      progressPercentage: enrollmentObject.progressPercentage || 0,
-      currentModuleId: enrollmentObject.currentModuleId || '',
-      currentLessonId: enrollmentObject.currentLessonId || '',
-      completedLessons: enrollmentObject.completedLessons || [],
-      completedModules: enrollmentObject.completedModules || [],
-      quizAttempts: JSON.parse(
-        JSON.stringify(enrollmentObject.quizAttempts || []),
-      ) as SerializedQuizAttempt[],
-      assignmentSubmissions: JSON.parse(
-        JSON.stringify(enrollmentObject.assignmentSubmissions || []),
-      ) as SerializedAssignmentSubmission[],
-      enrolledAt:
-        enrollmentObject.enrolledAt instanceof Date
-          ? enrollmentObject.enrolledAt.toISOString()
-          : null,
-      lastAccessedAt:
-        enrollmentObject.lastAccessedAt instanceof Date
-          ? enrollmentObject.lastAccessedAt.toISOString()
-          : null,
-    }
-
+    // 4. Return strictly typed Serialized Data (No type assertions needed)
     return {
       success: true,
-      data: serializedEnrollment,
-      message: 'Database saved.',
+      data: {
+        _id: updatedEnrollment._id.toString(),
+        userId: updatedEnrollment.userId.toString(),
+        courseId: updatedEnrollment.courseId.toString(),
+        status: updatedEnrollment.status,
+        progressPercentage: updatedEnrollment.progressPercentage,
+        currentModuleId: updatedEnrollment.currentModuleId,
+        currentLessonId: updatedEnrollment.currentLessonId,
+        completedLessons: updatedEnrollment.completedLessons,
+        completedModules: updatedEnrollment.completedModules,
+
+        quizAttempts: (updatedEnrollment.quizAttempts || []).map((q) => ({
+          quizId: q.quizId,
+          score: q.score,
+          passed: q.passed,
+          answers: q.answers,
+          attemptedAt:
+            q.attemptedAt instanceof Date
+              ? q.attemptedAt.toISOString()
+              : new Date(q.attemptedAt).toISOString(),
+        })),
+
+        assignmentSubmissions: (
+          updatedEnrollment.assignmentSubmissions || []
+        ).map((sub) => ({
+          assignmentId: sub.assignmentId,
+          submissionUrl: sub.submissionUrl,
+          status: sub.status,
+          reviewsReceived: (sub.reviewsReceived || []).map((r) => ({
+            reviewerId: r.reviewerId.toString(),
+            score: r.score,
+            feedback: r.feedback,
+          })),
+          finalScore: sub.finalScore,
+        })),
+
+        enrolledAt:
+          updatedEnrollment.enrolledAt instanceof Date
+            ? updatedEnrollment.enrolledAt.toISOString()
+            : null,
+        lastAccessedAt:
+          updatedEnrollment.lastAccessedAt instanceof Date
+            ? updatedEnrollment.lastAccessedAt.toISOString()
+            : null,
+      },
+      message: 'Progression updated.',
     }
-  } catch (error: unknown) {
-    console.error('Failed progression sync block:', error)
+  } catch (error) {
+    console.error('System error:', error)
     return {
       success: false,
       data: null,
-      message: 'Internal server updating engine breakdown.',
+      message: 'System error updating progress.',
     }
   }
 }

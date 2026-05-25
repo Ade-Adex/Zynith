@@ -158,7 +158,7 @@ export default function MyLearningPage() {
   }
 
   return (
-    <div className="py-6 max-w-7xl mx-auto space-y-10 min-h-screen bg-background">
+    <div className="pt-6 pb-24 max-w-7xl mx-auto space-y-10 min-h-screen bg-background">
       {/* HEADER BLOCK */}
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-neutral-100 dark:border-neutral-800 pb-6">
         <div>
@@ -260,11 +260,11 @@ export default function MyLearningPage() {
               description="Your account doesn't point to any ongoing training models right now."
             />
           ) : (
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="xl">
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="" className='gap-6!'>
               {learningMatrix.active.map((course) => (
                 <div
                   key={String(course._id)}
-                  className="relative group space-y-2"
+                  className="relative group space-y-2 mb-10 md:mb-0"
                 >
                   <CourseCard
                     course={course}

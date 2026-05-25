@@ -84,10 +84,9 @@ export function CourseGrid({
       />
 
       {displayedCourses.length > 0 ? (
-        // Overflow container hidden hides the sliding elements outside the card boundaries
         <div className="w-full overflow-x-hidden py-4 px-1">
           <div
-            className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 transition-all duration-300 ease-out transform ${
+            className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 transition-all duration-300 ease-out transform ${
               slideDirection === 'right'
                 ? '-translate-x-12 opacity-20 filter blur-xs'
                 : slideDirection === 'left'
