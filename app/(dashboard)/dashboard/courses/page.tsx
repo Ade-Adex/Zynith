@@ -150,7 +150,7 @@ export default function MyLearningPage() {
             fw={700}
             className="uppercase tracking-widest text-neutral-500 font-mono"
           >
-            Synchronizing Active Action Models...
+            Synchronizing your courses...
           </Text>
         </div>
       </Center>

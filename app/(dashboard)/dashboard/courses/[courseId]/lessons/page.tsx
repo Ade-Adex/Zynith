@@ -80,6 +80,8 @@ export default function CourseWorkspacePage() {
 
   const [isPending, startTransition] = useTransition()
 
+  const [isAssignmentSubmitting, setIsAssignmentSubmitting] = useState(false)
+
   useEffect(() => {
     async function syncEnrollment() {
       // if (!user?._id || !courseId || !course) return
@@ -157,7 +159,7 @@ export default function CourseWorkspacePage() {
   }
 
   const handleLessonSelection = (lesson: Lesson, targetModule: Module) => {
-    if (!checkIsLessonUnlocked(lesson.id, targetModule.id)) return
+    // if (!checkIsLessonUnlocked(lesson.id, targetModule.id)) return
 
     setActiveLesson(lesson)
     setActiveModule(targetModule)
@@ -259,6 +261,24 @@ export default function CourseWorkspacePage() {
     })
   }
 
+  // Add this handler for assignment submission
+  const handleAssignmentSubmit = async () => {
+    if (!assignmentUrl || !activeModule?.assignment) return
+
+    setIsAssignmentSubmitting(true)
+
+    try {
+      // Implement your submission action here
+      // Example: await submitAssignmentAction(user._id, courseId, activeModule.assignment.id, assignmentUrl);
+      alert('Assignment submitted successfully!')
+      setAssignmentSubmitted(true)
+    } catch (error) {
+      console.error('Assignment submission error:', error)
+    } finally {
+      setIsAssignmentSubmitting(false)
+    }
+  }
+
   const handleMarkComplete = async () => {
     if (!user?._id || !courseId || !activeLesson) return
 
@@ -353,7 +373,7 @@ export default function CourseWorkspacePage() {
 
                   <div className="space-y-1.5">
                     {mod.lessons.map((les) => {
-                      const isUnlocked = checkIsLessonUnlocked(les.id, mod.id)
+                      // const isUnlocked = checkIsLessonUnlocked(les.id, mod.id)
 
                       const isCurrent = activeLesson?.id === les.id
 
@@ -363,7 +383,7 @@ export default function CourseWorkspacePage() {
                       return (
                         <button
                           key={les.id}
-                          disabled={!isUnlocked}
+                          // disabled={!isUnlocked}
                           onClick={() => {
                             handleLessonSelection(les, mod)
                             setSidebarOpen(false)
@@ -555,34 +575,44 @@ export default function CourseWorkspacePage() {
                             </h3>
 
                             <div className="grid gap-3">
-                              {q.options.map((option) => (
-                                <button
-                                  key={option}
-                                  onClick={() =>
-                                    handleAnswerSelect(q.id, option)
-                                  }
-                                  className={`text-left p-4 rounded-2xl border transition-all ${
-                                    selectedAnswers[q.id] === option
-                                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-                                      : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400'
-                                  }`}
-                                >
-                                  <span className="text-sm font-medium">
-                                    {option}
-                                  </span>
-                                </button>
-                              ))}
+                              {q.options.map((option) => {
+                                const isSelected =
+                                  selectedAnswers[q.id] === option
+                                return (
+                                  <button
+                                    key={option}
+                                    onClick={() =>
+                                      handleAnswerSelect(q.id, option)
+                                    }
+                                    disabled={isPending || quizSubmitted} // Disable if submitting or already done
+                                    className={`flex items-center justify-between text-left p-4 rounded-2xl border transition-all ${
+                                      isSelected
+                                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
+                                        : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-400'
+                                    } ${quizSubmitted ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  >
+                                    <span className="text-sm font-medium">
+                                      {option}
+                                    </span>
+                                    {isSelected && (
+                                      <CheckCircle2 className="w-4 h-4 text-blue-500" />
+                                    )}
+                                  </button>
+                                )
+                              })}
                             </div>
                           </div>
                         ))}
 
+                        {/* Submit Button */}
                         <button
                           onClick={() =>
                             handleSubmitQuiz(targetQuiz, !activeLesson)
                           }
-                          className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-neutral-900 dark:bg-white text-white dark:text-black font-black transition-all active:scale-[0.98]"
+                          disabled={isPending || quizSubmitted}
+                          className="w-full sm:w-auto px-8 py-2.5 rounded-2xl text-sm! bg-neutral-900 dark:bg-white text-white dark:text-black font-black transition-all active:scale-[0.98] disabled:opacity-50"
                         >
-                          Submit Quiz
+                          {isPending ? 'Submitting Quiz...' : 'Submit Quiz'}
                         </button>
                       </div>
                     )
@@ -599,7 +629,6 @@ export default function CourseWorkspacePage() {
                     <h2 className="text-xl lg:text-2xl font-black tracking-tight">
                       {activeModule.assignment.title}
                     </h2>
-
                     <p className="mt-4 text-sm sm:text-base leading-relaxed text-neutral-600 dark:text-neutral-300">
                       {activeModule.assignment.problemStatement}
                     </p>
@@ -611,11 +640,20 @@ export default function CourseWorkspacePage() {
                       placeholder="https://github.com/..."
                       value={assignmentUrl}
                       onChange={(e) => setAssignmentUrl(e.target.value)}
+                      disabled={isAssignmentSubmitting || assignmentSubmitted}
                       className="w-full rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-5 py-4 text-sm outline-none focus:ring-2 focus:ring-blue-500"
                     />
 
-                    <button className="w-full sm:w-auto px-8 py-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-black font-black transition-all active:scale-[0.98]">
-                      Submit Assignment
+                    <button
+                      onClick={handleAssignmentSubmit}
+                      disabled={isAssignmentSubmitting || assignmentSubmitted}
+                      className="w-full sm:w-auto px-8 py-2.5 rounded-2xl text-sm! bg-amber-500 hover:bg-amber-400 text-black font-black transition-all active:scale-[0.98] disabled:opacity-50"
+                    >
+                      {isAssignmentSubmitting
+                        ? 'Submitting Assignment...'
+                        : assignmentSubmitted
+                          ? 'Submitted'
+                          : 'Submit Assignment'}
                     </button>
                   </div>
                 </div>

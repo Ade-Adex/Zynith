@@ -261,20 +261,25 @@ export async function getEnrollmentProgressAction(
 //     const userObjectId = new Types.ObjectId(userId)
 //     const courseObjectId = new Types.ObjectId(courseId)
 
-//     // 1. Properly Typed Update Fields (Using Partial<IEnrollment>)
-//     const updateFields: Partial<IEnrollment> = { lastAccessedAt: new Date() }
-//     if (updates.currentModuleId) updateFields.currentModuleId = updates.currentModuleId
-//     if (updates.currentLessonId) updateFields.currentLessonId = updates.currentLessonId
+//     // 1. Build Update Query safely
+//     const updateQuery: UpdateQuery<IEnrollment> = {
+//       $set: { lastAccessedAt: new Date() },
+//     }
 
-//     const updateQuery: UpdateQuery<IEnrollment> = { $set: updateFields }
+//     if (updates.currentModuleId)
+//       updateQuery.$set!.currentModuleId = updates.currentModuleId
+//     if (updates.currentLessonId)
+//       updateQuery.$set!.currentLessonId = updates.currentLessonId
 
-//     // 2. Properly Typed Array Operators (Using Record<string, string>)
-//     const arrayOperators: Record<string, string> = {}
-//     if (updates.newCompletedLessonId) arrayOperators.completedLessons = updates.newCompletedLessonId
-//     if (updates.newCompletedModuleId) arrayOperators.completedModules = updates.newCompletedModuleId
+//     // Handle Set Operators (must be initialized if keys exist)
+//     const addToSet: Record<string, string> = {}
+//     if (updates.newCompletedLessonId)
+//       addToSet.completedLessons = updates.newCompletedLessonId
+//     if (updates.newCompletedModuleId)
+//       addToSet.completedModules = updates.newCompletedModuleId
 
-//     if (Object.keys(arrayOperators).length > 0) {
-//       updateQuery.$addToSet = arrayOperators
+//     if (Object.keys(addToSet).length > 0) {
+//       updateQuery.$addToSet = addToSet
 //     }
 
 //     if (updates.quizAttempt) {
@@ -283,84 +288,103 @@ export async function getEnrollmentProgressAction(
 //       }
 //     }
 
-//     // 3. Update & Retrieve
-//     const enrollment = await EnrollmentModel.findOneAndUpdate(
+//     // 2. Perform Atomic Update
+//     // Using lean() here to get a POJO directly, avoiding heavy Mongoose Document overhead
+//     const updatedEnrollment = await EnrollmentModel.findOneAndUpdate(
 //       { userId: userObjectId, courseId: courseObjectId },
 //       updateQuery,
-//       { new: true }
-//     )
+//       { returnDocument: 'after' },
+//     ).lean<IEnrollment | null>()
 
-//     if (!enrollment) return { success: false, data: null, message: 'Enrollment missing.' }
-
-//     // 4. Calculate Progression
-//     const course = await CourseModel.findById(courseObjectId).lean<{ modules: Module[] }>()
-//     if (course && course.modules) {
-//       const totalLessons = course.modules.reduce((acc: number, m: Module) => acc + (m.lessons?.length || 0), 0)
-//       const completedCount = enrollment.completedLessons?.length || 0
-
-//       const newPercentage = totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0
-
-//       enrollment.progressPercentage = newPercentage
-//       await enrollment.save()
+//     if (!updatedEnrollment) {
+//       return { success: false, data: null, message: 'Enrollment missing.' }
 //     }
 
-//     // 5. Construct Serialized Data Manually (No "as" cast)
-//     const serializedData: SerializedEnrollment = {
-//       _id: enrollment._id.toString(),
-//       userId: enrollment.userId.toString(),
-//       courseId: enrollment.courseId.toString(),
-//       status: enrollment.status,
-//       progressPercentage: enrollment.progressPercentage ?? 0,
-//       currentModuleId: enrollment.currentModuleId || '',
-//       currentLessonId: enrollment.currentLessonId || '',
-//       completedLessons: enrollment.completedLessons || [],
-//       completedModules: enrollment.completedModules || [],
+//     // 3. Calculate Progression
+//     // Fetch lean course to get module data
+//     const course = await CourseModel.findById(courseObjectId).lean<{
+//       modules: Module[]
+//     }>()
 
-//       // Explicitly map nested arrays to fix the "Types are incompatible" error
-//       quizAttempts: (enrollment.quizAttempts || []).map((q) => ({
-//         quizId: q.quizId,
-//         score: q.score,
-//         passed: q.passed,
-//         answers: q.answers,
-//         attemptedAt:
-//           q.attemptedAt instanceof Date
-//             ? q.attemptedAt.toISOString()
-//             : new Date(q.attemptedAt).toISOString(),
-//       })),
+//     let finalPercentage = updatedEnrollment.progressPercentage
 
-//       assignmentSubmissions: (enrollment.assignmentSubmissions || []).map(
-//         (sub) => ({
+//     if (course?.modules) {
+//       const totalLessons = course.modules.reduce(
+//         (acc: number, m: Module) => acc + (m.lessons?.length || 0),
+//         0,
+//       )
+//       const completedCount = updatedEnrollment.completedLessons?.length || 0
+
+//       finalPercentage =
+//         totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0
+
+//       // Update progress in DB if it changed
+//       if (finalPercentage !== updatedEnrollment.progressPercentage) {
+//         await EnrollmentModel.updateOne(
+//           { _id: updatedEnrollment._id },
+//           { $set: { progressPercentage: finalPercentage } },
+//         )
+//         updatedEnrollment.progressPercentage = finalPercentage
+//       }
+//     }
+
+//     // 4. Return strictly typed Serialized Data (No type assertions needed)
+//     return {
+//       success: true,
+//       data: {
+//         _id: updatedEnrollment._id.toString(),
+//         userId: updatedEnrollment.userId.toString(),
+//         courseId: updatedEnrollment.courseId.toString(),
+//         status: updatedEnrollment.status,
+//         progressPercentage: updatedEnrollment.progressPercentage,
+//         currentModuleId: updatedEnrollment.currentModuleId,
+//         currentLessonId: updatedEnrollment.currentLessonId,
+//         completedLessons: updatedEnrollment.completedLessons,
+//         completedModules: updatedEnrollment.completedModules,
+
+//         quizAttempts: (updatedEnrollment.quizAttempts || []).map((q) => ({
+//           quizId: q.quizId,
+//           score: q.score,
+//           passed: q.passed,
+//           answers: q.answers,
+//           attemptedAt:
+//             q.attemptedAt instanceof Date
+//               ? q.attemptedAt.toISOString()
+//               : new Date(q.attemptedAt).toISOString(),
+//         })),
+
+//         assignmentSubmissions: (
+//           updatedEnrollment.assignmentSubmissions || []
+//         ).map((sub) => ({
 //           assignmentId: sub.assignmentId,
 //           submissionUrl: sub.submissionUrl,
 //           status: sub.status,
-//           // Fix: Explicitly map the inner array to convert ObjectId to string
-//           reviewsReceived: (sub.reviewsReceived || []).map((review) => ({
-//             reviewerId: review.reviewerId.toString(),
-//             score: review.score,
-//             feedback: review.feedback,
+//           reviewsReceived: (sub.reviewsReceived || []).map((r) => ({
+//             reviewerId: r.reviewerId.toString(),
+//             score: r.score,
+//             feedback: r.feedback,
 //           })),
 //           finalScore: sub.finalScore,
-//         }),
-//       ),
+//         })),
 
-//       enrolledAt:
-//         enrollment.enrolledAt instanceof Date
-//           ? enrollment.enrolledAt.toISOString()
-//           : null,
-//       lastAccessedAt:
-//         enrollment.lastAccessedAt instanceof Date
-//           ? enrollment.lastAccessedAt.toISOString()
-//           : null,
-//     }
-
-//     return {
-//       success: true,
-//       data: serializedData,
+//         enrolledAt:
+//           updatedEnrollment.enrolledAt instanceof Date
+//             ? updatedEnrollment.enrolledAt.toISOString()
+//             : null,
+//         lastAccessedAt:
+//           updatedEnrollment.lastAccessedAt instanceof Date
+//             ? updatedEnrollment.lastAccessedAt.toISOString()
+//             : null,
+//       },
 //       message: 'Progression updated.',
 //     }
 //   } catch (error) {
-//     console.error(error)
-//     return { success: false, data: null, message: 'System error updating progress.' }
+//     console.error('System error:', error)
+//     return {
+//       success: false,
+//       data: null,
+//       message: 'System error updating progress.',
+//     }
 //   }
 // }
 
@@ -398,7 +422,7 @@ export async function updateEnrollmentProgressAction(
     const userObjectId = new Types.ObjectId(userId)
     const courseObjectId = new Types.ObjectId(courseId)
 
-    // 1. Build Update Query safely
+    // 1. Build Update Query
     const updateQuery: UpdateQuery<IEnrollment> = {
       $set: { lastAccessedAt: new Date() },
     }
@@ -408,16 +432,13 @@ export async function updateEnrollmentProgressAction(
     if (updates.currentLessonId)
       updateQuery.$set!.currentLessonId = updates.currentLessonId
 
-    // Handle Set Operators (must be initialized if keys exist)
     const addToSet: Record<string, string> = {}
     if (updates.newCompletedLessonId)
       addToSet.completedLessons = updates.newCompletedLessonId
     if (updates.newCompletedModuleId)
       addToSet.completedModules = updates.newCompletedModuleId
 
-    if (Object.keys(addToSet).length > 0) {
-      updateQuery.$addToSet = addToSet
-    }
+    if (Object.keys(addToSet).length > 0) updateQuery.$addToSet = addToSet
 
     if (updates.quizAttempt) {
       updateQuery.$push = {
@@ -426,7 +447,6 @@ export async function updateEnrollmentProgressAction(
     }
 
     // 2. Perform Atomic Update
-    // Using lean() here to get a POJO directly, avoiding heavy Mongoose Document overhead
     const updatedEnrollment = await EnrollmentModel.findOneAndUpdate(
       { userId: userObjectId, courseId: courseObjectId },
       updateQuery,
@@ -437,73 +457,101 @@ export async function updateEnrollmentProgressAction(
       return { success: false, data: null, message: 'Enrollment missing.' }
     }
 
-    // 3. Calculate Progression
-    // Fetch lean course to get module data
+    // 3. Fetch Course and Validate Completion
     const course = await CourseModel.findById(courseObjectId).lean<{
       modules: Module[]
     }>()
 
-    let finalPercentage = updatedEnrollment.progressPercentage
-
-    if (course?.modules) {
+    if (course) {
+      // FIX: Typed reduce function (no 'any')
       const totalLessons = course.modules.reduce(
         (acc: number, m: Module) => acc + (m.lessons?.length || 0),
         0,
       )
-      const completedCount = updatedEnrollment.completedLessons?.length || 0
 
-      finalPercentage =
+      const completedCount = updatedEnrollment.completedLessons?.length || 0
+      const finalPercentage =
         totalLessons > 0 ? Math.round((completedCount / totalLessons) * 100) : 0
 
-      // Update progress in DB if it changed
-      if (finalPercentage !== updatedEnrollment.progressPercentage) {
+      // VERIFICATION LOGIC: Check all requirements
+      let allRequirementsMet = true
+
+      for (const mod of course.modules) {
+        // 1. Check all lessons in module
+        for (const lesson of mod.lessons) {
+          if (!updatedEnrollment.completedLessons?.includes(lesson.id)) {
+            allRequirementsMet = false
+          }
+        }
+        // 2. Check Module Quiz (if exists)
+        if (
+          mod.quiz &&
+          !updatedEnrollment.quizAttempts?.some(
+            (q) => q.quizId === mod.quiz!.id && q.passed,
+          )
+        ) {
+          allRequirementsMet = false
+        }
+        // 3. Check Module Assignment (if exists)
+        if (
+          mod.assignment &&
+          !updatedEnrollment.assignmentSubmissions?.some(
+            (s) => s.assignmentId === mod.assignment!.id,
+          )
+        ) {
+          allRequirementsMet = false
+        }
+      }
+
+      // FIX: Status mapping to match model enum ['active', 'completed', 'suspended']
+      const newStatus = allRequirementsMet ? 'completed' : 'active'
+
+      if (
+        finalPercentage !== updatedEnrollment.progressPercentage ||
+        updatedEnrollment.status !== newStatus
+      ) {
         await EnrollmentModel.updateOne(
           { _id: updatedEnrollment._id },
-          { $set: { progressPercentage: finalPercentage } },
+          {
+            $set: {
+              progressPercentage: finalPercentage,
+              status: newStatus,
+            },
+          },
         )
         updatedEnrollment.progressPercentage = finalPercentage
+        updatedEnrollment.status = newStatus
       }
     }
-
-    // 4. Return strictly typed Serialized Data (No type assertions needed)
+    // 4. Return serialized data
     return {
       success: true,
       data: {
         _id: updatedEnrollment._id.toString(),
         userId: updatedEnrollment.userId.toString(),
         courseId: updatedEnrollment.courseId.toString(),
-        status: updatedEnrollment.status,
+        status: updatedEnrollment.status, // Now dynamically updated
         progressPercentage: updatedEnrollment.progressPercentage,
         currentModuleId: updatedEnrollment.currentModuleId,
         currentLessonId: updatedEnrollment.currentLessonId,
         completedLessons: updatedEnrollment.completedLessons,
         completedModules: updatedEnrollment.completedModules,
-
         quizAttempts: (updatedEnrollment.quizAttempts || []).map((q) => ({
-          quizId: q.quizId,
-          score: q.score,
-          passed: q.passed,
-          answers: q.answers,
+          ...q,
           attemptedAt:
             q.attemptedAt instanceof Date
               ? q.attemptedAt.toISOString()
               : new Date(q.attemptedAt).toISOString(),
         })),
-
         assignmentSubmissions: (
           updatedEnrollment.assignmentSubmissions || []
         ).map((sub) => ({
-          assignmentId: sub.assignmentId,
-          submissionUrl: sub.submissionUrl,
-          status: sub.status,
+          ...sub,
           reviewsReceived: (sub.reviewsReceived || []).map((r) => ({
+            ...r,
             reviewerId: r.reviewerId.toString(),
-            score: r.score,
-            feedback: r.feedback,
           })),
-          finalScore: sub.finalScore,
         })),
-
         enrolledAt:
           updatedEnrollment.enrolledAt instanceof Date
             ? updatedEnrollment.enrolledAt.toISOString()
