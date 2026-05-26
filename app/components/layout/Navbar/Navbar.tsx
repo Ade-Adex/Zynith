@@ -1,3 +1,6 @@
+// /app/components/layout/Navbar.tsx
+
+
 'use client'
 
 import { useAuthStore } from '@/app/store/authStore'
@@ -29,8 +32,9 @@ import { ThemeToggle } from '@/app/components/constant/ThemeToggle'
 import { useCartStore } from '@/app/store/cartStore'
 
 export const Navbar = () => {
-  const { user, logout, isAuthenticated } = useAuthStore()
-  const { cartItems } = useCartStore() 
+  // Grab hasHydrated along with your authentication variables
+  const { user, logout, isAuthenticated, hasHydrated } = useAuthStore()
+  const { cartItems } = useCartStore()
   const [opened, { toggle, close }] = useDisclosure(false)
   const router = useRouter()
 
@@ -82,7 +86,13 @@ export const Navbar = () => {
             <Search size={18} className="text-foreground/70" />
           </div>
 
-          {isAuthenticated && user ? (
+          {/* CRITICAL FIX: Check if store has fully hydrated from localStorage.
+            If false, render a structural placeholder shell matching your button layout 
+            to hold the layout spacing without showing wrong states.
+          */}
+          {!hasHydrated ? (
+            <div className="hidden md:block w-[80px] h-9" />
+          ) : isAuthenticated && user ? (
             <div className="flex items-center gap-2 md:gap-3">
               <div className="hidden sm:flex items-center gap-3 border border-slate-300 dark:border-slate-700 px-3 py-1.5 rounded-full">
                 <Tooltip label="Daily Streak">
@@ -112,12 +122,12 @@ export const Navbar = () => {
 
               <Indicator
                 size={20}
-                label={cartItems.length.toString()} // <-- Hook up real count dynamic value
+                label={cartItems.length.toString()}
                 color="blue"
                 withBorder
                 offset={4}
                 radius="xl"
-                disabled={cartItems.length === 0} // Hide indicator badge if nothing is inside
+                disabled={cartItems.length === 0}
                 inline
                 styles={{
                   indicator: {
@@ -127,7 +137,6 @@ export const Navbar = () => {
                 }}
               >
                 <Tooltip label="Your Cart">
-                  {/* Simple redirect link to a customized checkout panel */}
                   <UnstyledButton
                     onClick={() => router.push('/cart')}
                     className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-zinc-800 transition-colors"
@@ -158,7 +167,7 @@ export const Navbar = () => {
                   },
                   label: {
                     color: 'var(--foreground)',
-                    opacity: 0.4 /* Instead of text-slate-400, this creates perfect contrast on any background */,
+                    opacity: 0.4,
                   },
                   divider: {
                     borderColor: 'var(--border)',
@@ -174,7 +183,6 @@ export const Navbar = () => {
                       position="bottom-end"
                       color="green"
                       withBorder
-                      /* Ensures the green indicator dot border matches the surface behind it */
                       styles={{
                         indicator: {
                           borderColor: 'var(--surface) !important',
@@ -245,7 +253,6 @@ export const Navbar = () => {
                     onClick={logout}
                     color="red"
                     leftSection={<LogOut size={14} />}
-                    /* Mantine handles color="red" nicely, but we can make it look extra clean on hover */
                     className="hover:bg-red-500/10"
                   >
                     <span className="text-xs font-bold">Sign Out</span>
@@ -308,7 +315,8 @@ export const Navbar = () => {
                   </Menu.Item>
                 ))}
 
-                {isAuthenticated ? (
+                {/* Handle mobile menu hydration safety cleanly as well */}
+                {!hasHydrated ? null : isAuthenticated ? (
                   <Menu.Item
                     component={Link}
                     href="/dashboard"
