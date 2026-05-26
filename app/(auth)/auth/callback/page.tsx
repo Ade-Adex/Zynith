@@ -23,7 +23,7 @@ function CallbackHandler() {
       enqueueSnackbar('No verification token found in URL.', {
         variant: 'error',
       })
-      router.replace('/auth/login')
+      router.replace('/auth')
       return
     }
 
@@ -36,7 +36,10 @@ function CallbackHandler() {
 
         if (result.success && result.userData) {
           const parsedUser = JSON.parse(result.userData)
+
+          // Set zustand store layer data alongside the authenticated timestamp
           login(parsedUser)
+
           enqueueSnackbar('Welcome back! Login successful.', {
             variant: 'success',
           })
@@ -45,14 +48,14 @@ function CallbackHandler() {
           enqueueSnackbar(result.message || 'Verification process failed.', {
             variant: 'error',
           })
-          router.replace('/auth/login')
+          router.replace('/auth')
         }
       } catch (err) {
         console.error('Callback error:', err)
         enqueueSnackbar('An unexpected system error occurred.', {
           variant: 'error',
         })
-        router.replace('/auth/login')
+        router.replace('/auth')
       }
     }
 

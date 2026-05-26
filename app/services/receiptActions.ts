@@ -24,8 +24,12 @@ export async function getReceiptDetailsByReference(
     const isSubunitGateway =
       transaction.gateway === 'PAYSTACK' || transaction.gateway === 'STRIPE'
 
-    // Explicitly trust the gateway mapping flag cleanly.
-    const divisor = isSubunitGateway ? 100 : 1
+    // Defensive check: If total contains a clean decimal point or is small,
+    // it was saved as absolute units rather than subunits.
+    const isSavedAsAbsoluteUnits =
+      transaction.total < 1000 || !Number.isInteger(transaction.total)
+
+    const divisor = isSubunitGateway && !isSavedAsAbsoluteUnits ? 100 : 1
 
     const subtotalNum = Number(transaction.subtotal) / divisor
     const taxNum = Number(transaction.tax) / divisor
@@ -38,12 +42,13 @@ export async function getReceiptDetailsByReference(
         cardDetails: transaction.paymentDetails,
         items: transaction.items.map((item) => {
           const rawItemPrice = Number(item.price)
+          // Use item level fallback if individual item matches absolute state rules
+          const itemDivisor =
+            isSubunitGateway && rawItemPrice < 1000 ? 1 : divisor
           return {
             _id: item.courseId.toString(),
             title: item.title,
-            // Clean fix: No more complex ternary fallback rules.
-            // If the gateway uses subunits, divide the item price uniformly.
-            price: rawItemPrice / divisor,
+            price: rawItemPrice / itemDivisor,
           }
         }),
         subtotal: subtotalNum,

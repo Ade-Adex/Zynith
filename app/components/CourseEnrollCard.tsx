@@ -109,11 +109,7 @@ export function CourseEnrollCard({
   const currentCourseId = String(course._id)
   const itemInCart = mounted ? isInCart(currentCourseId) : false
 
-  const activeUserId = user?._id
-  if (!activeUserId) {
-    router.push(`/auth?redirect=${encodeURIComponent(pathname)}`)
-    return
-  }
+  const activeUserId = user?._id || ''
 
   const handleCartToggle = async () => {
     if (isAdding) return

@@ -11,7 +11,7 @@ import {
   Center,
   Loader,
   Badge,
-  Tooltip, // ✅ Imported Mantine Tooltip component
+  Tooltip,
 } from '@mantine/core'
 import { Wallet, FileText, ArrowUpRight, Award } from 'lucide-react'
 import { useAuthStore } from '@/app/store/authStore'
@@ -23,8 +23,13 @@ import {
 import { UserType } from '@/app/types/user'
 import Link from 'next/link'
 
+// Core Fix: Standardize fractional decimal limits across the ledger UI
+const currencyFormatOptions = {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+}
+
 export default function WalletPage() {
-  // Explicitly assert UserType structure to clear out the partial type error
   const { user: rawUser, isAuthenticated } = useAuthStore()
   const user = rawUser as UserType | null
 
@@ -32,7 +37,8 @@ export default function WalletPage() {
   const [perks, setPerks] = useState<SerializedMarketplaceItem[]>()
   const [history, setHistory] = useState<SerializedTransactionHistory[]>()
 
-  // Safely grab structural assets from user storage states
+  console.log('history', history)
+
   const walletBalance = user?.wallet?.balance ?? 0
   const userPoints = user?.stats?.points ?? 0
   const currencySymbol =
@@ -42,8 +48,6 @@ export default function WalletPage() {
     async function loadData() {
       if (user?._id) {
         const response = await getWalletDashboardData(user._id)
-
-        // console.log('response', response)
         if (response.success) {
           setPerks(response.marketplaceItems)
           setHistory(response.historyItems)
@@ -73,7 +77,6 @@ export default function WalletPage() {
 
   return (
     <div className="py-6 space-y-8">
-      {/* Structural Header Title Grid */}
       <div className="flex flex-col gap-1">
         <p className="text-[10px] font-black uppercase tracking-[0.4em] text-blue-600 dark:text-blue-400">
           Financial Hub
@@ -86,7 +89,6 @@ export default function WalletPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Financial Balance Assets */}
         <div className="lg:col-span-4 space-y-6">
-          {/* Balance Cash Card */}
           <Paper
             p="32px"
             radius="24px"
@@ -98,7 +100,7 @@ export default function WalletPage() {
               </Text>
               <Text className="text-4xl font-black tracking-tighter mb-8 text-slate-100">
                 {currencySymbol}
-                {walletBalance.toLocaleString()}
+                {walletBalance.toLocaleString('en-US', currencyFormatOptions)}
               </Text>
               <Button
                 fullWidth
@@ -112,7 +114,6 @@ export default function WalletPage() {
             <Wallet className="absolute -bottom-4 -right-4 w-32 h-32 text-slate-900 opacity-40 rotate-12 pointer-events-none" />
           </Paper>
 
-          {/* Gamified Points Assets Card */}
           <Paper
             p="24px"
             radius="24px"
@@ -183,13 +184,16 @@ export default function WalletPage() {
                     <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800/60">
                       <Text className="font-mono font-bold text-slate-800 dark:text-slate-200">
                         {currencySymbol}
-                        {item.price.toLocaleString()}
+                        {item.price.toLocaleString(
+                          'en-US',
+                          currencyFormatOptions,
+                        )}
                       </Text>
                       <Button
                         variant="white"
                         radius="md"
                         size="xs"
-                        className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 font-bold uppercase tracking-wider text-[10px]"
+                        className="border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-700 dark:text-zinc-300 hover:text-blue-600 dark:hover:text-blue-400 font-bold uppercase tracking-wider text-[10px]"
                       >
                         Acquire Course
                       </Button>
@@ -246,7 +250,6 @@ export default function WalletPage() {
                       {tx.date}
                     </td>
 
-                    {/* ✅ Wrapped with Mantine Tooltip with configuration configurations */}
                     <td className="py-4 px-6 text-slate-800 dark:text-slate-200 font-bold truncate max-w-xs">
                       <Tooltip
                         label={tx.courseTitle}
@@ -262,7 +265,7 @@ export default function WalletPage() {
 
                     <td className="py-4 px-6 font-mono font-bold italic text-slate-900 dark:text-slate-100">
                       {currencySymbol}
-                      {tx.amount.toLocaleString()}
+                      {tx.amount.toLocaleString('en-US', currencyFormatOptions)}
                     </td>
                     <td className="py-4 px-6 text-right">
                       <Link

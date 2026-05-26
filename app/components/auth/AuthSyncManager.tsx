@@ -1,5 +1,4 @@
-
-// /app/components/auth/AuthSyncManager.tsx'
+// /app/components/auth/AuthSyncManager.tsx
 
 'use client'
 
@@ -7,20 +6,28 @@ import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/app/store/authStore'
 import { useSnackbar } from 'notistack'
+import { logoutAction } from '@/app/services/authActions'
 
 export function AuthSyncManager({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pathname = usePathname()
   const { enqueueSnackbar } = useSnackbar()
+
   const { isAuthenticated, authenticatedAt, logout, hasHydrated } =
     useAuthStore()
 
-  // 1. Cross-Tab Sync
+  /**
+   * 1. Cross-Tab Authentication Sync
+   */
   useEffect(() => {
     const handleStorageSync = (event: StorageEvent) => {
-      if (event.key === 'zynith-auth-storage') {
+      if (event.key !== 'zynith-auth-storage') return
+
+      try {
         if (!event.newValue) {
           logout()
+          logoutAction()
+
           if (pathname.startsWith('/dashboard')) {
             enqueueSnackbar('Session terminated from another tab.', {
               variant: 'info',
@@ -30,50 +37,71 @@ export function AuthSyncManager({ children }: { children: React.ReactNode }) {
           return
         }
 
-        try {
-          const parsed = JSON.parse(event.newValue)
-          const isTargetAuthenticated = parsed?.state?.isAuthenticated
+        const parsed = JSON.parse(event.newValue)
+        const incomingAuthState = parsed?.state?.isAuthenticated ?? false
 
-          if (isTargetAuthenticated && !isAuthenticated) {
-            useAuthStore.persist.rehydrate()
-            enqueueSnackbar('Authenticated from another tab. Welcome back!', {
-              variant: 'success',
-            })
+        if (incomingAuthState && !isAuthenticated) {
+          useAuthStore.persist.rehydrate()
+          enqueueSnackbar('Authenticated from another tab. Welcome back!', {
+            variant: 'success',
+          })
 
-            // Only redirect if they are stuck on auth page
-            if (pathname === '/auth') {
-              router.replace('/dashboard')
-            }
+          if (pathname === '/auth') {
+            router.replace('/dashboard')
           }
-        } catch (err) {
-          console.error('Failed to parse cross-tab sync package.', err)
         }
+
+        if (!incomingAuthState && isAuthenticated) {
+          logout()
+          logoutAction()
+          enqueueSnackbar('Session terminated from another tab.', {
+            variant: 'info',
+          })
+
+          if (pathname.startsWith('/dashboard')) {
+            router.replace('/auth')
+          }
+        }
+      } catch (err) {
+        console.error('Failed to parse auth sync package.', err)
       }
     }
 
     window.addEventListener('storage', handleStorageSync)
     return () => window.removeEventListener('storage', handleStorageSync)
-  }, [isAuthenticated, logout, router, pathname, enqueueSnackbar])
+  }, [isAuthenticated, logout, pathname, router, enqueueSnackbar])
 
-  // 2. Token Lifetime Tracker
+  /**
+   * 2. Session Expiration Tracker (Updated cleanly to 1 Day)
+   */
   useEffect(() => {
-    if (!hasHydrated || !isAuthenticated || !authenticatedAt) return
+    if (!hasHydrated || !isAuthenticated || !authenticatedAt) {
+      return
+    }
 
-    const checkSessionValidity = () => {
-      const fifteenMinutesMs = 15 * 60 * 1000
-      const expirationThreshold = authenticatedAt + fifteenMinutesMs
+    const checkSessionValidity = async () => {
+      // 24 Hours absolute timeframe calculation
+      const oneDayMs = 24 * 60 * 60 * 1000
+      const expirationThreshold = authenticatedAt + oneDayMs
 
       if (Date.now() > expirationThreshold) {
         logout()
-        enqueueSnackbar('Your secure workspace access token has expired.', {
-          variant: 'error',
-        })
+        await logoutAction() // Clear background server cookie path
+
+        enqueueSnackbar(
+          'Your workspace verification session has expired (1 Day limit reached).',
+          {
+            variant: 'error',
+          },
+        )
+
         router.replace('/auth')
       }
     }
 
     checkSessionValidity()
-    const liveTrackerInterval = setInterval(checkSessionValidity, 5000)
+    const liveTrackerInterval = setInterval(checkSessionValidity, 15000) // Sweeps cleanly every 15s
+
     return () => clearInterval(liveTrackerInterval)
   }, [
     isAuthenticated,
@@ -84,19 +112,20 @@ export function AuthSyncManager({ children }: { children: React.ReactNode }) {
     enqueueSnackbar,
   ])
 
-  // 3. Routing Guard
+  /**
+   * 3. Route Protection Guard
+   */
   useEffect(() => {
-    // CRITICAL: Do nothing until the store has finished loading
     if (!hasHydrated) return
 
-    // Only prevent authenticated users from visiting /auth
     if (isAuthenticated && pathname === '/auth') {
       router.replace('/dashboard')
+      return
     }
 
-    // If NOT logged in, don't let them access any dashboard route
     if (!isAuthenticated && pathname.startsWith('/dashboard')) {
       router.replace('/auth')
+      return
     }
   }, [isAuthenticated, hasHydrated, pathname, router])
 

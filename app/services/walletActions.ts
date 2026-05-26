@@ -53,28 +53,30 @@ export async function getWalletDashboardData(userId: string) {
       .sort({ createdAt: -1 })
       .lean<IDbTransaction[]>()
 
-   const historyItems: SerializedTransactionHistory[] = transactions.map(
-     (tx) => {
-       const combinedTitles = tx.items.map((i) => i.title).join(', ')
+    const historyItems: SerializedTransactionHistory[] = transactions.map(
+      (tx) => {
+        const combinedTitles = tx.items.map((i) => i.title).join(', ')
 
-       // Determine if the amount needs to be parsed from kobo/cents
-       const isSubunitGateway =
-         tx.gateway === 'PAYSTACK' || tx.gateway === 'STRIPE'
-       const rawAmount = Number(tx.total)
-       const normalizedAmount = isSubunitGateway ? rawAmount / 100 : rawAmount
+        // Normalize gateway comparison string formatting
+        const targetGateway = (tx.gateway || 'PAYSTACK').toUpperCase()
+        const isSubunitGateway =
+          targetGateway === 'PAYSTACK' || targetGateway === 'STRIPE'
 
-       return {
-         reference: tx.reference,
-         date: new Date(tx.createdAt).toLocaleDateString('en-US', {
-           year: 'numeric',
-           month: 'short',
-           day: 'numeric',
-         }),
-         courseTitle: combinedTitles || 'System Workspace Upgrade',
-         amount: normalizedAmount, // Now safely normalized to full standard format
-       }
-     },
-   )
+        const rawAmount = Number(tx.total)
+        const normalizedAmount = isSubunitGateway ? rawAmount / 100 : rawAmount
+
+        return {
+          reference: tx.reference,
+          date: new Date(tx.createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+          }),
+          courseTitle: combinedTitles || 'System Workspace Upgrade',
+          amount: normalizedAmount, // Safely normalized to full standard real amount decimal position
+        }
+      },
+    )
 
     return {
       success: true,

@@ -7,7 +7,11 @@ import { EnrollmentModel } from '@/app/models/Enrollment'
 import { CourseModel } from '@/app/models/Course'
 import { Course } from '@/app/types'
 import { Types, UpdateQuery } from 'mongoose'
-import { SerializedEnrollment, IDbEnrollment, UpdatePayload } from '@/app/types/enrollment'
+import {
+  SerializedEnrollment,
+  IDbEnrollment,
+  UpdatePayload,
+} from '@/app/types/enrollment'
 import { TransactionModel } from '@/app/models/Transaction'
 
 export type EnrollmentActionResult = {
@@ -105,25 +109,29 @@ export async function enrollUserAfterPaymentAction(
       }
     }
 
+    // Resolve exactly fallback value and force UpperCase for structural math check safety
+    const determinedGateway = (
+      gatewayDetails?.gateway || 'PAYSTACK'
+    ).toUpperCase() as 'PAYSTACK' | 'WALLET' | 'STRIPE'
+
     // 1. Resolve exact price details across all selected courses
     const verifiedCourses = await CourseModel.find({
       _id: { $in: courseObjectIds },
     }).lean<Course[]>()
 
     const isSubunitGateway =
-      gatewayDetails?.gateway === 'PAYSTACK' ||
-      gatewayDetails?.gateway === 'STRIPE'
+      determinedGateway === 'PAYSTACK' || determinedGateway === 'STRIPE'
 
     let totalSubtotalKobo = 0
     let totalTaxKobo = 0
     let totalCombinedKobo = 0
 
     const transactionItems = verifiedCourses.map((course) => {
-      const standardItemSubtotal = course.price // Base Price (e.g., 249.0)
-      const standardItemTax = standardItemSubtotal * 0.075 // 7.5% Tax (e.g., 18.675)
-      const standardItemTotal = standardItemSubtotal + standardItemTax // Combined Total
+      const standardItemSubtotal = Number(course.price)
+      const standardItemTax = standardItemSubtotal * 0.075
+      const standardItemTotal = standardItemSubtotal + standardItemTax
 
-      // Convert completely to Subunits (Kobo) if gateway dictates it
+      // Convert to Subunits (Kobo/Cents) accurately if gateway structural layout matches
       const finalItemPrice = isSubunitGateway
         ? Math.round(standardItemSubtotal * 100)
         : standardItemSubtotal
@@ -141,22 +149,21 @@ export async function enrollUserAfterPaymentAction(
       return {
         courseId: course._id,
         title: course.title,
-        price: finalItemPrice, // Core Fix: Now accurately saving 24900 instead of 249
+        price: finalItemPrice,
       }
     })
 
-    // 2. Commit the Transaction Ledger Record with precise subunit weights
+    // 2. Core Fix: Explicit updates targeting matching fields
     await TransactionModel.findOneAndUpdate(
       { reference: paymentReference },
       {
-        $setOnInsert: {
+        $set: {
           userId: userObjectId,
-          reference: paymentReference,
-          gateway: gatewayDetails?.gateway || 'PAYSTACK',
+          gateway: determinedGateway,
           items: transactionItems,
-          subtotal: totalSubtotalKobo, // Saves 24900
-          tax: totalTaxKobo, // Saves 1868 (rounds 18.675 * 100)
-          total: totalCombinedKobo, // Saves 26768 (which is 24900 + 1868)
+          subtotal: totalSubtotalKobo,
+          tax: totalTaxKobo,
+          total: totalCombinedKobo,
           status: 'SUCCESS',
           paymentDetails: {
             cardType: gatewayDetails?.cardType || 'N/A',
@@ -206,7 +213,6 @@ export async function enrollUserAfterPaymentAction(
     return { success: false, message: 'Database orchestration failure.' }
   }
 }
-
 /**
  * Fetches a single active enrollment record for a user to synchronize live progress.
  */
@@ -280,12 +286,10 @@ export async function updateEnrollmentProgressAction(
   try {
     await connectDB()
 
-    // 1. Verify alignment variables
     if (!userId || !courseId) {
       return { success: false, message: 'Missing user ID or course ID.' }
     }
 
-    // 2. Check if this assignment submission already exists to decide between update or push
     if (payload.assignmentSubmission) {
       const { assignmentId, url } = payload.assignmentSubmission
 
@@ -296,7 +300,6 @@ export async function updateEnrollmentProgressAction(
       })
 
       if (existingEnrollment) {
-        // Option A: Update existing assignment submission url
         const updatedDoc = await EnrollmentModel.findOneAndUpdate(
           {
             userId: new Types.ObjectId(userId),
@@ -306,7 +309,7 @@ export async function updateEnrollmentProgressAction(
           {
             $set: {
               'assignmentSubmissions.$.submissionUrl': url,
-              'assignmentSubmissions.$.status': 'pending_reviews', // Reset state if re-submitted
+              'assignmentSubmissions.$.status': 'pending_reviews',
               lastAccessedAt: new Date(),
             },
           },
@@ -321,7 +324,6 @@ export async function updateEnrollmentProgressAction(
           data: serializeEnrollment(updatedDoc),
         }
       } else {
-        // Option B: Push a new assignment submission entry
         const updatedDoc = await EnrollmentModel.findOneAndUpdate(
           {
             userId: new Types.ObjectId(userId),
@@ -352,7 +354,6 @@ export async function updateEnrollmentProgressAction(
       }
     }
 
-    // Handle generic lesson progress updates (Fallback if no assignment payload provided)
     const genericUpdate: UpdateQuery<IDbEnrollment> = {
       $set: { lastAccessedAt: new Date() },
     }
@@ -418,7 +419,6 @@ export async function checkExistingEnrollmentsAction(
     const userObjectId = new Types.ObjectId(userId)
     const courseObjectIds = courseIds.map((id) => new Types.ObjectId(id))
 
-    // Find any active enrollments for this user within the selected course array
     const existingEnrollments = await EnrollmentModel.find({
       userId: userObjectId,
       courseId: { $in: courseObjectIds },
@@ -430,7 +430,6 @@ export async function checkExistingEnrollmentsAction(
         e.courseId.toString(),
       )
 
-      // Fetch the actual titles of the conflicting courses to show on the UI
       const duplicateCourses = await CourseModel.find(
         {
           _id: { $in: duplicateCourseIds.map((id) => new Types.ObjectId(id)) },

@@ -1,20 +1,24 @@
 // /app/services/authActions.ts
+
 'use server'
 
 import connectDB from '@/app/lib/db'
 import { User, IUser } from '@/app/models/User'
 import crypto from 'crypto'
 import { Resend } from 'resend'
+import { cookies } from 'next/headers'
+import { signSessionToken } from '@/app/lib/jwt' // Implemented clean utility reference
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const FROM_EMAIL = `Zynith <${process.env.RESEND_MAIL_USER}>`
+const FROM_EMAIL = `Zynith <${process.env.RESEND_MAIL_USER || 'no-reply@christbcogbomoso.org'}>`
 const REPLY_TO_EMAIL = process.env.MAIL_USER || ''
 
 export type AuthActionResult = {
   success: boolean
   message: string
   userData?: string
+  token?: string
 }
 
 export async function sendMagicLinkAction(
@@ -27,55 +31,44 @@ export async function sendMagicLinkAction(
   try {
     await connectDB()
     const cleanEmail = email.toLowerCase().trim()
-   const generatedToken = crypto.randomBytes(32).toString('hex')
-   const expirationWindow = new Date(Date.now() + 24 * 60 * 60 * 1000)
+    const generatedToken = crypto.randomBytes(32).toString('hex')
+    const expirationWindow = new Date(Date.now() + 15 * 60 * 1000) // 15 Minute window
 
     let targetUser: IUser | null = await User.findOne({ email: cleanEmail })
 
-    console.log('targetUser', targetUser)
-
     if (!targetUser) {
-      // 1. Extract the name component from the email string
       const derivedPrefix = cleanEmail.split('@')[0]
-      console.log('derivedPrefix', derivedPrefix)
-      
-      const baseName = derivedPrefix.charAt(0).toUpperCase() + derivedPrefix.slice(1)
-      console.log('baseName', baseName)
+      const baseName =
+        derivedPrefix.charAt(0).toUpperCase() + derivedPrefix.slice(1)
 
       let computedFirstName = baseName
       let computedLastName = ''
 
-      // 2. Check for punctuation separators first (e.g., "john.doe", "alex_smith")
       const nameParts = derivedPrefix.split(/[._-]/)
-      
+
       if (nameParts.length >= 2) {
-        computedFirstName = nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1)
-        computedLastName = nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1)
+        computedFirstName =
+          nameParts[0].charAt(0).toUpperCase() + nameParts[0].slice(1)
+        computedLastName =
+          nameParts[1].charAt(0).toUpperCase() + nameParts[1].slice(1)
       } else if (derivedPrefix.length >= 5) {
-        // 3. UNIVERSAL FALLBACK: Handle continuous single strings (e.g., "adeoluamole", "mariahcarey")
-        // Dynamically split down the middle based on the string length
         const midpoint = Math.ceil(derivedPrefix.length / 2)
-        
         const rawFirst = derivedPrefix.substring(0, midpoint)
         const rawLast = derivedPrefix.substring(midpoint)
-        
+
         computedFirstName = rawFirst.charAt(0).toUpperCase() + rawFirst.slice(1)
         computedLastName = rawLast.charAt(0).toUpperCase() + rawLast.slice(1)
       } else {
-        // Handle ultra-short usernames (e.g., "sam") safely
         computedFirstName = baseName
         computedLastName = 'Student'
       }
 
-      console.log('Computed Fields -> FirstName:', computedFirstName, '| LastName:', computedLastName)
-
-      // 4. Instantiate the user document with complete, dynamically computed fields
       targetUser = new User({
         email: cleanEmail,
         name: baseName,
         firstName: computedFirstName,
         lastName: computedLastName,
-        username: `${derivedPrefix}_${Math.random().toString(36).substring(2, 6)}`,
+        username: `${derivedPrefix}_${crypto.randomBytes(2).toString('hex')}`,
         avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(cleanEmail)}`,
       })
     }
@@ -149,15 +142,29 @@ export async function verifyTokenAndLoginAction(
       return { success: false, message: 'Token has expired or is invalid.' }
     }
 
-    console.log('matchingUser', matchingUser)
-
-    // Clear verification context completely once matched
     matchingUser.authMetadata = undefined
     await matchingUser.save()
+
+    // Sign the token using your separated token processor module
+    const sessionToken = await signSessionToken({
+      _id: matchingUser._id.toString(),
+      email: matchingUser.email,
+      role: matchingUser.role,
+    })
+
+    const cookieStore = await cookies()
+    cookieStore.set('zynith_session', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 24 * 60 * 60, // 1 Day sync matching the payload configuration
+    })
 
     return {
       success: true,
       message: 'Access cleared.',
+      token: sessionToken,
       userData: JSON.stringify({
         _id: matchingUser._id.toString(),
         name: matchingUser.name,
@@ -179,4 +186,9 @@ export async function verifyTokenAndLoginAction(
       message: 'System authentication transaction error.',
     }
   }
+}
+
+export async function logoutAction() {
+  const cookieStore = await cookies()
+  cookieStore.delete('zynith_session')
 }

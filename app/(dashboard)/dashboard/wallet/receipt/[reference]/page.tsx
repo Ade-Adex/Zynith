@@ -61,6 +61,8 @@ export default function PaymentReceiptPage() {
   const [loading, setLoading] = useState<boolean>(true)
   const [orderData, setOrderData] = useState<OrderData | null>(null)
 
+  console.log("orders", orderData)
+
   useEffect(() => {
     if (!reference || !user?._id) return
 
