@@ -169,7 +169,7 @@ export default function PaymentReceiptPage() {
         </Link>
       </div>
 
-      <div className="bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-900 rounded-3xl p-6 md:p-10 shadow-xl dark:shadow-black/40 print:border-none print:shadow-none print:bg-white text-slate-800 dark:text-zinc-100">
+      <div className="bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-900 rounded-xl p-6 md:p-10 shadow-xl dark:shadow-black/40 print:border-none print:shadow-none print:bg-white text-slate-800 dark:text-zinc-100">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-slate-100 dark:border-zinc-900">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-500 shrink-0">
