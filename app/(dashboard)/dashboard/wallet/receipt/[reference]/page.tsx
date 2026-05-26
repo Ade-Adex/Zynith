@@ -142,7 +142,7 @@ export default function PaymentReceiptPage() {
   }
 
   return (
-    <div className="w-full px-3 sm:px-6 py-6 sm:py-10 max-w-5xl mx-auto print:max-w-full print:py-0">
+    <div className="w-full px-0 sm:px-6 py-6 sm:py-10 max-w-5xl mx-auto print:max-w-full print:py-0">
 
       {/* Back */}
       <div className="mb-4 print:hidden">
@@ -154,7 +154,7 @@ export default function PaymentReceiptPage() {
         </Link>
       </div>
 
-      <div className="bg-white dark:bg-zinc-950 border rounded-xl sm:rounded-2xl p-4 sm:p-8 md:p-10">
+      <div className="bg-background border rounded-xl sm:rounded-2xl p-4 sm:p-8 md:p-10">
 
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
