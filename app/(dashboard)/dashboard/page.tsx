@@ -1,10 +1,9 @@
+
 // /app/(dashboard)/dashboard/page.tsx
 
 'use client'
 
-import React from 'react'
-import { useCourses } from '@/app/hooks/useCourses'
-import { Enrollment, UserType } from '@/app/types/user'
+import React, { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Card,
@@ -17,19 +16,36 @@ import {
   Stack,
   rem,
   Loader,
+  RingProgress,
+  Divider,
+  Avatar,
 } from '@mantine/core'
+import { useMediaQuery } from '@mantine/hooks'
 import {
   Zap,
   Star,
   ArrowUpRight,
-  Clock,
+  Clock3,
   Flame,
   Wallet,
   ChevronRight,
   BookOpen,
+  Trophy,
+  CheckCircle2,
+  GraduationCap,
+  CalendarDays,
+  Activity,
+  PlayCircle,
+  BarChart3,
+  ReceiptText,
+  Target,
+  TrendingUp,
 } from 'lucide-react'
-import { useMediaQuery } from '@mantine/hooks'
+
 import { useAuthStore } from '@/app/store/authStore'
+import { getDashboardOverviewAction } from '@/app/services/dashboardActions'
+import { DashboardData } from '@/app/types/user'
+import { Module } from '@/app/types'
 
 interface StatProps {
   label: string
@@ -40,271 +56,593 @@ interface StatProps {
 
 export default function DashboardOverview() {
   const store = useAuthStore()
-  const user = store.user as UserType | null | undefined
+  const authUser = store.user
+
   const isMobile = useMediaQuery(`(max-width: ${rem(768)})`)
 
-  // Pulling live data directly from the hook connected to /api/courses
-  const { courses: databaseCourses, loading: coursesLoading } = useCourses()
+  const [loading, setLoading] = useState(true)
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
 
-  // Guard clause handles both store hydration and active API loading states safely
-  if (!user || !user.stats || coursesLoading) {
+  useEffect(() => {
+    async function loadDashboard() {
+      try {
+        if (!authUser?._id) return
+
+        setLoading(true)
+
+        const response = await getDashboardOverviewAction(authUser._id)
+
+        if (response?.success && response?.data) {
+
+         setDashboard(response.data as DashboardData)
+        }
+      } catch (error) {
+        console.error(error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadDashboard()
+  }, [authUser?._id])
+
+  const activeCourse = dashboard?.activeCourse
+
+const currentModule = useMemo(() => {
+  if (!activeCourse?.course?.modules?.length) return null
+
+  return activeCourse.course.modules.find(
+    (module: Module) =>
+      String(module.id) === String(activeCourse.enrollment.currentModuleId),
+  )
+}, [activeCourse])
+  
+  const walletCurrency =
+    dashboard?.user?.wallet?.currency === 'USD' ? '$' : '₦'
+
+  if (loading || !dashboard) {
     return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-3 bg-[var(--background)] text-[var(--foreground)]">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
         <Loader size="sm" color="blue" />
+
         <Text
           size="xs"
-          fw={700}
-          className="text-slate-400 dark:text-slate-500 uppercase tracking-widest"
+          fw={800}
+          className="uppercase tracking-[0.25em] text-slate-500"
         >
-          Loading workspace...
+          Synchronizing Dashboard...
         </Text>
       </div>
     )
   }
 
-  const userEnrollments: Enrollment[] = user.enrollments || []
-  // Grabbing the most recent enrollment (usually the one just paid for)
-  const enrollment: Enrollment | undefined = userEnrollments[userEnrollments.length - 1]
-
-  // Pure lookups inside your database array values
-  const courseDetails = enrollment
-    ? databaseCourses.find((c) => String(c._id) === String(enrollment.courseId))
-    : undefined
-
-  const currentModule =
-    courseDetails && enrollment
-      ? courseDetails.modules.find(
-          (m) => String(m.id) === String(enrollment.currentModuleId),
-        )
-      : undefined
-
-  // Dynamic lesson calculations based on actual course structure instead of hardcoded 20
-  const totalLessons = courseDetails 
-    ? courseDetails.modules.reduce((acc, mod) => acc + (mod.lessons?.length || 0), 0) || 20
-    : 20
-
-  const completedLessons = Math.round(((enrollment?.progressPercentage || 0) / 100) * totalLessons)
-
   return (
-    <div className="py-12 bg-[var(--background)] text-[var(--foreground)]">
-      {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div className="mb-8">
-          <Badge
-            variant="dot"
-            color="blue"
-            className="mb-4 md:mb-2 uppercase font-black tracking-widest text-[9px]"
+    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] py-6 md:py-10">
+      {/* HERO */}
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8">
+        <div className="flex items-start gap-4">
+          <Avatar
+            radius="xl"
+            size={isMobile ? 56 : 72}
+            src={dashboard.user.avatar || undefined}
+            className="bg-blue-600 text-white shadow-lg"
           >
-            Student Workspace
-          </Badge>
-          <h1 className="text-2xl md:text-4xl font-black tracking-tighter text-slate-900 dark:text-slate-100">
-            Welcome, {user.firstName || 'Student'}
-            <span className="text-blue-600 dark:text-blue-500">.</span>
-          </h1>
+            {!dashboard.user.avatar &&
+              (dashboard.user.firstName?.slice(0, 1) || 'S')}
+          </Avatar>
+
+          <div className="min-w-0">
+            <Badge
+              variant="light"
+              color="blue"
+              radius="sm"
+              className="uppercase tracking-[0.2em] font-black mb-3"
+            >
+              Learning Workspace
+            </Badge>
+
+            <h1 className="text-2xl md:text-4xl font-black tracking-tight leading-tight text-slate-900 dark:text-white break-words">
+              Welcome back, {dashboard.user.firstName}
+              <span className="text-blue-600">.</span>
+            </h1>
+
+            <p className="text-sm md:text-base mt-2 text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
+              Track your real-time course progress, transactions, achievements,
+              and learning performance from your personalized workspace.
+            </p>
+          </div>
         </div>
-        <Paper
-          withBorder
-          radius="md"
-          p="xs"
-          className="flex items-center justify-items-center md:justify-items-start gap-2 px-4 bg-white dark:bg-slate-900/50 border-slate-100 dark:border-slate-800 shadow-sm mb-5"
-        >
-          <Clock size={14} className="text-slate-400 dark:text-slate-500" />
-          <Text
-            size="10px"
-            fw={800}
-            className="uppercase tracking-widest text-slate-600 dark:text-slate-300"
+
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+          <Paper
+            radius="xl"
+            p="md"
+            withBorder
+            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
           >
-            Session: 2h 45m
-          </Text>
-        </Paper>
+            <Group gap={8}>
+              <BookOpen size={15} className="text-blue-500" />
+
+              <Text size="10px" fw={900} className="uppercase tracking-widest">
+                Enrolled
+              </Text>
+            </Group>
+
+            <Text
+              fw={900}
+              className="text-lg mt-2 text-slate-900 dark:text-white"
+            >
+              {dashboard.metrics.enrolledCourses}
+            </Text>
+          </Paper>
+
+          <Paper
+            radius="xl"
+            p="md"
+            withBorder
+            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+          >
+            <Group gap={8}>
+              <Target size={15} className="text-emerald-500" />
+
+              <Text size="10px" fw={900} className="uppercase tracking-widest">
+                Completion
+              </Text>
+            </Group>
+
+            <Text
+              fw={900}
+              className="text-lg mt-2 text-slate-900 dark:text-white"
+            >
+              {dashboard.metrics.completionRate}%
+            </Text>
+          </Paper>
+
+          <Paper
+            radius="xl"
+            p="md"
+            withBorder
+            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 col-span-2 md:col-span-1"
+          >
+            <Group gap={8}>
+              <TrendingUp size={15} className="text-orange-500" />
+
+              <Text size="10px" fw={900} className="uppercase tracking-widest">
+                Active Courses
+              </Text>
+            </Group>
+
+            <Text
+              fw={900}
+              className="text-lg mt-2 text-slate-900 dark:text-white"
+            >
+              {dashboard.metrics.activeCourses}
+            </Text>
+          </Paper>
+        </div>
       </div>
 
-      {/* Stats Grid */}
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="md" mb="xl">
+      {/* STATS */}
+      <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing="lg" mb="xl">
         <StatItem
-          label="Course Points"
-          value={user.stats.points.toLocaleString()}
+          label="Learning Points"
+          value={dashboard.metrics.points.toLocaleString()}
           icon={<Zap size={18} className="text-amber-500 fill-amber-500" />}
-          trend="+12% this week"
+          trend={`${dashboard.metrics.completedCourses} Completed`}
         />
+
         <StatItem
-          label="Reviews Done"
-          value={user.stats.peerReviewsDone}
-          icon={<Star size={18} className="text-purple-500" />}
-          trend="Top 5% Rank"
+          label="Peer Reviews"
+          value={dashboard.metrics.peerReviews}
+          icon={<Star size={18} className="text-violet-500" />}
+          trend="Student Activity"
         />
+
         <StatItem
-          label="Active Streak"
-          value={`${user.stats.streakDays} Days`}
+          label="Learning Streak"
+          value={`${dashboard.metrics.streakDays} Days`}
           icon={<Flame size={18} className="text-orange-500 fill-orange-500" />}
-          trend="Mastery Goal"
+          trend="Consistency"
         />
+
         <StatItem
           label="Wallet Balance"
-          value={`${user.wallet?.currency === 'USD' ? '$' : '₦'}${user.wallet?.balance?.toLocaleString() ?? 0}`}
+          value={`${walletCurrency}${dashboard.user.wallet?.balance?.toLocaleString() ?? 0}`}
           icon={<Wallet size={18} className="text-green-500" />}
           trend="Updated Live"
         />
       </SimpleGrid>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Main Learning Card */}
-        <div className="lg:col-span-8">
-          {enrollment && courseDetails ? (
+      <div className="grid grid-cols-1 2xl:grid-cols-12 gap-6">
+        {/* LEFT */}
+        <div className="2xl:col-span-8 space-y-6">
+          {/* ACTIVE COURSE */}
+          {activeCourse ? (
             <Card
+              radius="24px"
               padding={isMobile ? 'md' : 'xl'}
-              radius="16px"
-              className="border border-slate-200 dark:border-slate-800 shadow-[0_8px_30px_rgb(0,0,0,0.04)] bg-white dark:bg-slate-900/40 overflow-hidden relative min-h-85 flex flex-col justify-between"
+              className="relative overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50"
             >
-              <div className="absolute top-0 right-0 md:p-8">
+              <div className="absolute top-0 right-0">
                 <div
-                  className={`w-40 h-40 bg-gradient-to-br ${courseDetails.color || 'from-blue-50 to-indigo-50'} rounded-full blur-3xl opacity-20 dark:opacity-5`}
+                  className={`w-72 h-72 rounded-full blur-3xl opacity-10 dark:opacity-5 bg-gradient-to-br ${
+                    activeCourse.course.color || 'from-blue-400 to-indigo-500'
+                  }`}
                 />
               </div>
 
-              <Stack>
-                <Group justify="space-between">
-                  <Badge
-                    size="sm"
-                    radius="sm"
-                    color="green"
-                    variant="light"
-                    className="font-black uppercase tracking-widest"
-                  >
-                    Active Track
-                  </Badge>
-                  <Link href={`/courses/${enrollment.courseId}`}>
-                    <ArrowUpRight className="text-slate-300 dark:text-slate-600 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer" />
+              <div className="relative z-10">
+                <Group justify="space-between" align="flex-start">
+                  <div className="min-w-0 flex-1">
+                    <Badge
+                      color="green"
+                      variant="light"
+                      radius="sm"
+                      className="uppercase tracking-widest font-black mb-4"
+                    >
+                      Active Course
+                    </Badge>
+
+                    <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight text-slate-900 dark:text-white break-words">
+                      {activeCourse.course.title}
+                    </h2>
+
+                    <Text
+                      size="xs"
+                      fw={800}
+                      className="uppercase tracking-[0.2em] mt-3 text-slate-400 dark:text-slate-500 break-words"
+                    >
+                      {currentModule
+                        ? `Current Module • ${currentModule.title}`
+                        : 'Learning In Progress'}
+                    </Text>
+                  </div>
+
+                  <Link href={`/courses/${activeCourse.course._id}`}>
+                    <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
+                      <ArrowUpRight size={18} />
+                    </div>
                   </Link>
                 </Group>
 
-                <div className="mt-4">
-                  <h2 className="text-xl font-black tracking-tighter leading-tight max-w-md text-slate-900 dark:text-slate-100 uppercase">
-                    {courseDetails.title}
-                  </h2>
-                  <Text
-                    c="dimmed"
-                    fw={700}
-                    className="uppercase tracking-[0.2em] text-[10px] !mt-1.5 text-slate-400 dark:text-slate-500"
-                  >
-                    {currentModule
-                      ? `Module ${enrollment.currentModuleId} • ${currentModule.title}`
-                      : `Module ${enrollment.currentModuleId || 1} • Starting Lessons`}
-                  </Text>
-                </div>
-              </Stack>
+                <div className="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+                  <div className="lg:col-span-2">
+                    <Group justify="space-between" mb="xs">
+                      <Text
+                        size="10px"
+                        fw={900}
+                        className="uppercase tracking-widest text-blue-600"
+                      >
+                        Overall Progress
+                      </Text>
 
-              <div className="mt-4">
-                <Group justify="space-between" mb="xs">
-                  <Text
-                    size="10px"
-                    fw={900}
-                    color="blue"
-                    className="tracking-widest"
-                  >
-                    {enrollment.progressPercentage || 0}% COMPLETE
-                  </Text>
-                  <Text
-                    size="xs"
-                    fw={800}
-                    className="text-slate-400 dark:text-slate-500"
-                  >
-                    {completedLessons} / {totalLessons} LESSONS
-                  </Text>
-                </Group>
-                <Progress
-                  value={enrollment.progressPercentage || 0}
-                  color="blue"
-                  size="lg"
-                  radius="xl"
-                  className="bg-slate-100 dark:bg-slate-800"
-                />
-                <Link
-                  href={`/courses/${enrollment.courseId}/learn`}
-                  className="block mt-8"
-                >
-                  <button className="bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-950 w-full md:w-auto px-10 py-3 rounded-xl text-xs cursor-pointer font-black uppercase tracking-[0.2em] hover:bg-blue-600 dark:hover:bg-blue-500 dark:hover:text-white transition-all active:scale-95 shadow-xl shadow-blue-900/10">
-                    {enrollment.progressPercentage === 0 ? 'Start Course' : 'Resume Course'}
-                  </button>
-                </Link>
+                      <Text size="xs" fw={800} className="text-slate-500">
+                        {dashboard.metrics.completedLessons} /{' '}
+                        {dashboard.metrics.totalLessons} Lessons
+                      </Text>
+                    </Group>
+
+                    <Progress
+                      value={activeCourse.enrollment.progressPercentage || 0}
+                      size="xl"
+                      radius="xl"
+                      color="blue"
+                    />
+
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8">
+                      <MiniMetric
+                        label="Modules"
+                        value={activeCourse.course.modules?.length || 0}
+                        icon={<BookOpen size={16} />}
+                      />
+
+                      <MiniMetric
+                        label="Completed"
+                        value={dashboard.metrics.completedLessons}
+                        icon={<CheckCircle2 size={16} />}
+                      />
+
+                      <MiniMetric
+                        label="Certificates"
+                        value={dashboard.metrics.certificates}
+                        icon={<GraduationCap size={16} />}
+                      />
+
+                      <MiniMetric
+                        label="Progress"
+                        value={`${dashboard.metrics.completionRate}%`}
+                        icon={<BarChart3 size={16} />}
+                      />
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-3 mt-8">
+                      <Link
+                        href={`/courses/${activeCourse.course._id}/learn`}
+                        className="w-full sm:w-auto"
+                      >
+                        <button className="w-full sm:w-auto bg-slate-900 dark:bg-white dark:text-slate-950 text-white px-8 py-3.5 rounded-2xl font-black uppercase tracking-[0.18em] text-xs hover:bg-blue-600 dark:hover:bg-blue-500 dark:hover:text-white transition-all cursor-pointer shadow-lg">
+                          <span className="flex items-center justify-center gap-2">
+                            <PlayCircle size={16} />
+
+                            {activeCourse.enrollment.progressPercentage === 0
+                              ? 'Start Learning'
+                              : 'Resume Learning'}
+                          </span>
+                        </button>
+                      </Link>
+
+                      <Link href="/courses" className="w-full sm:w-auto">
+                        <button className="w-full sm:w-auto border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-8 py-3.5 rounded-2xl font-black uppercase tracking-[0.18em] text-xs hover:border-blue-500 hover:text-blue-600 transition-all cursor-pointer">
+                          Explore Courses
+                        </button>
+                      </Link>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-center">
+                    <RingProgress
+                      size={180}
+                      thickness={16}
+                      roundCaps
+                      sections={[
+                        {
+                          value:
+                            activeCourse.enrollment.progressPercentage || 0,
+                          color: 'blue',
+                        },
+                      ]}
+                      label={
+                        <div className="text-center">
+                          <Text
+                            fw={900}
+                            className="text-3xl text-slate-900 dark:text-white"
+                          >
+                            {activeCourse.enrollment.progressPercentage || 0}%
+                          </Text>
+
+                          <Text
+                            size="10px"
+                            fw={900}
+                            className="uppercase tracking-widest text-slate-500 mt-1"
+                          >
+                            Completed
+                          </Text>
+                        </div>
+                      }
+                    />
+                  </div>
+                </div>
               </div>
             </Card>
           ) : (
             <Card
+              radius="24px"
               padding="xl"
-              radius="16px"
-              className="border border-dashed border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/20 flex flex-col items-center justify-center p-12 text-center min-h-[340px]"
+              className="min-h-[320px] flex flex-col items-center justify-center border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30 text-center"
             >
-              <BookOpen size={32} className="text-slate-300 dark:text-slate-600 mb-3" />
-              <Text
-                size="sm"
-                fw={800}
-                className="text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1"
-              >
-                No Active Enrollments
-              </Text>
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-semibold max-w-xs leading-relaxed mb-6">
-                You are currently not registered for any active system tracks.
-                Explore the repository catalog to pick up points.
+              <div className="w-20 h-20 rounded-full bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center mb-5">
+                <BookOpen size={32} className="text-blue-600" />
+              </div>
+
+              <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                No Active Course
+              </h2>
+
+              <p className="max-w-md mt-3 text-sm leading-relaxed text-slate-500">
+                You are currently not enrolled in any active learning track.
               </p>
-              <Link href="/courses">
-                <button className="bg-blue-600 hover:bg-slate-900 dark:hover:bg-white dark:hover:text-slate-950 text-white px-8 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest transition-all cursor-pointer shadow-md">
-                  Browse Catalog
+
+              <Link href="/courses" className="mt-8">
+                <button className="bg-blue-600 hover:bg-slate-900 text-white px-8 py-3 rounded-2xl font-black uppercase tracking-[0.18em] text-xs transition-all cursor-pointer">
+                  Browse Courses
                 </button>
               </Link>
             </Card>
           )}
+
+          {/* RECENT TRANSACTIONS */}
+          <Paper
+            radius="24px"
+            p={isMobile ? 'md' : 'xl'}
+            withBorder
+            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+          >
+            <Group justify="space-between" mb="lg">
+              <div>
+                <Text
+                  fw={900}
+                  className="uppercase tracking-[0.2em] text-sm text-slate-500"
+                >
+                  Recent Transactions
+                </Text>
+
+                <Text size="sm" className="text-slate-400 mt-1">
+                  Latest successful payments from your account.
+                </Text>
+              </div>
+
+              <ReceiptText size={20} className="text-emerald-500" />
+            </Group>
+
+            <div className="space-y-4">
+              {dashboard.recentTransactions.length > 0 ? (
+                dashboard.recentTransactions.map(
+                  (
+                    transaction: DashboardData['recentTransactions'][number],
+                  ) => (
+                    <div
+                      key={transaction.reference}
+                      className="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 dark:border-slate-800"
+                    >
+                      <div className="w-11 h-11 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center text-green-600">
+                        <Wallet size={16} />
+                      </div>
+
+                      <div className="flex-1 min-w-0">
+                        <Text
+                          fw={800}
+                          className="text-slate-900 dark:text-white truncate"
+                        >
+                          {transaction.titles.join(', ')}
+                        </Text>
+
+                        <Text size="xs" className="text-slate-500 mt-1">
+                          Ref: {transaction.reference}
+                        </Text>
+                      </div>
+
+                      <Badge color="green" variant="light">
+                        {walletCurrency}
+                        {transaction.amount.toLocaleString()}
+                      </Badge>
+                    </div>
+                  ),
+                )
+              ) : (
+                <Text size="sm" className="text-slate-500">
+                  No recent transactions found.
+                </Text>
+              )}
+            </div>
+          </Paper>
         </div>
 
-        {/* Sidebar Mini-Tasks */}
-        <div className="lg:col-span-4 space-y-6">
+        {/* RIGHT */}
+        <div className="2xl:col-span-4 space-y-6">
+          {/* PERFORMANCE */}
           <Paper
-            p={isMobile ? 'sm' : 'lg'}
-            radius="16px"
+            radius="24px"
+            p={isMobile ? 'md' : 'xl'}
             withBorder
-            className="border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 shadow-sm"
+            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+          >
+            <Group justify="space-between" mb="lg">
+              <Text
+                fw={900}
+                className="uppercase tracking-[0.2em] text-sm text-slate-500"
+              >
+                Performance Overview
+              </Text>
+
+              <Activity size={18} className="text-blue-500" />
+            </Group>
+
+            <Stack gap="lg">
+              <PerformanceRow
+                label="Course Completion"
+                value={`${dashboard.metrics.completedCourses}`}
+              />
+
+              <PerformanceRow
+                label="Certificates Earned"
+                value={`${dashboard.metrics.certificates}`}
+              />
+
+              <PerformanceRow
+                label="Assignments Reviewed"
+                value={`${dashboard.metrics.peerReviews}`}
+              />
+
+              <PerformanceRow
+                label="Current Streak"
+                value={`${dashboard.metrics.streakDays} Days`}
+              />
+            </Stack>
+          </Paper>
+
+          {/* RECENT ENROLLMENTS */}
+          <Paper
+            radius="24px"
+            p={isMobile ? 'md' : 'xl'}
+            withBorder
+            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+          >
+            <Group justify="space-between" mb="lg">
+              <Text
+                fw={900}
+                className="uppercase tracking-[0.2em] text-sm text-slate-500"
+              >
+                Recent Courses
+              </Text>
+
+              <CalendarDays size={18} className="text-orange-500" />
+            </Group>
+
+            <div className="space-y-4">
+              {dashboard.recentEnrollments.length > 0 ? (
+                dashboard.recentEnrollments.map(
+                  (item: DashboardData['recentEnrollments'][number]) => (
+                    <div key={item.enrollmentId}>
+                      <div className="flex items-start gap-4">
+                        <div className="w-3 h-3 rounded-full bg-blue-600 mt-1.5" />
+
+                        <div className="flex-1 min-w-0">
+                          <Text
+                            fw={800}
+                            className="text-slate-900 dark:text-white break-words"
+                          >
+                            {item.course?.title || 'Course'}
+                          </Text>
+
+                          <Text size="xs" className="text-slate-500 mt-1">
+                            {item.progressPercentage}% completed
+                          </Text>
+                        </div>
+                      </div>
+                    </div>
+                  ),
+                )
+              ) : (
+                <Text size="sm" className="text-slate-500">
+                  No recent enrollments available.
+                </Text>
+              )}
+            </div>
+          </Paper>
+
+          {/* QUICK ACTIONS */}
+          <Paper
+            radius="24px"
+            p={isMobile ? 'md' : 'xl'}
+            withBorder
+            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
           >
             <Text
               fw={900}
-              className="uppercase tracking-widest text-sm mb-6 text-slate-400 dark:text-slate-500"
+              className="uppercase tracking-[0.2em] text-sm text-slate-500 mb-6"
             >
-              P2P Pending Reviews
+              Quick Actions
             </Text>
-            <Stack gap="md">
-              {[1, 2].map((id) => (
-                <div
-                  key={id}
-                  className="group flex items-center gap-4 py-3 px-3 hover:bg-slate-50 dark:hover:bg-slate-800/40 rounded-2xl transition-all cursor-pointer border border-transparent hover:border-slate-100 dark:hover:border-slate-800"
-                >
-                  <div className="w-8 h-8 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-400 dark:text-slate-500 font-bold text-xs group-hover:bg-blue-100 dark:group-hover:bg-blue-950/50 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                    {id === 1 ? 'R' : 'G'}
-                  </div>
-                  <div className="flex-1">
-                    <Text
-                      size="xs"
-                      fw={800}
-                      className="leading-none mb-1 text-slate-800 dark:text-slate-200"
-                    >
-                      Assignment #{id + 500}
-                    </Text>
-                    <Text
-                      size="10px"
-                      fw={700}
-                      className="text-slate-400 dark:text-slate-500"
-                    >
-                      System Logic • +50 PTS
-                    </Text>
-                  </div>
-                  <ChevronRight
-                    size={14}
-                    className="text-slate-300 dark:text-slate-600"
-                  />
-                </div>
-              ))}
-              <button className="w-full mt-4 text-sm font-black uppercase tracking-widest text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/30 py-3 rounded-xl transition-all cursor-pointer">
-                Access Grading Hub
-              </button>
-            </Stack>
+
+            <div className="space-y-3">
+              <QuickAction
+                href="/courses"
+                title="Browse Courses"
+                subtitle="Explore available learning tracks"
+                icon={<BookOpen size={16} />}
+              />
+
+              <QuickAction
+                href="/dashboard/wallet"
+                title="Wallet & Payments"
+                subtitle="Manage balance and transactions"
+                icon={<Wallet size={16} />}
+              />
+
+              <QuickAction
+                href="/dashboard/certificates"
+                title="Certificates"
+                subtitle="Access earned certificates"
+                icon={<GraduationCap size={16} />}
+              />
+
+              <QuickAction
+                href="/dashboard/transactions"
+                title="Transactions"
+                subtitle="Review purchase history"
+                icon={<ReceiptText size={16} />}
+              />
+            </div>
           </Paper>
         </div>
       </div>
@@ -315,38 +653,146 @@ export default function DashboardOverview() {
 function StatItem({ label, value, icon, trend }: StatProps) {
   return (
     <Paper
-      p="md"
-      radius="16px"
+      p="lg"
+      radius="24px"
       withBorder
-      className="border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900/40 hover:border-blue-100 dark:hover:border-blue-900/50 hover:shadow-lg dark:hover:shadow-blue-950/20 hover:shadow-blue-900/5 transition-all duration-300 group"
+      className="group border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50"
     >
-      <Group justify="space-between" mb="md">
-        <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-2xl group-hover:bg-blue-50 dark:group-hover:bg-blue-950/50 transition-colors">
+      <Group justify="space-between" mb="lg">
+        <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
           {icon}
         </div>
+
         <Badge
-          variant="transparent"
+          size="sm"
+          variant="light"
           color="gray"
-          size="xs"
-          className="font-bold tracking-tighter text-slate-400 dark:text-slate-500"
+          className="font-black"
         >
           {trend}
         </Badge>
       </Group>
+
       <Text
-        size="18px"
         fw={900}
-        className="tracking-tighter text-slate-900 dark:text-slate-100"
+        className="text-2xl tracking-tight text-slate-900 dark:text-white break-words"
       >
         {value}
       </Text>
+
       <Text
-        size="8px"
-        fw={800}
-        className="uppercase tracking-widest !mt-1.5 text-slate-400 dark:text-slate-500"
+        size="10px"
+        fw={900}
+        className="uppercase tracking-[0.25em] mt-2 text-slate-500"
       >
         {label}
       </Text>
     </Paper>
+  )
+}
+
+function MiniMetric({
+  label,
+  value,
+  icon,
+}: {
+  label: string
+  value: string | number
+  icon: React.ReactNode
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 p-4">
+      <div className="flex items-center gap-2 text-slate-500 mb-2">
+        {icon}
+      </div>
+
+      <Text
+        fw={900}
+        className="text-xl text-slate-900 dark:text-white"
+      >
+        {value}
+      </Text>
+
+      <Text
+        size="10px"
+        fw={900}
+        className="uppercase tracking-widest text-slate-500 mt-1"
+      >
+        {label}
+      </Text>
+    </div>
+  )
+}
+
+function PerformanceRow({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4">
+      <Text
+        size="sm"
+        fw={700}
+        className="text-slate-600 dark:text-slate-400"
+      >
+        {label}
+      </Text>
+
+      <Badge
+        radius="sm"
+        size="lg"
+        variant="light"
+        color="blue"
+        className="font-black"
+      >
+        {value}
+      </Badge>
+    </div>
+  )
+}
+
+function QuickAction({
+  href,
+  title,
+  subtitle,
+  icon,
+}: {
+  href: string
+  title: string
+  subtitle: string
+  icon: React.ReactNode
+}) {
+  return (
+    <Link href={href}>
+      <div className="group flex items-center gap-4 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all cursor-pointer">
+        <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-blue-600">
+          {icon}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <Text
+            fw={800}
+            className="text-slate-900 dark:text-white"
+          >
+            {title}
+          </Text>
+
+          <Text
+            size="xs"
+            className="text-slate-500 mt-1"
+          >
+            {subtitle}
+          </Text>
+        </div>
+
+        <ChevronRight
+          size={16}
+          className="text-slate-400 group-hover:text-blue-600 transition-colors"
+        />
+      </div>
+    </Link>
   )
 }

@@ -53,6 +53,8 @@ export interface IDbEnrollment extends Document {
   assignmentSubmissions: DbAssignmentSubmission[]
   enrolledAt: Date
   lastAccessedAt: Date
+  createdAt: Date
+  updatedAt: Date
 }
 
 // --- FRONTEND TYPES (Used by UI components) ---
