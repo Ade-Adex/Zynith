@@ -1,4 +1,4 @@
-// /app/components/dashboard/DashboardOverview.tsx
+// /app/(dashboard)/dashboard/page.tsx
 
 'use client'
 

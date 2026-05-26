@@ -31,7 +31,9 @@ export function SidebarContent({
   return (
     <Stack gap={4} px={isCollapsed ? 4 : 0}>
       {SIDEBAR_DATA.map((item) => {
-        const isActive = pathname === item.href
+        const isActive =
+          pathname === item.href ||
+          (item.href !== '/dashboard' && pathname.startsWith(item.href))
 
         const linkContent = (
           <NavLink

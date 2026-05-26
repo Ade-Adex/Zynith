@@ -12,6 +12,7 @@ import {
   SerializedEnrollment,
   UpdatePayload,
 } from '@/app/types/enrollment'
+import { TransactionModel } from '@/app/models/Transaction'
 
 export type EnrollmentActionResult = {
   success: boolean
@@ -77,36 +78,160 @@ const serializeEnrollment = (doc: IDbEnrollment): SerializedEnrollment => ({
 /**
  * Provisions unique enrollments for a user across one or multiple courses.
  */
+// export async function enrollUserAfterPaymentAction(
+//   userId: string,
+//   courseIds: string[],
+//   paymentReference: string,
+// ): Promise<EnrollmentActionResult> {
+//   if (!userId || !courseIds || courseIds.length === 0) {
+//     return { success: false, message: 'Missing crucial enrollment parameters.' }
+//   }
+
+//   try {
+//     await connectDB()
+
+//     const userObjectId = new Types.ObjectId(userId)
+
+//     const enrollmentPromises = courseIds.map(async (courseId) => {
+//       const courseObjectId = new Types.ObjectId(courseId)
+
+//       // Cast the lean query or fallback to a typed structural shape
+//       const course = (await CourseModel.findById(courseObjectId).lean()) as {
+//         modules?: Module[]
+//       } | null
+//       const firstModuleId = course?.modules?.[0]?.id || ''
+//       const firstLessonId = course?.modules?.[0]?.lessons?.[0]?.id || ''
+
+//       return EnrollmentModel.findOneAndUpdate(
+//         { userId: userObjectId, courseId: courseObjectId },
+//         {
+//           $setOnInsert: {
+//             userId: userObjectId,
+//             courseId: courseObjectId,
+//             status: 'active',
+//             progressPercentage: 0,
+//             currentModuleId: firstModuleId,
+//             currentLessonId: firstLessonId,
+//             completedLessons: [],
+//             completedModules: [],
+//             quizAttempts: [],
+//             assignmentSubmissions: [],
+//             enrolledAt: new Date(),
+//           },
+//           $set: {
+//             lastAccessedAt: new Date(),
+//           },
+//         },
+//         { upsert: true, returnDocument: 'after' },
+//       )
+//     })
+
+//     await Promise.all(enrollmentPromises)
+
+//     return {
+//       success: true,
+//       message: 'Secure workspace access parameters successfully provisioned.',
+//     }
+//   } catch (error: unknown) {
+//     console.error('Enrollment generation system fault:', error)
+//     return {
+//       success: false,
+//       message:
+//         error instanceof Error
+//           ? error.message
+//           : 'Database orchestration failure.',
+//     }
+//   }
+// }
+
+
 export async function enrollUserAfterPaymentAction(
   userId: string,
   courseIds: string[],
   paymentReference: string,
-): Promise<EnrollmentActionResult> {
+  gatewayDetails?: {
+    gateway: 'PAYSTACK' | 'WALLET'
+    cardType?: string
+    last4?: string
+    bank?: string
+  },
+) {
   if (!userId || !courseIds || courseIds.length === 0) {
     return { success: false, message: 'Missing crucial enrollment parameters.' }
   }
 
   try {
     await connectDB()
-
     const userObjectId = new Types.ObjectId(userId)
+    const courseObjectIds = courseIds.map((id) => new Types.ObjectId(id))
 
-    const enrollmentPromises = courseIds.map(async (courseId) => {
-      const courseObjectId = new Types.ObjectId(courseId)
+    // ADDED: Early check to see if the user is already enrolled in any of these courses
+    const existingEnrollments = await EnrollmentModel.find({
+      userId: userObjectId,
+      courseId: { $in: courseObjectIds },
+      status: 'active', // or 'completed' depending on your business rule
+    }).lean()
 
-      // Cast the lean query or fallback to a typed structural shape
-      const course = (await CourseModel.findById(courseObjectId).lean()) as {
-        modules?: Module[]
-      } | null
-      const firstModuleId = course?.modules?.[0]?.id || ''
-      const firstLessonId = course?.modules?.[0]?.lessons?.[0]?.id || ''
+    if (existingEnrollments.length > 0) {
+      return {
+        success: false,
+        message:
+          'You are already enrolled in one or more of the selected courses.',
+      }
+    }
+
+    // 1. Resolve exact price details across all selected courses
+    const verifiedCourses = await CourseModel.find({
+      _id: { $in: courseObjectIds },
+    }).lean<Course[]>()
+
+    let calculatedTotal = 0
+    const transactionItems = verifiedCourses.map((course) => {
+      calculatedTotal += course.price
+      return {
+        courseId: course._id,
+        title: course.title,
+        price: Math.round(course.price - course.price * 0.075), // Deduct tax to evaluate pure subtotal
+      }
+    })
+
+    const exactTax = Math.round(calculatedTotal * 0.075)
+    const exactSubtotal = calculatedTotal - exactTax
+
+    // 2. Commit the Transaction Ledger Record
+    await TransactionModel.findOneAndUpdate(
+      { reference: paymentReference },
+      {
+        $setOnInsert: {
+          userId: userObjectId,
+          reference: paymentReference,
+          gateway: gatewayDetails?.gateway || 'PAYSTACK',
+          items: transactionItems,
+          subtotal: exactSubtotal,
+          tax: exactTax,
+          total: calculatedTotal,
+          status: 'SUCCESS',
+          paymentDetails: {
+            cardType: gatewayDetails?.cardType || 'N/A',
+            last4: gatewayDetails?.last4 || 'N/A',
+            bank: gatewayDetails?.bank || 'N/A',
+          },
+        },
+      },
+      { upsert: true, new: true },
+    )
+
+    // 3. Provision workspace items
+    const enrollmentPromises = verifiedCourses.map(async (course) => {
+      const firstModuleId = course.modules?.[0]?.id || ''
+      const firstLessonId = course.modules?.[0]?.lessons?.[0]?.id || ''
 
       return EnrollmentModel.findOneAndUpdate(
-        { userId: userObjectId, courseId: courseObjectId },
+        { userId: userObjectId, courseId: course._id },
         {
           $setOnInsert: {
             userId: userObjectId,
-            courseId: courseObjectId,
+            courseId: course._id,
             status: 'active',
             progressPercentage: 0,
             currentModuleId: firstModuleId,
@@ -117,9 +242,7 @@ export async function enrollUserAfterPaymentAction(
             assignmentSubmissions: [],
             enrolledAt: new Date(),
           },
-          $set: {
-            lastAccessedAt: new Date(),
-          },
+          $set: { lastAccessedAt: new Date() },
         },
         { upsert: true, returnDocument: 'after' },
       )
@@ -131,15 +254,9 @@ export async function enrollUserAfterPaymentAction(
       success: true,
       message: 'Secure workspace access parameters successfully provisioned.',
     }
-  } catch (error: unknown) {
+  } catch (error) {
     console.error('Enrollment generation system fault:', error)
-    return {
-      success: false,
-      message:
-        error instanceof Error
-          ? error.message
-          : 'Database orchestration failure.',
-    }
+    return { success: false, message: 'Database orchestration failure.' }
   }
 }
 

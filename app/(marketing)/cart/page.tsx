@@ -18,12 +18,19 @@ import { useCartStore } from '@/app/store/cartStore'
 import { useAuthStore } from '@/app/store/authStore'
 import { enrollUserAfterPaymentAction } from '@/app/services/enrollmentActions'
 
+// Expand interface to support the metadata parameters returned from verified hooks
 interface PaystackTransactionResponse {
   reference: string
   status: string
   trans: string
   transaction: string
   message: string
+  channel?: string
+  bank?: string
+  card?: {
+    brand: string
+    last4: string
+  }
 }
 
 interface PaystackTransactionOptions {
@@ -190,27 +197,31 @@ export default function CartPage() {
         callback: async (response: PaystackTransactionResponse) => {
           try {
             const activeUserId = user?._id
+            if (!activeUserId) return
 
-            if (!activeUserId) {
-              console.error(
-                'Bulk enrollment aborted: User session identifier lost.',
-              )
-              return
-            }
+            // Safely extract optional channel parameters fallback structural definitions
+            const channel = response.channel || 'card'
+            const brandType = response.card?.brand || 'VISA / MASTER'
+            const numericEnding = response.card?.last4 || '****'
+            const issuingBank = response.bank || 'Gateway Bank'
 
             await enrollUserAfterPaymentAction(
               String(activeUserId),
               courseIdsStaged,
               response.reference,
+              {
+                gateway: 'PAYSTACK',
+                cardType: `${channel.toUpperCase()} (${brandType})`,
+                last4: numericEnding,
+                bank: issuingBank,
+              },
             )
           } catch (err) {
             console.error('Bulk processing background sync failure:', err)
           } finally {
             clearCart()
             setIsProcessingPayment(false)
-            router.push(
-              `/dashboard?payment=success&reference=${response.reference}`,
-            )
+            router.push(`/dashboard/wallet/receipt/${response.reference}`)
           }
         },
         onClose: () => {
@@ -218,7 +229,6 @@ export default function CartPage() {
         },
       })
 
-      // Type-safe property guard evaluation without using 'any'
       if ('open' in handler) {
         handler.open()
       } else if ('openIframe' in handler) {
@@ -333,19 +343,19 @@ export default function CartPage() {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-surface focus:outline-none! focus:border-none! focus:ring-0! focus-visible:ring-0! focus-visible:outline-none! rounded-xl px-3 border border-slate-200 dark:border-zinc-800 transition-all">
+            <div className="flex items-center gap-2 bg-surface focus:outline-none focus:border-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none rounded-xl px-3 border border-slate-200 dark:border-zinc-800 transition-all">
               <Tag size={14} className="text-slate-400" />
               <input
                 type="text"
                 placeholder="PROMO CODE"
-                className="bg-transparent! border-none! py-2.5 outline-none! focus:outline-none! focus:border-none! focus:ring-0! focus-visible:ring-0! focus-visible:outline-none! font-black text-sm! tracking-wider placeholder:text-slate-400 uppercase w-full"
+                className="bg-transparent border-none py-2.5 outline-none focus:outline-none focus:border-none focus:ring-0 focus-visible:ring-0 focus-visible:outline-none font-black text-sm tracking-wider placeholder:text-slate-400 uppercase w-full"
               />
             </div>
 
             <button
               onClick={handleCartPaymentCheckout}
               disabled={isProcessingPayment}
-              className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-3.5 rounded-2xl font-black! uppercase text-sm! tracking-wider transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
+              className="w-full bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white py-3.5 rounded-2xl font-black uppercase text-sm tracking-wider transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-600/20 disabled:opacity-50 cursor-pointer"
             >
               {isProcessingPayment ? (
                 'Initializing Gateways...'
