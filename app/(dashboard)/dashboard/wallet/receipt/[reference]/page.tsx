@@ -3,7 +3,7 @@
 'use client'
 
 import React, { useEffect, useState } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   CheckCircle2,
@@ -42,7 +42,6 @@ interface OrderData {
   date: string
 }
 
-// Fixed formatting configuration parameters matrix
 const currencyFormatOptions = {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
@@ -54,14 +53,11 @@ export default function PaymentReceiptPage() {
     ? params.reference[0]
     : (params?.reference as string)
 
-  const router = useRouter()
   const { user: rawUser } = useAuthStore()
   const user = rawUser as UserType | null
 
-  const [loading, setLoading] = useState<boolean>(true)
+  const [loading, setLoading] = useState(true)
   const [orderData, setOrderData] = useState<OrderData | null>(null)
-
-  console.log("orders", orderData)
 
   useEffect(() => {
     if (!reference || !user?._id) return
@@ -71,11 +67,9 @@ export default function PaymentReceiptPage() {
         const response = await getReceiptDetailsByReference(reference, user._id)
         if (response.success && response.data) {
           setOrderData(response.data as OrderData)
-        } else {
-          console.error('Statement generation reference parameters mismatch.')
         }
       } catch (err) {
-        console.error('Error fetching operational database receipt:', err)
+        console.error(err)
       } finally {
         setLoading(false)
       }
@@ -84,9 +78,7 @@ export default function PaymentReceiptPage() {
     fetchReceiptDetails()
   }, [reference, user?._id])
 
-  const handlePrint = () => {
-    if (typeof window !== 'undefined') window.print()
-  }
+  const handlePrint = () => window.print()
 
   const renderGatewayDetails = () => {
     if (!orderData) return null
@@ -95,19 +87,19 @@ export default function PaymentReceiptPage() {
       case 'WALLET':
         return (
           <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400">
-            <Wallet2 size={12} /> Internal Wallet
+            <Wallet2 size={12} /> Wallet
           </span>
         )
       case 'PAYSTACK':
         return (
           <span className="flex items-center gap-1 text-teal-600 dark:text-teal-400">
-            <CreditCard size={12} /> Paystack Engine
+            <CreditCard size={12} /> Paystack
           </span>
         )
       case 'STRIPE':
         return (
           <span className="flex items-center gap-1 text-indigo-600 dark:text-indigo-400">
-            <CreditCard size={12} /> Stripe Payment
+            <CreditCard size={12} /> Stripe
           </span>
         )
       default:
@@ -117,11 +109,11 @@ export default function PaymentReceiptPage() {
 
   if (loading) {
     return (
-      <div className="min-h-[75vh] flex items-center justify-center bg-transparent">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 border-2 border-t-blue-600 border-slate-200 dark:border-zinc-800 rounded-full animate-spin" />
-          <p className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500 animate-pulse">
-            Compiling Transaction Statement...
+      <div className="min-h-[70vh] flex items-center justify-center px-4">
+        <div className="text-center space-y-3">
+          <div className="w-8 h-8 border-2 border-t-blue-600 border-slate-200 dark:border-zinc-800 rounded-full animate-spin mx-auto" />
+          <p className="text-[10px] sm:text-xs font-black uppercase tracking-widest text-slate-400">
+            Loading receipt...
           </p>
         </div>
       </div>
@@ -130,28 +122,19 @@ export default function PaymentReceiptPage() {
 
   if (!orderData) {
     return (
-      <div className="min-h-[75vh] flex items-center justify-center px-4">
-        <div className="text-center space-y-6 max-w-sm border border-slate-100 dark:border-zinc-800/80 p-8 rounded-3xl bg-white dark:bg-zinc-950 shadow-xl">
-          <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/20 flex items-center justify-center text-red-500 mx-auto">
-            <Hash size={24} />
-          </div>
-          <div className="space-y-2">
-            <h3 className="text-sm font-black uppercase tracking-wider text-slate-800 dark:text-zinc-200">
-              Statement Ledger Record Not Found
-            </h3>
-            <p className="text-xs text-slate-400 dark:text-zinc-500 leading-relaxed">
-              We couldn&apos;t locate a settled ledger mapping reference code{' '}
-              <span className="font-mono bg-slate-50 dark:bg-zinc-900 px-1 py-0.5 rounded text-red-400">
-                {reference}
-              </span>{' '}
-              under this active account credentials.
-            </p>
-          </div>
+      <div className="min-h-[70vh] flex items-center justify-center px-4">
+        <div className="w-full max-w-sm text-center border rounded-2xl p-6 sm:p-8 bg-white dark:bg-zinc-950">
+          <Hash className="mx-auto text-red-500 mb-3" />
+          <h3 className="text-sm font-black uppercase">Not Found</h3>
+          <p className="text-xs text-slate-500 mt-2 break-words">
+            Reference: {reference}
+          </p>
+
           <Link
             href="/dashboard/wallet"
-            className="inline-flex items-center gap-2 text-xs font-black text-blue-600 dark:text-blue-400 uppercase tracking-widest hover:underline pt-2"
+            className="inline-flex mt-5 text-xs font-bold text-blue-600 gap-2"
           >
-            <ArrowLeft size={14} /> Return to Wallet Hub
+            <ArrowLeft size={14} /> Back
           </Link>
         </div>
       </div>
@@ -159,27 +142,29 @@ export default function PaymentReceiptPage() {
   }
 
   return (
-    <div className="py-8 max-w-3xl mx-auto print:py-0 print:max-w-full px-4 sm:px-6">
-      <div className="mb-6 print:hidden">
+    <div className="w-full px-0 sm:px-6 py-6 sm:py-10 max-w-5xl mx-auto print:max-w-full print:py-0">
+
+      {/* Back */}
+      <div className="mb-4 print:hidden">
         <Link
           href="/dashboard/wallet"
-          className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-400 hover:text-slate-600 dark:hover:text-zinc-200 transition-colors"
+          className="text-xs font-bold flex items-center gap-2 text-slate-500"
         >
-          <ArrowLeft size={14} /> Back to Financial Hub
+          <ArrowLeft size={14} /> Back
         </Link>
       </div>
 
-      <div className="bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-900 rounded-3xl p-6 md:p-10 shadow-xl dark:shadow-black/40 print:border-none print:shadow-none print:bg-white text-slate-800 dark:text-zinc-100">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-slate-100 dark:border-zinc-900">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-500 shrink-0">
-              <CheckCircle2 size={28} className="fill-emerald-500/10" />
-            </div>
+      <div className="bg-background border rounded-xl sm:rounded-2xl p-4 sm:p-8 md:p-10">
+
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b pb-6">
+          <div className="flex items-start gap-3 sm:gap-4">
+            <CheckCircle2 className="text-emerald-500 shrink-0" />
             <div>
-              <p className="text-[9px] font-black uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                Payment Authorized Successfully
+              <p className="text-[9px] sm:text-[10px] font-black uppercase text-emerald-500">
+                Payment Successful
               </p>
-              <h1 className="text-xl md:text-2xl font-black uppercase tracking-tighter">
+              <h1 className="text-lg sm:text-2xl font-black">
                 Transaction Receipt
               </h1>
             </div>
@@ -187,162 +172,107 @@ export default function PaymentReceiptPage() {
 
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 border border-slate-200 dark:border-zinc-800 text-slate-600 dark:text-zinc-300 rounded-xl text-xs font-black uppercase tracking-wider transition-all cursor-pointer print:hidden"
+            className="w-full sm:w-auto text-xs font-black px-4 py-2 border rounded-lg print:hidden"
           >
-            <Printer size={14} /> Print Statement
+            <Printer size={14} className="inline mr-2" />
+            Print
           </button>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6 my-4 bg-slate-50/50 dark:bg-zinc-900/20 rounded-2xl border border-slate-100/50 dark:border-zinc-900/40 px-4">
-          <div className="space-y-1">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 flex items-center gap-1">
-              <Hash size={10} /> Reference Code
-            </span>
-            <p
-              className="text-xs font-bold font-mono text-slate-900 dark:text-zinc-200 truncate"
-              title={reference}
+        {/* GRID (FIXED RESPONSIVE) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mt-6 bg-slate-50 dark:bg-zinc-900 p-4 rounded-xl">
+
+          <div className="min-w-0">
+            <p className="text-[9px] uppercase text-slate-400 flex items-center gap-1">
+              <Hash size={10} /> Ref
+            </p>
+            <p className="text-xs font-mono break-all">{reference}</p>
+          </div>
+
+          <div>
+            <p className="text-[9px] uppercase text-slate-400 flex items-center gap-1">
+              <Calendar size={10} /> Date
+            </p>
+            <p className="text-xs">{orderData.date}</p>
+          </div>
+
+          <div>
+            <p className="text-[9px] uppercase text-slate-400 flex items-center gap-1">
+              <User size={10} /> User
+            </p>
+            <p className="text-xs truncate">
+              {user?.firstName || 'User'}
+            </p>
+          </div>
+
+          <div>
+            <p className="text-[9px] uppercase text-slate-400 flex items-center gap-1">
+              <CreditCard size={10} /> Method
+            </p>
+            <div className="text-xs">{renderGatewayDetails()}</div>
+          </div>
+        </div>
+
+        {/* ITEMS */}
+        <div className="mt-6 space-y-4">
+          {orderData.items.map(item => (
+            <div
+              key={item._id}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-4"
             >
-              {reference}
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 flex items-center gap-1">
-              <Calendar size={10} /> Settlement Date
-            </span>
-            <p className="text-xs font-bold text-slate-900 dark:text-zinc-200">
-              {orderData.date}
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 flex items-center gap-1">
-              <User size={10} /> Account Identity
-            </span>
-            <p className="text-xs font-bold text-slate-900 dark:text-zinc-200 truncate">
-              {user?.firstName || 'Learner Profile'}
-            </p>
-          </div>
-
-          <div className="space-y-1">
-            <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 flex items-center gap-1">
-              <CreditCard size={10} /> Settlement Path
-            </span>
-            <div className="text-xs font-bold text-slate-900 dark:text-zinc-200 flex items-center gap-1">
-              {renderGatewayDetails()}
+              <p className="text-sm font-bold break-words">
+                {item.title}
+              </p>
+              <p className="text-sm font-mono">
+                ₦{item.price.toLocaleString('en-US', currencyFormatOptions)}
+              </p>
             </div>
-          </div>
+          ))}
         </div>
 
-        {orderData.cardDetails &&
-          (orderData.cardDetails.bank || orderData.cardDetails.last4) && (
-            <div className="mb-6 p-4 rounded-xl border border-slate-100 dark:border-zinc-900 bg-slate-50/30 dark:bg-zinc-900/10 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-medium text-slate-500 dark:text-zinc-400">
-              {orderData.cardDetails.bank && (
-                <span className="flex items-center gap-1.5">
-                  <Building size={13} className="text-slate-400" />
-                  Institution:{' '}
-                  <strong className="text-slate-800 dark:text-zinc-300 font-bold uppercase">
-                    {orderData.cardDetails.bank}
-                  </strong>
-                </span>
-              )}
-              {orderData.cardDetails.cardType && (
-                <span className="flex items-center gap-1.5">
-                  <CreditCard size={13} className="text-slate-400" />
-                  Channel Type:{' '}
-                  <strong className="text-slate-800 dark:text-zinc-300 font-bold uppercase">
-                    {orderData.cardDetails.cardType}
-                  </strong>
-                </span>
-              )}
-              {orderData.cardDetails.last4 && (
-                <span className="flex items-center gap-1.5 font-mono">
-                  Number Matrix:{' '}
-                  <strong className="text-slate-800 dark:text-zinc-200">
-                    •••• •••• •••• {orderData.cardDetails.last4}
-                  </strong>
-                </span>
-              )}
-            </div>
-          )}
-
-        <div className="space-y-4 my-6">
-          <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-900 pb-2">
-            Manifest Item Breakdown
-          </h3>
-
-          <div className="divide-y divide-slate-100 dark:divide-zinc-900">
-            {orderData.items.map((item) => (
-              <div
-                key={item._id}
-                className="py-4 flex items-start justify-between gap-4 first:pt-0 last:pb-0"
-              >
-                <div className="space-y-1">
-                  <h4 className="font-black uppercase tracking-tight text-sm text-slate-900 dark:text-zinc-100 leading-tight">
-                    {item.title}
-                  </h4>
-                  <p className="text-[10px] font-black text-blue-600 dark:text-blue-400 uppercase tracking-wider">
-                    Full Digital Access Provisioned &bull; License Active
-                  </p>
-                </div>
-                <span className="text-sm font-bold font-mono tracking-tight text-slate-900 dark:text-zinc-100 shrink-0">
-                  ₦{item.price.toLocaleString('en-US', currencyFormatOptions)}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="border-t border-slate-100 dark:border-zinc-900 pt-6 mt-8 max-w-sm ml-auto space-y-3 text-xs md:text-sm font-medium text-slate-500 dark:text-zinc-400">
+        {/* TOTAL */}
+        <div className="mt-6 ml-auto max-w-full sm:max-w-sm space-y-2 text-sm">
           <div className="flex justify-between">
-            <span>Subtotal Balance</span>
-            <span className="font-bold text-slate-900 dark:text-zinc-200 font-mono">
-              ₦
-              {orderData.subtotal.toLocaleString(
-                'en-US',
-                currencyFormatOptions,
-              )}
-            </span>
+            <span>Subtotal</span>
+            <span>₦{orderData.subtotal.toLocaleString('en-US', currencyFormatOptions)}</span>
           </div>
+
           <div className="flex justify-between">
-            <span>Value Added Tax (7.5%)</span>
-            <span className="font-bold text-slate-900 dark:text-zinc-200 font-mono">
-              ₦{orderData.tax.toLocaleString('en-US', currencyFormatOptions)}
-            </span>
+            <span>Tax</span>
+            <span>₦{orderData.tax.toLocaleString('en-US', currencyFormatOptions)}</span>
           </div>
-          <div className="h-px bg-slate-100 dark:bg-zinc-900 my-1" />
-          <div className="flex justify-between text-base font-black text-slate-900 dark:text-zinc-100">
-            <span className="italic uppercase tracking-tight">
-              Total Settled Amount
-            </span>
-            <span className="font-mono text-emerald-600 dark:text-emerald-400">
+
+          <div className="border-t pt-2 flex justify-between font-black">
+            <span>Total</span>
+            <span className="text-emerald-500">
               ₦{orderData.total.toLocaleString('en-US', currencyFormatOptions)}
             </span>
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 dark:border-zinc-900 pt-8 mt-10 print:hidden">
-          <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-bold">
-            <ShieldCheck size={14} className="text-emerald-500" />
-            Verified & Secured Node Entry
+        {/* FOOTER */}
+        <div className="flex flex-col sm:flex-row gap-3 sm:items-center justify-between mt-8 pt-6 border-t print:hidden">
+          <div className="flex items-center gap-2 text-[10px] text-slate-400">
+            <ShieldCheck size={14} /> Secure
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <Link
               href="/dashboard/wallet"
-              className="w-full sm:w-auto px-5 py-3 bg-slate-50 hover:bg-slate-100 dark:bg-zinc-900 dark:hover:bg-zinc-800 text-slate-700 dark:text-zinc-300 rounded-xl font-black uppercase text-[10px] tracking-wider text-center transition-all border border-slate-200 dark:border-zinc-800"
+              className="text-xs text-center px-4 py-2 border rounded-lg"
             >
-              Billing History
+              History
             </Link>
             <Link
               href="/dashboard/courses"
-              className="w-full sm:w-auto px-5 py-3 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-xl font-black uppercase text-[10px] tracking-wider text-center transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10"
+              className="text-xs text-center px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center justify-center gap-2"
             >
-              Enter Classroom <ArrowRight size={14} />
+              Classroom <ArrowRight size={14} />
             </Link>
           </div>
         </div>
+
       </div>
     </div>
   )
-}
+          }
