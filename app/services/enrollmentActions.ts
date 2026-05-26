@@ -213,6 +213,7 @@ export async function enrollUserAfterPaymentAction(
     return { success: false, message: 'Database orchestration failure.' }
   }
 }
+
 /**
  * Fetches a single active enrollment record for a user to synchronize live progress.
  */

@@ -1,5 +1,6 @@
 // /app/components/CourseEnrollCard.tsx
 
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -19,7 +20,10 @@ import {
 import { useCartStore } from '@/app/store/cartStore'
 import { useAuthStore } from '@/app/store/authStore'
 import { Course } from '@/app/types'
-import { enrollUserAfterPaymentAction } from '@/app/services/enrollmentActions'
+import {
+  enrollUserAfterPaymentAction,
+  checkExistingEnrollmentsAction, // ✅ Import the validation handler
+} from '@/app/services/enrollmentActions'
 
 // cSpell:ignore Paystack
 
@@ -58,7 +62,7 @@ interface ModernPaystackPopConstructor {
 
 interface CourseEnrollCardProps {
   course: Course
-  price: number 
+  price: number
   type: string
   hasAccess: boolean
   isLoggedIn: boolean
@@ -78,21 +82,18 @@ export function CourseEnrollCard({
   const [isAdding, setIsAdding] = useState(false)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [isSdkLoaded, setIsSdkLoaded] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null) // ✅ Error state variable tracking
 
   const { addToCart, removeFromCart, isInCart } = useCartStore()
   const { user, isAuthenticated } = useAuthStore()
 
   const isFree = type === 'Free' || price === 0
-  
-  // 2. Remove parseFloat since price is already a number
-  const numericPrice = price 
+  const numericPrice = price
 
-  // Calculate consistent Tax matches with Cart page (7.5% VAT)
   const vatValue = isFree ? 0 : numericPrice * 0.075
   const finalTotal = numericPrice + vatValue
 
   useEffect(() => {
-    // Schedule state sync safely outside the layout render loop to prevent cascading blocks
     const frameId = requestAnimationFrame(() => {
       setMounted(true)
       if (
@@ -108,7 +109,6 @@ export function CourseEnrollCard({
 
   const currentCourseId = String(course._id)
   const itemInCart = mounted ? isInCart(currentCourseId) : false
-
   const activeUserId = user?._id || ''
 
   const handleCartToggle = async () => {
@@ -127,13 +127,13 @@ export function CourseEnrollCard({
 
   const handleBuyNowPayment = async () => {
     if (!mounted || isProcessingPayment) return
+    setErrorMessage(null) // Reset structural errors on fresh invocation
 
     if (!isAuthenticated || !user) {
       router.push(`/auth?redirect=${encodeURIComponent(pathname)}`)
       return
     }
 
-    // Dynamic runtime validation check fallback
     const checkGlobalPop =
       typeof window !== 'undefined' && window['PaystackPop' as keyof Window]
 
@@ -145,6 +145,19 @@ export function CourseEnrollCard({
     setIsProcessingPayment(true)
 
     try {
+      // ✅ CRITICAL SECURITY LAYER: Check DB constraint sequences before compiling gateway popup
+      const checkEnrollment = await checkExistingEnrollmentsAction(user._id, [
+        currentCourseId,
+      ])
+
+      if (checkEnrollment.hasDuplicates) {
+        setErrorMessage(
+          `Checkout Blocked: You have already purchased this module. Check your learning workspace dashboard.`,
+        )
+        setIsProcessingPayment(false) // Dead reset UI thread state loops
+        return
+      }
+
       const PaystackPopConstructor =
         typeof window !== 'undefined'
           ? (window[
@@ -161,7 +174,6 @@ export function CourseEnrollCard({
 
       const generatedReference = `REG-${Date.now()}-${Math.floor(Math.random() * 10000)}`
 
-      // Safely instantiate modern v2 structure
       const paystack = new PaystackPopConstructor()
       paystack.newTransaction({
         key: process.env.NEXT_PUBLIC_PAYSTACK_PUBLIC_KEY || '',
@@ -223,7 +235,6 @@ export function CourseEnrollCard({
 
   return (
     <>
-      {/* Optimized Native Next.js Implementation loading the proper V2 SDK */}
       <Script
         src="https://js.paystack.co/v2/inline.js"
         strategy="afterInteractive"
@@ -238,12 +249,18 @@ export function CourseEnrollCard({
       <div className="bg-white dark:bg-[#0a0a0a] border border-slate-200 dark:border-zinc-800 p-4 md:p-10 rounded-2xl shadow-[0_32px_64px_-16px_rgba(0,0,0,0.1)] dark:shadow-[0_32px_64px_-16px_rgba(0,0,0,0.5)] relative overflow-hidden">
         <div className="absolute -top-16 -right-24 w-48 h-48 bg-blue-600/10 dark:bg-blue-500/5 blur-[80px] rounded-full" />
 
+        {/* ✅ Dynamic Error Display Notice Block inside the Checkout Workspace Card */}
+        {errorMessage && (
+          <div className="mb-6 p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wide leading-relaxed relative z-10">
+            {errorMessage}
+          </div>
+        )}
+
         <div className="mb-10 relative z-10">
           <p className="text-[10px]! font-black uppercase tracking-[0.4em] text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2">
             <Zap size={12} fill="currentColor" /> Lifetime Access
           </p>
           <div className="flex flex-col gap-4">
-            {/* Total Amount Added Together */}
             <div className="flex flex-col gap-1">
               <span className="text-[10px]! font-bold uppercase tracking-wider text-slate-400 dark:text-zinc-500">
                 Total Due
@@ -262,7 +279,6 @@ export function CourseEnrollCard({
               </div>
             </div>
 
-            {/* Itemized Breakdown (Course Price + VAT) */}
             {!isFree && (
               <div className="border-t border-dashed border-slate-200 dark:border-zinc-800 pt-3 mt-1 space-y-1.5">
                 <div className="flex justify-between items-center text-xs text-slate-500 dark:text-zinc-400">
