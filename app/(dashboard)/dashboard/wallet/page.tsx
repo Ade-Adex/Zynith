@@ -42,6 +42,8 @@ export default function WalletPage() {
     async function loadData() {
       if (user?._id) {
         const response = await getWalletDashboardData(user._id)
+
+        // console.log('response', response)
         if (response.success) {
           setPerks(response.marketplaceItems)
           setHistory(response.historyItems)

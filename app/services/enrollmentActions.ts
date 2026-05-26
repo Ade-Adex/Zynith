@@ -5,13 +5,9 @@
 import connectDB from '@/app/lib/db'
 import { EnrollmentModel } from '@/app/models/Enrollment'
 import { CourseModel } from '@/app/models/Course'
-import { Course, Lesson, Module } from '@/app/types'
+import { Course } from '@/app/types'
 import { Types, UpdateQuery } from 'mongoose'
-import {
-  IDbEnrollment,
-  SerializedEnrollment,
-  UpdatePayload,
-} from '@/app/types/enrollment'
+import { SerializedEnrollment, IDbEnrollment, UpdatePayload } from '@/app/types/enrollment'
 import { TransactionModel } from '@/app/models/Transaction'
 
 export type EnrollmentActionResult = {
@@ -33,7 +29,6 @@ const serializeEnrollment = (doc: IDbEnrollment): SerializedEnrollment => ({
   currentLessonId: doc.currentLessonId || '',
   completedLessons: doc.completedLessons || [],
   completedModules: doc.completedModules || [],
-
   quizAttempts: (doc.quizAttempts || []).map((q) => ({
     quizId: q.quizId,
     score: q.score,
@@ -48,7 +43,6 @@ const serializeEnrollment = (doc: IDbEnrollment): SerializedEnrollment => ({
       isCorrect: ans.isCorrect,
     })),
   })),
-
   assignmentSubmissions: (doc.assignmentSubmissions || []).map((a) => ({
     assignmentId: a.assignmentId,
     submissionUrl: a.submissionUrl,
@@ -60,7 +54,6 @@ const serializeEnrollment = (doc: IDbEnrollment): SerializedEnrollment => ({
       feedback: r.feedback,
     })),
   })),
-
   enrolledAt: doc.enrolledAt
     ? (doc.enrolledAt instanceof Date
         ? doc.enrolledAt
@@ -78,79 +71,12 @@ const serializeEnrollment = (doc: IDbEnrollment): SerializedEnrollment => ({
 /**
  * Provisions unique enrollments for a user across one or multiple courses.
  */
-// export async function enrollUserAfterPaymentAction(
-//   userId: string,
-//   courseIds: string[],
-//   paymentReference: string,
-// ): Promise<EnrollmentActionResult> {
-//   if (!userId || !courseIds || courseIds.length === 0) {
-//     return { success: false, message: 'Missing crucial enrollment parameters.' }
-//   }
-
-//   try {
-//     await connectDB()
-
-//     const userObjectId = new Types.ObjectId(userId)
-
-//     const enrollmentPromises = courseIds.map(async (courseId) => {
-//       const courseObjectId = new Types.ObjectId(courseId)
-
-//       // Cast the lean query or fallback to a typed structural shape
-//       const course = (await CourseModel.findById(courseObjectId).lean()) as {
-//         modules?: Module[]
-//       } | null
-//       const firstModuleId = course?.modules?.[0]?.id || ''
-//       const firstLessonId = course?.modules?.[0]?.lessons?.[0]?.id || ''
-
-//       return EnrollmentModel.findOneAndUpdate(
-//         { userId: userObjectId, courseId: courseObjectId },
-//         {
-//           $setOnInsert: {
-//             userId: userObjectId,
-//             courseId: courseObjectId,
-//             status: 'active',
-//             progressPercentage: 0,
-//             currentModuleId: firstModuleId,
-//             currentLessonId: firstLessonId,
-//             completedLessons: [],
-//             completedModules: [],
-//             quizAttempts: [],
-//             assignmentSubmissions: [],
-//             enrolledAt: new Date(),
-//           },
-//           $set: {
-//             lastAccessedAt: new Date(),
-//           },
-//         },
-//         { upsert: true, returnDocument: 'after' },
-//       )
-//     })
-
-//     await Promise.all(enrollmentPromises)
-
-//     return {
-//       success: true,
-//       message: 'Secure workspace access parameters successfully provisioned.',
-//     }
-//   } catch (error: unknown) {
-//     console.error('Enrollment generation system fault:', error)
-//     return {
-//       success: false,
-//       message:
-//         error instanceof Error
-//           ? error.message
-//           : 'Database orchestration failure.',
-//     }
-//   }
-// }
-
-
 export async function enrollUserAfterPaymentAction(
   userId: string,
   courseIds: string[],
   paymentReference: string,
   gatewayDetails?: {
-    gateway: 'PAYSTACK' | 'WALLET'
+    gateway: 'PAYSTACK' | 'WALLET' | 'STRIPE'
     cardType?: string
     last4?: string
     bank?: string
@@ -165,11 +91,10 @@ export async function enrollUserAfterPaymentAction(
     const userObjectId = new Types.ObjectId(userId)
     const courseObjectIds = courseIds.map((id) => new Types.ObjectId(id))
 
-    // ADDED: Early check to see if the user is already enrolled in any of these courses
     const existingEnrollments = await EnrollmentModel.find({
       userId: userObjectId,
       courseId: { $in: courseObjectIds },
-      status: 'active', // or 'completed' depending on your business rule
+      status: 'active',
     }).lean()
 
     if (existingEnrollments.length > 0) {
@@ -185,20 +110,42 @@ export async function enrollUserAfterPaymentAction(
       _id: { $in: courseObjectIds },
     }).lean<Course[]>()
 
-    let calculatedTotal = 0
+    const isSubunitGateway =
+      gatewayDetails?.gateway === 'PAYSTACK' ||
+      gatewayDetails?.gateway === 'STRIPE'
+
+    let totalSubtotalKobo = 0
+    let totalTaxKobo = 0
+    let totalCombinedKobo = 0
+
     const transactionItems = verifiedCourses.map((course) => {
-      calculatedTotal += course.price
+      const standardItemSubtotal = course.price // Base Price (e.g., 249.0)
+      const standardItemTax = standardItemSubtotal * 0.075 // 7.5% Tax (e.g., 18.675)
+      const standardItemTotal = standardItemSubtotal + standardItemTax // Combined Total
+
+      // Convert completely to Subunits (Kobo) if gateway dictates it
+      const finalItemPrice = isSubunitGateway
+        ? Math.round(standardItemSubtotal * 100)
+        : standardItemSubtotal
+      const finalItemTax = isSubunitGateway
+        ? Math.round(standardItemTax * 100)
+        : standardItemTax
+      const finalItemTotal = isSubunitGateway
+        ? Math.round(standardItemTotal * 100)
+        : standardItemTotal
+
+      totalSubtotalKobo += finalItemPrice
+      totalTaxKobo += finalItemTax
+      totalCombinedKobo += finalItemTotal
+
       return {
         courseId: course._id,
         title: course.title,
-        price: Math.round(course.price - course.price * 0.075), // Deduct tax to evaluate pure subtotal
+        price: finalItemPrice, // Core Fix: Now accurately saving 24900 instead of 249
       }
     })
 
-    const exactTax = Math.round(calculatedTotal * 0.075)
-    const exactSubtotal = calculatedTotal - exactTax
-
-    // 2. Commit the Transaction Ledger Record
+    // 2. Commit the Transaction Ledger Record with precise subunit weights
     await TransactionModel.findOneAndUpdate(
       { reference: paymentReference },
       {
@@ -207,9 +154,9 @@ export async function enrollUserAfterPaymentAction(
           reference: paymentReference,
           gateway: gatewayDetails?.gateway || 'PAYSTACK',
           items: transactionItems,
-          subtotal: exactSubtotal,
-          tax: exactTax,
-          total: calculatedTotal,
+          subtotal: totalSubtotalKobo, // Saves 24900
+          tax: totalTaxKobo, // Saves 1868 (rounds 18.675 * 100)
+          total: totalCombinedKobo, // Saves 26768 (which is 24900 + 1868)
           status: 'SUCCESS',
           paymentDetails: {
             cardType: gatewayDetails?.cardType || 'N/A',
@@ -221,7 +168,7 @@ export async function enrollUserAfterPaymentAction(
       { upsert: true, new: true },
     )
 
-    // 3. Provision workspace items
+    // 3. Provision workspace access items
     const enrollmentPromises = verifiedCourses.map(async (course) => {
       const firstModuleId = course.modules?.[0]?.id || ''
       const firstLessonId = course.modules?.[0]?.lessons?.[0]?.id || ''
@@ -324,146 +271,6 @@ export async function getEnrollmentProgressAction(
     }
   }
 }
-
-// export async function updateEnrollmentProgressAction(
-//   userId: string,
-//   courseId: string,
-//   updates: UpdatePayload,
-// ): Promise<{
-//   success: boolean
-//   data: SerializedEnrollment | null
-//   message: string
-// }> {
-//   if (!userId || !courseId) {
-//     return { success: false, data: null, message: 'Missing validation params.' }
-//   }
-
-//   try {
-//     await connectDB()
-//     const userObjectId = new Types.ObjectId(userId)
-//     const courseObjectId = new Types.ObjectId(courseId)
-
-//     const updateQuery: UpdateQuery<IDbEnrollment> = {
-//       $set: { lastAccessedAt: new Date() },
-//     }
-
-//     if (updates.currentModuleId)
-//       updateQuery.$set!.currentModuleId = updates.currentModuleId
-//     if (updates.currentLessonId)
-//       updateQuery.$set!.currentLessonId = updates.currentLessonId
-
-//     if (updates.newCompletedLessonId) {
-//       if (!updateQuery.$addToSet) updateQuery.$addToSet = {}
-//       updateQuery.$addToSet.completedLessons = updates.newCompletedLessonId
-//     }
-
-//     if (updates.quizAttempt) {
-//       // We cast the object push to match the schema structure expected by IEnrollment
-//       updateQuery.$push = {
-//         quizAttempts: {
-//           ...updates.quizAttempt,
-//           attemptedAt: new Date(),
-//         },
-//       }
-//     }
-
-//     const updatedEnrollment = await EnrollmentModel.findOneAndUpdate(
-//       { userId: userObjectId, courseId: courseObjectId },
-//       updateQuery,
-//       { returnDocument: 'after' },
-//     )
-
-//     if (!updatedEnrollment) {
-//       return { success: false, data: null, message: 'Enrollment not found.' }
-//     }
-
-//     // 3. Server-Side Completion Logic (Using imported Course type)
-//     const course = await CourseModel.findById(
-//       courseObjectId,
-//     ).lean<Course | null>()
-
-//     if (course) {
-//       const { completedLessons, quizAttempts, assignmentSubmissions } =
-//         updatedEnrollment
-//       const newCompletedModules = new Set(
-//         updatedEnrollment.completedModules || [],
-//       )
-
-//       for (const mod of course.modules) {
-//         // Correctly typed iteration over Module and Lesson
-//         const allModuleLessonsDone = mod.lessons.every((lesson: Lesson) =>
-//           completedLessons?.includes(lesson.id),
-//         )
-
-//         const quizPassed =
-//           !mod.quiz ||
-//           quizAttempts?.some((q) => q.quizId === mod.quiz!.id && q.passed)
-//         const assignmentSubmitted =
-//           !mod.assignment ||
-//           assignmentSubmissions?.some(
-//             (s) => s.assignmentId === mod.assignment!.id,
-//           )
-
-//         if (allModuleLessonsDone && quizPassed && assignmentSubmitted) {
-//           newCompletedModules.add(mod.id)
-//         }
-//       }
-
-//       // Calculate Progress Percentage using typed Module array
-//       const totalLessons = course.modules.reduce(
-//         (acc: number, m: Module) => acc + m.lessons.length,
-//         0,
-//       )
-
-//       const finalPercentage =
-//         totalLessons > 0
-//           ? Math.round(((completedLessons?.length || 0) / totalLessons) * 100)
-//           : 0
-
-//       const newStatus =
-//         newCompletedModules.size === course.modules.length
-//           ? 'completed'
-//           : 'active'
-
-//       // 4. Conditional Sync
-//       const completedModulesArray = Array.from(newCompletedModules)
-
-//       if (
-//         finalPercentage !== updatedEnrollment.progressPercentage ||
-//         completedModulesArray.length !==
-//           (updatedEnrollment.completedModules?.length || 0) ||
-//         updatedEnrollment.status !== newStatus
-//       ) {
-//         await EnrollmentModel.updateOne(
-//           { _id: updatedEnrollment._id },
-//           {
-//             $set: {
-//               progressPercentage: finalPercentage,
-//               status: newStatus,
-//               completedModules: completedModulesArray,
-//             },
-//           },
-//         )
-//         updatedEnrollment.progressPercentage = finalPercentage
-//         updatedEnrollment.status = newStatus
-//         updatedEnrollment.completedModules = completedModulesArray
-//       }
-//     }
-
-//     return {
-//       success: true,
-//       data: serializeEnrollment(updatedEnrollment as IDbEnrollment),
-//       message: 'Progress updated successfully.',
-//     }
-//   } catch (error) {
-//     console.error('System error:', error)
-//     return {
-//       success: false,
-//       data: null,
-//       message: 'System error updating progress.',
-//     }
-//   }
-// }
 
 export async function updateEnrollmentProgressAction(
   userId: string,
@@ -592,5 +399,54 @@ export async function updateEnrollmentProgressAction(
       success: false,
       message: (error as Error).message || 'Server error tracking progress.',
     }
+  }
+}
+
+/**
+ * Checks if a user is already enrolled in a list of course IDs.
+ */
+export async function checkExistingEnrollmentsAction(
+  userId: string,
+  courseIds: string[],
+): Promise<{ hasDuplicates: boolean; duplicateTitles: string[] }> {
+  if (!userId || !courseIds || courseIds.length === 0) {
+    return { hasDuplicates: false, duplicateTitles: [] }
+  }
+
+  try {
+    await connectDB()
+    const userObjectId = new Types.ObjectId(userId)
+    const courseObjectIds = courseIds.map((id) => new Types.ObjectId(id))
+
+    // Find any active enrollments for this user within the selected course array
+    const existingEnrollments = await EnrollmentModel.find({
+      userId: userObjectId,
+      courseId: { $in: courseObjectIds },
+      status: 'active',
+    }).lean()
+
+    if (existingEnrollments.length > 0) {
+      const duplicateCourseIds = existingEnrollments.map((e) =>
+        e.courseId.toString(),
+      )
+
+      // Fetch the actual titles of the conflicting courses to show on the UI
+      const duplicateCourses = await CourseModel.find(
+        {
+          _id: { $in: duplicateCourseIds.map((id) => new Types.ObjectId(id)) },
+        },
+        'title',
+      ).lean()
+
+      return {
+        hasDuplicates: true,
+        duplicateTitles: duplicateCourses.map((c) => c.title),
+      }
+    }
+
+    return { hasDuplicates: false, duplicateTitles: [] }
+  } catch (error) {
+    console.error('Error validating unique checkout constraints:', error)
+    return { hasDuplicates: false, duplicateTitles: [] }
   }
 }

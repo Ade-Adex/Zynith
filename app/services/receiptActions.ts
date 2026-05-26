@@ -21,26 +21,49 @@ export async function getReceiptDetailsByReference(
       return { success: false, data: null }
     }
 
+    const isSubunitGateway =
+      transaction.gateway === 'PAYSTACK' || transaction.gateway === 'STRIPE'
+
+    // Explicitly trust the gateway mapping flag cleanly.
+    const divisor = isSubunitGateway ? 100 : 1
+
+    const subtotalNum = Number(transaction.subtotal) / divisor
+    const taxNum = Number(transaction.tax) / divisor
+    const totalNum = Number(transaction.total) / divisor
+
     return {
       success: true,
       data: {
         gateway: transaction.gateway,
         cardDetails: transaction.paymentDetails,
-        items: transaction.items.map((item) => ({
-          _id: item.courseId.toString(),
-          title: item.title,
-          price: item.price,
-        })),
-        subtotal: transaction.subtotal,
-        tax: transaction.tax,
-        total: transaction.total,
-        date: new Date(transaction.createdAt).toLocaleDateString('en-NG', {
-          dateStyle: 'long',
+        items: transaction.items.map((item) => {
+          const rawItemPrice = Number(item.price)
+          return {
+            _id: item.courseId.toString(),
+            title: item.title,
+            // Clean fix: No more complex ternary fallback rules.
+            // If the gateway uses subunits, divide the item price uniformly.
+            price: rawItemPrice / divisor,
+          }
         }),
+        subtotal: subtotalNum,
+        tax: taxNum,
+        total: totalNum,
+        date: transaction.createdAt
+          ? new Date(transaction.createdAt).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })
+          : new Date().toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            }),
       },
     }
   } catch (error) {
-    console.error('Receipt compilation error:', error)
+    console.error('Error fetching operational database receipt:', error)
     return { success: false, data: null }
   }
 }

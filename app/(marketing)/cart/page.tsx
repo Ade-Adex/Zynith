@@ -16,9 +16,11 @@ import {
 } from 'lucide-react'
 import { useCartStore } from '@/app/store/cartStore'
 import { useAuthStore } from '@/app/store/authStore'
-import { enrollUserAfterPaymentAction } from '@/app/services/enrollmentActions'
+import {
+  enrollUserAfterPaymentAction,
+  checkExistingEnrollmentsAction, // ✅ Import the new verification action
+} from '@/app/services/enrollmentActions'
 
-// Expand interface to support the metadata parameters returned from verified hooks
 interface PaystackTransactionResponse {
   reference: string
   status: string
@@ -50,7 +52,6 @@ interface PaystackTransactionOptions {
   onClose: () => void
 }
 
-// Model both possible method signatures that Paystack inline SDKs utilize
 interface PaystackLegacyHandler {
   open: () => void
 }
@@ -70,6 +71,7 @@ export default function CartPage() {
   const pathname = usePathname()
   const [mounted, setMounted] = useState(false)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null) // ✅ Error message tracker UI asset
 
   const { cartItems, removeFromCart, getCartTotal, clearCart } = useCartStore()
   const { user, isAuthenticated } = useAuthStore()
@@ -142,6 +144,7 @@ export default function CartPage() {
 
   const handleCartPaymentCheckout = async () => {
     if (isProcessingPayment) return
+    setErrorMessage(null) // Reset errors
 
     if (!isAuthenticated || !user) {
       router.push(`/auth?redirect=${encodeURIComponent(pathname)}`)
@@ -151,6 +154,23 @@ export default function CartPage() {
     setIsProcessingPayment(true)
 
     try {
+      const courseIdsStaged = cartItems.map((item) => String(item._id))
+
+      // ✅ 1. Validate against existing database enrollments BEFORE triggering payment gateway popup
+      const checkEnrollment = await checkExistingEnrollmentsAction(
+        user._id,
+        courseIdsStaged,
+      )
+
+      if (checkEnrollment.hasDuplicates) {
+        setErrorMessage(
+          `Checkout Blocked: You have already purchased "${checkEnrollment.duplicateTitles.join(', ')}". Please remove it from your cart.`,
+        )
+        setIsProcessingPayment(false)
+        return
+      }
+
+      // 2. Load script and boot setup if validation passes
       await loadPaystackScript()
 
       const paystackInstance =
@@ -164,7 +184,6 @@ export default function CartPage() {
         throw new Error('Paystack SDK failed to initialize.')
       }
 
-      const courseIdsStaged = cartItems.map((item) => String(item._id))
       const generatedReference = `BKP-${Date.now()}-${Math.floor(Math.random() * 10000)}`
 
       const handler = paystackInstance.setup({
@@ -199,7 +218,6 @@ export default function CartPage() {
             const activeUserId = user?._id
             if (!activeUserId) return
 
-            // Safely extract optional channel parameters fallback structural definitions
             const channel = response.channel || 'card'
             const brandType = response.card?.brand || 'VISA / MASTER'
             const numericEnding = response.card?.last4 || '****'
@@ -259,6 +277,13 @@ export default function CartPage() {
 
         <div className="grid lg:grid-cols-3 gap-12 items-start">
           <div className="lg:col-span-2 space-y-4">
+            {/* ✅ Added a professional error notice block if verification actions fail */}
+            {errorMessage && (
+              <div className="p-4 rounded-2xl bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs font-bold uppercase tracking-wide leading-relaxed">
+                {errorMessage}
+              </div>
+            )}
+
             {cartItems.map((item) => (
               <div
                 key={item._id}

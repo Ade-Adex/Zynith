@@ -89,7 +89,7 @@ export function AuthSyncManager({ children }: { children: React.ReactNode }) {
     // CRITICAL: Do nothing until the store has finished loading
     if (!hasHydrated) return
 
-    // If logged in, don't let them sit on /auth
+    // Only prevent authenticated users from visiting /auth
     if (isAuthenticated && pathname === '/auth') {
       router.replace('/dashboard')
     }

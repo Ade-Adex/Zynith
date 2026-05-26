@@ -38,13 +38,13 @@ export async function getWalletDashboardData(userId: string) {
       (course) => ({
         _id: course._id.toString(),
         title: course.title,
-        price: course.price,
+        price: Number(course.price), // Keep as whole Naira standard format
         tag: course.tag?.toString() || 'Premium',
         instructor: course.instructor,
       }),
     )
 
-    // 2. Fetch REAL database transaction history items with clean schema targets
+    // 2. Fetch transaction history items
     const userObjectId = new Types.ObjectId(userId)
     const transactions = await TransactionModel.find({
       userId: userObjectId,
@@ -53,23 +53,28 @@ export async function getWalletDashboardData(userId: string) {
       .sort({ createdAt: -1 })
       .lean<IDbTransaction[]>()
 
-    const historyItems: SerializedTransactionHistory[] = transactions.map(
-      (tx) => {
-        // Correctly infers item layout properties from IDbTransaction mapping definitions
-        const combinedTitles = tx.items.map((i) => i.title).join(', ')
+   const historyItems: SerializedTransactionHistory[] = transactions.map(
+     (tx) => {
+       const combinedTitles = tx.items.map((i) => i.title).join(', ')
 
-        return {
-          reference: tx.reference,
-          date: new Date(tx.createdAt).toLocaleDateString('en-US', {
-            year: 'numeric',
-            month: 'short',
-            day: 'numeric',
-          }),
-          courseTitle: combinedTitles || 'System Workspace Upgrade',
-          amount: tx.total,
-        }
-      },
-    )
+       // Determine if the amount needs to be parsed from kobo/cents
+       const isSubunitGateway =
+         tx.gateway === 'PAYSTACK' || tx.gateway === 'STRIPE'
+       const rawAmount = Number(tx.total)
+       const normalizedAmount = isSubunitGateway ? rawAmount / 100 : rawAmount
+
+       return {
+         reference: tx.reference,
+         date: new Date(tx.createdAt).toLocaleDateString('en-US', {
+           year: 'numeric',
+           month: 'short',
+           day: 'numeric',
+         }),
+         courseTitle: combinedTitles || 'System Workspace Upgrade',
+         amount: normalizedAmount, // Now safely normalized to full standard format
+       }
+     },
+   )
 
     return {
       success: true,

@@ -42,9 +42,14 @@ interface OrderData {
   date: string
 }
 
+// Fixed formatting configuration parameters matrix
+const currencyFormatOptions = {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+}
+
 export default function PaymentReceiptPage() {
   const params = useParams()
-  // Secure dynamic array or plain object route parameters safely for Next.js 15+
   const reference = Array.isArray(params?.reference)
     ? params.reference[0]
     : (params?.reference as string)
@@ -63,7 +68,6 @@ export default function PaymentReceiptPage() {
       try {
         const response = await getReceiptDetailsByReference(reference, user._id)
         if (response.success && response.data) {
-          // Cast response match directly to state schema parameters
           setOrderData(response.data as OrderData)
         } else {
           console.error('Statement generation reference parameters mismatch.')
@@ -82,7 +86,6 @@ export default function PaymentReceiptPage() {
     if (typeof window !== 'undefined') window.print()
   }
 
-  // Gateway Badge Renderer Matrix
   const renderGatewayDetails = () => {
     if (!orderData) return null
 
@@ -155,7 +158,6 @@ export default function PaymentReceiptPage() {
 
   return (
     <div className="py-8 max-w-3xl mx-auto print:py-0 print:max-w-full px-4 sm:px-6">
-      {/* Back Button Action Control */}
       <div className="mb-6 print:hidden">
         <Link
           href="/dashboard/wallet"
@@ -165,9 +167,7 @@ export default function PaymentReceiptPage() {
         </Link>
       </div>
 
-      {/* Printable Area Card Base Wrapper */}
       <div className="bg-white dark:bg-zinc-950 border border-slate-100 dark:border-zinc-900 rounded-3xl p-6 md:p-10 shadow-xl dark:shadow-black/40 print:border-none print:shadow-none print:bg-white text-slate-800 dark:text-zinc-100">
-        {/* Header Branding Row */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-slate-100 dark:border-zinc-900">
           <div className="flex items-center gap-4">
             <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 flex items-center justify-center text-emerald-500 shrink-0">
@@ -191,7 +191,6 @@ export default function PaymentReceiptPage() {
           </button>
         </div>
 
-        {/* Audit Meta Grid Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-6 my-4 bg-slate-50/50 dark:bg-zinc-900/20 rounded-2xl border border-slate-100/50 dark:border-zinc-900/40 px-4">
           <div className="space-y-1">
             <span className="text-[9px] font-black uppercase tracking-wider text-slate-400 dark:text-zinc-500 flex items-center gap-1">
@@ -233,7 +232,6 @@ export default function PaymentReceiptPage() {
           </div>
         </div>
 
-        {/* Extra Card-specific details if populated from Gateway logs */}
         {orderData.cardDetails &&
           (orderData.cardDetails.bank || orderData.cardDetails.last4) && (
             <div className="mb-6 p-4 rounded-xl border border-slate-100 dark:border-zinc-900 bg-slate-50/30 dark:bg-zinc-900/10 flex flex-wrap items-center gap-x-6 gap-y-2 text-xs font-medium text-slate-500 dark:text-zinc-400">
@@ -266,7 +264,6 @@ export default function PaymentReceiptPage() {
             </div>
           )}
 
-        {/* Itemized Course Summary Breakdowns */}
         <div className="space-y-4 my-6">
           <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-zinc-500 border-b border-slate-100 dark:border-zinc-900 pb-2">
             Manifest Item Breakdown
@@ -287,25 +284,28 @@ export default function PaymentReceiptPage() {
                   </p>
                 </div>
                 <span className="text-sm font-bold font-mono tracking-tight text-slate-900 dark:text-zinc-100 shrink-0">
-                  ₦{item.price.toLocaleString()}
+                  ₦{item.price.toLocaleString('en-US', currencyFormatOptions)}
                 </span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Calculation Balance Ledger Sheet */}
         <div className="border-t border-slate-100 dark:border-zinc-900 pt-6 mt-8 max-w-sm ml-auto space-y-3 text-xs md:text-sm font-medium text-slate-500 dark:text-zinc-400">
           <div className="flex justify-between">
             <span>Subtotal Balance</span>
             <span className="font-bold text-slate-900 dark:text-zinc-200 font-mono">
-              ₦{orderData.subtotal.toLocaleString()}
+              ₦
+              {orderData.subtotal.toLocaleString(
+                'en-US',
+                currencyFormatOptions,
+              )}
             </span>
           </div>
           <div className="flex justify-between">
             <span>Value Added Tax (7.5%)</span>
             <span className="font-bold text-slate-900 dark:text-zinc-200 font-mono">
-              ₦{orderData.tax.toLocaleString()}
+              ₦{orderData.tax.toLocaleString('en-US', currencyFormatOptions)}
             </span>
           </div>
           <div className="h-px bg-slate-100 dark:bg-zinc-900 my-1" />
@@ -314,12 +314,11 @@ export default function PaymentReceiptPage() {
               Total Settled Amount
             </span>
             <span className="font-mono text-emerald-600 dark:text-emerald-400">
-              ₦{orderData.total.toLocaleString()}
+              ₦{orderData.total.toLocaleString('en-US', currencyFormatOptions)}
             </span>
           </div>
         </div>
 
-        {/* Security / Closing Footer Sign-off */}
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 border-t border-slate-100 dark:border-zinc-900 pt-8 mt-10 print:hidden">
           <div className="flex items-center gap-2 text-[10px] text-slate-400 dark:text-zinc-500 uppercase tracking-wider font-bold">
             <ShieldCheck size={14} className="text-emerald-500" />
