@@ -130,7 +130,7 @@ export default function PaymentReceiptPage() {
 
   if (!orderData) {
     return (
-      <div className="min-h-[75vh] flex items-center justify-center px-4">
+      <div className="min-h-[75vh] flex items-center justify-center">
         <div className="text-center space-y-6 max-w-sm border border-slate-100 dark:border-zinc-800/80 p-8 rounded-3xl bg-white dark:bg-zinc-950 shadow-xl">
           <div className="w-12 h-12 rounded-full bg-red-50 dark:bg-red-950/20 flex items-center justify-center text-red-500 mx-auto">
             <Hash size={24} />
@@ -159,7 +159,7 @@ export default function PaymentReceiptPage() {
   }
 
   return (
-    <div className="py-8 max-w-3xl mx-auto print:py-0 print:max-w-full px-4 sm:px-6">
+    <div className="py-8 max-w-5xl mx-auto print:py-0 print:max-w-full sm:px-6">
       <div className="mb-6 print:hidden">
         <Link
           href="/dashboard/wallet"
