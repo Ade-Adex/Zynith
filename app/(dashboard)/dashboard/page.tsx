@@ -117,9 +117,9 @@ const currentModule = useMemo(() => {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] py-6 md:py-10">
+    <div className="min-h-screen bg-background text-foreground py-6 md:py-10">
       {/* HERO */}
-      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-6 mb-8">
+      <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-4 mb-8">
         <div className="flex items-start gap-4">
           <Avatar
             radius="xl"
@@ -146,7 +146,7 @@ const currentModule = useMemo(() => {
               <span className="text-blue-600">.</span>
             </h1>
 
-            <p className="text-sm md:text-base mt-2 text-slate-500 dark:text-slate-400 max-w-2xl leading-relaxed">
+            <p className="text-sm md:text-base mt-2 text-slate-500 dark:text-slate-400 max-w-md leading-relaxed">
               Track your real-time course progress, transactions, achievements,
               and learning performance from your personalized workspace.
             </p>
@@ -155,10 +155,10 @@ const currentModule = useMemo(() => {
 
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
           <Paper
-            radius="xl"
+            radius="lg"
             p="md"
             withBorder
-            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+            className="bg-surface! surface-border"
           >
             <Group gap={8}>
               <BookOpen size={15} className="text-blue-500" />
@@ -168,19 +168,16 @@ const currentModule = useMemo(() => {
               </Text>
             </Group>
 
-            <Text
-              fw={900}
-              className="text-lg mt-2 text-slate-900 dark:text-white"
-            >
+            <Text fw={900} className="text-lg! md:text-xl! mt-3! text-center!">
               {dashboard.metrics.enrolledCourses}
             </Text>
           </Paper>
 
           <Paper
-            radius="xl"
+            radius="lg"
             p="md"
             withBorder
-            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+            className="bg-surface! surface-border"
           >
             <Group gap={8}>
               <Target size={15} className="text-emerald-500" />
@@ -190,19 +187,16 @@ const currentModule = useMemo(() => {
               </Text>
             </Group>
 
-            <Text
-              fw={900}
-              className="text-lg mt-2 text-slate-900 dark:text-white"
-            >
+            <Text fw={900} className="text-lg! md:text-xl! mt-3! text-center!">
               {dashboard.metrics.completionRate}%
             </Text>
           </Paper>
 
           <Paper
-            radius="xl"
+            radius="lg"
             p="md"
             withBorder
-            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 col-span-2 md:col-span-1"
+            className="bg-surface! surface-border col-span-2 md:col-span-1"
           >
             <Group gap={8}>
               <TrendingUp size={15} className="text-orange-500" />
@@ -212,10 +206,7 @@ const currentModule = useMemo(() => {
               </Text>
             </Group>
 
-            <Text
-              fw={900}
-              className="text-lg mt-2 text-slate-900 dark:text-white"
-            >
+            <Text fw={900} className="text-lg! md:text-xl! mt-3! text-center!">
               {dashboard.metrics.activeCourses}
             </Text>
           </Paper>
@@ -223,7 +214,7 @@ const currentModule = useMemo(() => {
       </div>
 
       {/* STATS */}
-      <SimpleGrid cols={{ base: 1, sm: 2, xl: 4 }} spacing="lg" mb="xl">
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="lg" mb="xl">
         <StatItem
           label="Learning Points"
           value={dashboard.metrics.points.toLocaleString()}
@@ -656,26 +647,21 @@ function StatItem({ label, value, icon, trend }: StatProps) {
       p="lg"
       radius="24px"
       withBorder
-      className="group border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50"
+      className="group bg-surface! surface-border"
     >
       <Group justify="space-between" mb="lg">
-        <div className="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+        <div className="w-10 h-10 rounded-2xl icon-bg flex items-center justify-center">
           {icon}
         </div>
 
-        <Badge
-          size="sm"
-          variant="light"
-          color="gray"
-          className="font-black"
-        >
+        <Badge size="sm" variant="light" color="" className="font-black">
           {trend}
         </Badge>
       </Group>
 
       <Text
         fw={900}
-        className="text-2xl tracking-tight text-slate-900 dark:text-white break-words"
+        className="text-2xl tracking-tight wrap-break-word"
       >
         {value}
       </Text>

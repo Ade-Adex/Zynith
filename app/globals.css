@@ -101,6 +101,41 @@ select:focus {
 }
 
 /* ======================================================= */
+/* SURFACE + BORDER UTILITY                                */
+/* ======================================================= */
+
+.surface-border {
+  background-color: var(--surface) !important;
+  border-color: #cbd5e1 !important; /* slate-300 */
+}
+
+html[data-mantine-color-scheme="dark"] .surface-border {
+  border-color: #475569 !important; /* slate-600 */
+}
+
+/* ======================================================= */
+/* ICON BACKGROUND UTILITY                                 */
+/* ======================================================= */
+
+.icon-bg {
+  background-color: #f1f5f9 !important; /* slate-100 */
+  color: #0f172a !important;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-bg svg {
+  color: inherit !important;
+}
+
+html[data-mantine-color-scheme="dark"] .icon-bg {
+  background-color: #1e293b !important; /* slate-800 */
+  color: #ffffff !important;
+}
+
+/* ======================================================= */
 /* BRAND PRIMARY VARIANT (Vibrant Blue Style)              */
 /* ======================================================= */
 
