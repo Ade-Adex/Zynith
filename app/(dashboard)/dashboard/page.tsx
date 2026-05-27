@@ -141,7 +141,7 @@ const currentModule = useMemo(() => {
               Learning Workspace
             </Badge>
 
-            <h1 className="text-2xl md:text-4xl font-black tracking-tight leading-tight text-slate-900 dark:text-white break-words">
+            <h1 className="text-2xl md:text-4xl font-black tracking-tight leading-tight text-slate-900 dark:text-white wrap-break-word">
               Welcome back, {dashboard.user.firstName}
               <span className="text-blue-600">.</span>
             </h1>
@@ -251,12 +251,12 @@ const currentModule = useMemo(() => {
           {activeCourse ? (
             <Card
               radius="24px"
-              padding={isMobile ? 'md' : 'xl'}
-              className="relative overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/50"
+              padding={isMobile ? 'sm' : 'lg'}
+              className="relative overflow-hidden border bg-surface! surface-border"
             >
               <div className="absolute top-0 right-0">
                 <div
-                  className={`w-72 h-72 rounded-full blur-3xl opacity-10 dark:opacity-5 bg-gradient-to-br ${
+                  className={`w-72 h-72 rounded-full blur-3xl opacity-10 dark:opacity-5 bg-linear-to-b ${
                     activeCourse.course.color || 'from-blue-400 to-indigo-500'
                   }`}
                 />
@@ -274,14 +274,14 @@ const currentModule = useMemo(() => {
                       Active Course
                     </Badge>
 
-                    <h2 className="text-2xl md:text-3xl font-black tracking-tight leading-tight text-slate-900 dark:text-white break-words">
+                    <h2 className="text-xl md:text-3xl font-black tracking-tight leading-tight text-slate-900 dark:text-white wrap-break-word">
                       {activeCourse.course.title}
                     </h2>
 
                     <Text
                       size="xs"
                       fw={800}
-                      className="uppercase tracking-[0.2em] mt-3 text-slate-400 dark:text-slate-500 break-words"
+                      className="uppercase tracking-[0.2em] text-sm mt-3! text-slate-400 dark:text-slate-500 wrap-break-word"
                     >
                       {currentModule
                         ? `Current Module • ${currentModule.title}`
@@ -289,8 +289,10 @@ const currentModule = useMemo(() => {
                     </Text>
                   </div>
 
-                  <Link href={`/courses/${activeCourse.course._id}`}>
-                    <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
+                  <Link
+                    href={`/dashboard/courses/${activeCourse.course._id}/lessons`}
+                  >
+                    <div className="w-11 h-11 rounded-2xl icon-bg flex items-center justify-center hover:bg-blue-600 hover:text-white transition-all">
                       <ArrowUpRight size={18} />
                     </div>
                   </Link>
@@ -315,7 +317,7 @@ const currentModule = useMemo(() => {
 
                     <Progress
                       value={activeCourse.enrollment.progressPercentage || 0}
-                      size="xl"
+                      size="md"
                       radius="xl"
                       color="blue"
                     />
@@ -409,7 +411,7 @@ const currentModule = useMemo(() => {
             <Card
               radius="24px"
               padding="xl"
-              className="min-h-[320px] flex flex-col items-center justify-center border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30 text-center"
+              className="`min-h-80 flex flex-col items-center justify-center border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30 text-center"
             >
               <div className="w-20 h-20 rounded-full bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center mb-5">
                 <BookOpen size={32} className="text-blue-600" />
@@ -687,15 +689,10 @@ function MiniMetric({
   icon: React.ReactNode
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/40 p-4">
-      <div className="flex items-center gap-2 text-slate-500 mb-2">
-        {icon}
-      </div>
+    <div className="rounded-2xl border border-slate-300! dark:border-slate-600! bg-slate-50 dark:bg-slate-900/40 p-4">
+      <div className="flex items-center gap-2 text-slate-500 mb-2">{icon}</div>
 
-      <Text
-        fw={900}
-        className="text-xl text-slate-900 dark:text-white"
-      >
+      <Text fw={900} className="text-xl text-slate-900 dark:text-white">
         {value}
       </Text>
 

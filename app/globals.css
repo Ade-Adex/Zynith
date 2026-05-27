@@ -55,7 +55,7 @@ html[data-mantine-color-scheme] *,
 html[data-mantine-color-scheme] ::before,
 html[data-mantine-color-scheme] ::after {
   transition-property: background-color, color, border-color, fill, stroke !important;
-  transition-duration: 600ms !important;
+  transition-duration: 300ms !important;
   transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
