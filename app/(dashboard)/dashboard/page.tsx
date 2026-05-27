@@ -1,4 +1,3 @@
-
 // /app/(dashboard)/dashboard/page.tsx
 
 'use client'
@@ -73,8 +72,7 @@ export default function DashboardOverview() {
         const response = await getDashboardOverviewAction(authUser._id)
 
         if (response?.success && response?.data) {
-
-         setDashboard(response.data as DashboardData)
+          setDashboard(response.data as DashboardData)
         }
       } catch (error) {
         console.error(error)
@@ -88,17 +86,16 @@ export default function DashboardOverview() {
 
   const activeCourse = dashboard?.activeCourse
 
-const currentModule = useMemo(() => {
-  if (!activeCourse?.course?.modules?.length) return null
+  const currentModule = useMemo(() => {
+    if (!activeCourse?.course?.modules?.length) return null
 
-  return activeCourse.course.modules.find(
-    (module: Module) =>
-      String(module.id) === String(activeCourse.enrollment.currentModuleId),
-  )
-}, [activeCourse])
-  
-  const walletCurrency =
-    dashboard?.user?.wallet?.currency === 'USD' ? '$' : '₦'
+    return activeCourse.course.modules.find(
+      (module: Module) =>
+        String(module.id) === String(activeCourse.enrollment.currentModuleId),
+    )
+  }, [activeCourse])
+
+  const walletCurrency = dashboard?.user?.wallet?.currency === 'USD' ? '$' : '₦'
 
   if (loading || !dashboard) {
     return (
@@ -274,14 +271,14 @@ const currentModule = useMemo(() => {
                       Active Course
                     </Badge>
 
-                    <h2 className="text-xl md:text-3xl font-black tracking-tight leading-tight text-slate-900 dark:text-white wrap-break-word">
+                    <h2 className="text-lg md:text-2xl font-black tracking-tight leading-tight text-slate-900 dark:text-white wrap-break-word">
                       {activeCourse.course.title}
                     </h2>
 
                     <Text
                       size="xs"
                       fw={800}
-                      className="uppercase tracking-[0.2em] text-sm mt-3! text-slate-400 dark:text-slate-500 wrap-break-word"
+                      className="uppercase tracking-[0.2em] text-[10px]! md:text-xs! mt-3! text-slate-400 dark:text-slate-500 wrap-break-word"
                     >
                       {currentModule
                         ? `Current Module • ${currentModule.title}`
@@ -353,7 +350,7 @@ const currentModule = useMemo(() => {
                         href={`/courses/${activeCourse.course._id}/learn`}
                         className="w-full sm:w-auto"
                       >
-                        <button className="w-full sm:w-auto bg-slate-900 dark:bg-white dark:text-slate-950 text-white px-8 py-3.5 rounded-2xl font-black uppercase tracking-[0.18em] text-xs hover:bg-blue-600 dark:hover:bg-blue-500 dark:hover:text-white transition-all cursor-pointer shadow-lg">
+                        <button className="w-full sm:w-auto bg-slate-900 dark:bg-white dark:text-slate-950 text-white px-8 py-2.5 rounded-2xl font-black uppercase tracking-[0.18em] text-sm! hover:bg-blue-600 dark:hover:bg-blue-500 dark:hover:text-white transition-all cursor-pointer shadow-lg">
                           <span className="flex items-center justify-center gap-2">
                             <PlayCircle size={16} />
 
@@ -365,7 +362,7 @@ const currentModule = useMemo(() => {
                       </Link>
 
                       <Link href="/courses" className="w-full sm:w-auto">
-                        <button className="w-full sm:w-auto border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-8 py-3.5 rounded-2xl font-black uppercase tracking-[0.18em] text-xs hover:border-blue-500 hover:text-blue-600 transition-all cursor-pointer">
+                        <button className="w-full sm:w-auto border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-8 py-2.5 rounded-2xl font-black uppercase tracking-[0.18em] text-sm! hover:border-blue-500 hover:text-blue-600 transition-all cursor-pointer">
                           Explore Courses
                         </button>
                       </Link>
@@ -438,18 +435,18 @@ const currentModule = useMemo(() => {
             radius="24px"
             p={isMobile ? 'md' : 'xl'}
             withBorder
-            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+            className="bg-surface! surface-border"
           >
             <Group justify="space-between" mb="lg">
               <div>
                 <Text
                   fw={900}
-                  className="uppercase tracking-[0.2em] text-sm text-slate-500"
+                  className="uppercase tracking-[0.2em] text-sm! text-slate-500"
                 >
                   Recent Transactions
                 </Text>
 
-                <Text size="sm" className="text-slate-400 mt-1">
+                <Text size="" className="text-slate-400 text-[12px]! mt-1">
                   Latest successful payments from your account.
                 </Text>
               </div>
@@ -457,7 +454,7 @@ const currentModule = useMemo(() => {
               <ReceiptText size={20} className="text-emerald-500" />
             </Group>
 
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               {dashboard.recentTransactions.length > 0 ? (
                 dashboard.recentTransactions.map(
                   (
@@ -465,36 +462,100 @@ const currentModule = useMemo(() => {
                   ) => (
                     <div
                       key={transaction.reference}
-                      className="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 dark:border-slate-800"
+                      className="
+            border
+            surface-border
+            rounded-2xl
+            p-4
+          "
                     >
-                      <div className="w-11 h-11 rounded-2xl bg-green-50 dark:bg-green-950/30 flex items-center justify-center text-green-600">
-                        <Wallet size={16} />
-                      </div>
-
-                      <div className="flex-1 min-w-0">
-                        <Text
-                          fw={800}
-                          className="text-slate-900 dark:text-white truncate"
+                      {/* Mobile + Desktop Layout */}
+                      <div className="flex gap-3">
+                        {/* Icon */}
+                        <div
+                          className="
+                w-10 h-10
+                min-w-11
+                rounded-2xl
+                icon-bg
+                flex items-center justify-center
+                text-green-600
+                shrink-0
+              "
                         >
-                          {transaction.titles.join(', ')}
-                        </Text>
+                          <Wallet size={16} />
+                        </div>
 
-                        <Text size="xs" className="text-slate-500 mt-1">
-                          Ref: {transaction.reference}
-                        </Text>
+                        {/* Content */}
+                        <div className="flex-1 min-w-0 space-y-3">
+                          {/* Title */}
+                          <Text
+                            fw={900}
+                            className="
+                  text-xs! md:text-base!
+                  text-slate-900 dark:text-white
+                  leading-snug
+                 wrap-break-word
+                "
+                          >
+                            {transaction.titles.join(', ')}
+                          </Text>
+
+                          {/* Bottom Row */}
+                          <div
+                            className="
+                  flex flex-col
+                  xs:flex-row
+                  xs:items-center
+                  xs:justify-between
+                  gap-2
+                "
+                          >
+                            {/* Reference */}
+                            <Text
+                              size="10px"
+                              className="
+                    text-slate-500
+                    break-all py-2!
+                  "
+                            >
+                              Ref: {transaction.reference}
+                            </Text>
+
+                            {/* Amount */}
+                            <Badge
+                              color="green"
+                              variant="light"
+                              size="md"
+                              className="
+                    font-black
+                    w-fit
+                    max-w-full
+                  "
+                            >
+                              {walletCurrency}
+                              {transaction.amount.toLocaleString()}
+                            </Badge>
+                          </div>
+                        </div>
                       </div>
-
-                      <Badge color="green" variant="light">
-                        {walletCurrency}
-                        {transaction.amount.toLocaleString()}
-                      </Badge>
                     </div>
                   ),
                 )
               ) : (
-                <Text size="sm" className="text-slate-500">
-                  No recent transactions found.
-                </Text>
+                <div
+                  className="
+        border
+        surface-border
+        rounded-2xl
+        p-6
+        text-center
+      "
+                >
+                  <Text size="sm" className="text-slate-500 font-medium">
+                    No recent transactions found.
+                  </Text>
+                </div>
               )}
             </div>
           </Paper>
@@ -507,12 +568,12 @@ const currentModule = useMemo(() => {
             radius="24px"
             p={isMobile ? 'md' : 'xl'}
             withBorder
-            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+            className="bg-surface! surface-border"
           >
             <Group justify="space-between" mb="lg">
               <Text
                 fw={900}
-                className="uppercase tracking-[0.2em] text-sm text-slate-500"
+                className="uppercase tracking-[0.2em] text-sm! text-slate-500"
               >
                 Performance Overview
               </Text>
@@ -520,7 +581,7 @@ const currentModule = useMemo(() => {
               <Activity size={18} className="text-blue-500" />
             </Group>
 
-            <Stack gap="lg">
+            <Stack gap="md">
               <PerformanceRow
                 label="Course Completion"
                 value={`${dashboard.metrics.completedCourses}`}
@@ -548,12 +609,12 @@ const currentModule = useMemo(() => {
             radius="24px"
             p={isMobile ? 'md' : 'xl'}
             withBorder
-            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
+            className="bg-surface! surface-border"
           >
             <Group justify="space-between" mb="lg">
               <Text
                 fw={900}
-                className="uppercase tracking-[0.2em] text-sm text-slate-500"
+                className="uppercase tracking-[0.2em] text-sm! text-slate-500"
               >
                 Recent Courses
               </Text>
@@ -572,12 +633,15 @@ const currentModule = useMemo(() => {
                         <div className="flex-1 min-w-0">
                           <Text
                             fw={800}
-                            className="text-slate-900 dark:text-white break-words"
+                            className="text-slate-900 dark:text-white text-xs! md:text-base! wrap-break-word"
                           >
                             {item.course?.title || 'Course'}
                           </Text>
 
-                          <Text size="xs" className="text-slate-500 mt-1">
+                          <Text
+                            size=""
+                            className="text-slate-500 mt-1 text-[10px]! md:text-sm!"
+                          >
                             {item.progressPercentage}% completed
                           </Text>
                         </div>
@@ -590,51 +654,6 @@ const currentModule = useMemo(() => {
                   No recent enrollments available.
                 </Text>
               )}
-            </div>
-          </Paper>
-
-          {/* QUICK ACTIONS */}
-          <Paper
-            radius="24px"
-            p={isMobile ? 'md' : 'xl'}
-            withBorder
-            className="bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800"
-          >
-            <Text
-              fw={900}
-              className="uppercase tracking-[0.2em] text-sm text-slate-500 mb-6"
-            >
-              Quick Actions
-            </Text>
-
-            <div className="space-y-3">
-              <QuickAction
-                href="/courses"
-                title="Browse Courses"
-                subtitle="Explore available learning tracks"
-                icon={<BookOpen size={16} />}
-              />
-
-              <QuickAction
-                href="/dashboard/wallet"
-                title="Wallet & Payments"
-                subtitle="Manage balance and transactions"
-                icon={<Wallet size={16} />}
-              />
-
-              <QuickAction
-                href="/dashboard/certificates"
-                title="Certificates"
-                subtitle="Access earned certificates"
-                icon={<GraduationCap size={16} />}
-              />
-
-              <QuickAction
-                href="/dashboard/transactions"
-                title="Transactions"
-                subtitle="Review purchase history"
-                icon={<ReceiptText size={16} />}
-              />
             </div>
           </Paper>
         </div>
@@ -661,10 +680,7 @@ function StatItem({ label, value, icon, trend }: StatProps) {
         </Badge>
       </Group>
 
-      <Text
-        fw={900}
-        className="text-2xl tracking-tight wrap-break-word"
-      >
+      <Text fw={900} className="text-2xl tracking-tight wrap-break-word">
         {value}
       </Text>
 
@@ -707,20 +723,10 @@ function MiniMetric({
   )
 }
 
-function PerformanceRow({
-  label,
-  value,
-}: {
-  label: string
-  value: string
-}) {
+function PerformanceRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-4">
-      <Text
-        size="sm"
-        fw={700}
-        className="text-slate-600 dark:text-slate-400"
-      >
+      <Text size="12px" fw={700} className="text-slate-600 dark:text-slate-400">
         {label}
       </Text>
 
@@ -734,48 +740,5 @@ function PerformanceRow({
         {value}
       </Badge>
     </div>
-  )
-}
-
-function QuickAction({
-  href,
-  title,
-  subtitle,
-  icon,
-}: {
-  href: string
-  title: string
-  subtitle: string
-  icon: React.ReactNode
-}) {
-  return (
-    <Link href={href}>
-      <div className="group flex items-center gap-4 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 hover:border-blue-200 dark:hover:border-blue-900 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-all cursor-pointer">
-        <div className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-blue-600">
-          {icon}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <Text
-            fw={800}
-            className="text-slate-900 dark:text-white"
-          >
-            {title}
-          </Text>
-
-          <Text
-            size="xs"
-            className="text-slate-500 mt-1"
-          >
-            {subtitle}
-          </Text>
-        </div>
-
-        <ChevronRight
-          size={16}
-          className="text-slate-400 group-hover:text-blue-600 transition-colors"
-        />
-      </div>
-    </Link>
   )
 }
