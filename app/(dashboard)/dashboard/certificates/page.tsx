@@ -158,7 +158,7 @@ export default function CertificatesWorkspaceRoot() {
               className="block w-full"
             >
               <button className="w-full bg-neutral-50 dark:bg-neutral-900 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 border border-neutral-200 dark:border-neutral-800 group-hover:border-blue-500/20 text-slate-900 dark:text-neutral-300 text-xs font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer">
-                View Certificate Verification{' '}
+                View
                 <ArrowRight
                   size={14}
                   className="group-hover:translate-x-1 transition-transform"
