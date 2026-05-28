@@ -62,7 +62,7 @@ export default function CertificatesWorkspaceRoot() {
 
   if (certificates.length === 0) {
     return (
-      <div className="py-20 px-4 max-w-xl mx-auto text-center flex flex-col items-center justify-center min-h-[450px]">
+      <div className="py-20 max-w-xl mx-auto text-center flex flex-col items-center justify-center min-h-[450px]">
         <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-900/60 flex items-center justify-center text-neutral-400 dark:text-neutral-600 mb-5">
           <Award size={32} />
         </div>
@@ -83,7 +83,7 @@ export default function CertificatesWorkspaceRoot() {
   }
 
   return (
-    <div className="py-6 md:py-10 px-4 max-w-7xl mx-auto min-h-screen bg-background text-foreground">
+    <div className="py-6 md:py-10 max-w-7xl mx-auto min-h-screen bg-background text-foreground">
       {/* SECTION HEADER */}
       <div className="mb-10">
         <div className="flex items-center gap-2">
@@ -101,13 +101,13 @@ export default function CertificatesWorkspaceRoot() {
       </div>
 
       {/* COMPREHENSIVE CERTIFICATE GRID */}
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="md">
         {certificates.map((cert) => (
           <Paper
             key={String(cert.id)}
             radius="20px"
             withBorder
-            className="p-6 bg-white dark:bg-neutral-900/40 border-neutral-200 dark:border-neutral-800/80 flex flex-col justify-between hover:shadow-xl hover:border-blue-500/40 transition-all duration-300 group"
+            className="p-4 md:p-6 bg-white dark:bg-neutral-900/40 border-neutral-200 dark:border-neutral-800/80 flex flex-col justify-between hover:shadow-xl hover:border-blue-500/40 transition-all duration-300 group"
           >
             <div>
               {/* Card Badge Top Decoration */}
