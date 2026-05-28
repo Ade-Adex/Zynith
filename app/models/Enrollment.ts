@@ -1,8 +1,29 @@
 // /app/models/Enrollment.ts
 
-
 import mongoose, { Schema, Model } from 'mongoose'
 import { IDbEnrollment } from '@/app/types/enrollment'
+
+// Sub-schema for cleaner nested organization and explicit structure tracking
+const IssuedCertificateSchema = new Schema(
+  {
+    certificateId: {
+      type: String,
+      required: true,
+      unique: true,
+      sparse: true, // Allows null/omitted fields on active enrollments while preserving uniqueness on issued certs
+      index: true,
+    },
+    issuedAt: {
+      type: Date,
+      default: Date.now,
+    },
+    verificationUrl: {
+      type: String,
+      required: true,
+    },
+  },
+  { _id: false }, // Prevents Mongoose from creating redundant nested sub-document ObjectIds
+)
 
 const EnrollmentSchema = new Schema<IDbEnrollment>(
   {
@@ -66,12 +87,17 @@ const EnrollmentSchema = new Schema<IDbEnrollment>(
         finalScore: { type: Number, default: 0 },
       },
     ],
+    certificate: {
+      type: IssuedCertificateSchema,
+      default: null,
+    },
     enrolledAt: { type: Date, default: Date.now },
     lastAccessedAt: { type: Date, default: Date.now },
   },
   { timestamps: true },
 )
 
+// Compound Index to prevent double registration
 EnrollmentSchema.index({ userId: 1, courseId: 1 }, { unique: true })
 
 export const EnrollmentModel: Model<IDbEnrollment> =

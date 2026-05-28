@@ -34,6 +34,7 @@ const serializeEnrollment = (doc: IDbEnrollment): SerializedEnrollment => ({
   completedLessons: doc.completedLessons || [],
   completedModules: doc.completedModules || [],
   quizAttempts: (doc.quizAttempts || []).map((q) => ({
+    _id: q._id?.toString(),
     quizId: q.quizId,
     score: q.score,
     passed: q.passed,
@@ -42,22 +43,35 @@ const serializeEnrollment = (doc: IDbEnrollment): SerializedEnrollment => ({
       : new Date(q.attemptedAt)
     ).toISOString(),
     answers: (q.answers || []).map((ans) => ({
+      _id: ans._id?.toString(),
       questionId: ans.questionId,
       selectedOption: ans.selectedOption,
       isCorrect: ans.isCorrect,
     })),
   })),
   assignmentSubmissions: (doc.assignmentSubmissions || []).map((a) => ({
+    _id: a._id?.toString(),
     assignmentId: a.assignmentId,
     submissionUrl: a.submissionUrl,
     status: a.status,
     finalScore: a.finalScore,
     reviewsReceived: (a.reviewsReceived || []).map((r) => ({
+      _id: r._id?.toString(),
       reviewerId: r.reviewerId.toString(),
       score: r.score,
       feedback: r.feedback,
     })),
   })),
+  certificate: doc.certificate && doc.certificate.certificateId
+    ? {
+        certificateId: doc.certificate.certificateId,
+        verificationUrl: doc.certificate.verificationUrl,
+        issuedAt: (doc.certificate.issuedAt instanceof Date
+          ? doc.certificate.issuedAt
+          : new Date(doc.certificate.issuedAt)
+        ).toISOString(),
+      }
+    : null,
   enrolledAt: doc.enrolledAt
     ? (doc.enrolledAt instanceof Date
         ? doc.enrolledAt
@@ -194,6 +208,7 @@ export async function enrollUserAfterPaymentAction(
             completedModules: [],
             quizAttempts: [],
             assignmentSubmissions: [],
+            certificate: null,
             enrolledAt: new Date(),
           },
           $set: { lastAccessedAt: new Date() },
@@ -279,6 +294,7 @@ export async function getEnrollmentProgressAction(
     }
   }
 }
+
 
 export async function updateEnrollmentProgressAction(
   userId: string,
@@ -424,16 +440,27 @@ export async function updateEnrollmentProgressAction(
     }
 
     // 3. SECURE STATUS TRANSITIONS
-    // Ensure status only jumps to 'completed' when progress matches absolute final targets
     if (updatedDoc.progressPercentage === 100) {
       updatedDoc.status = 'completed'
+
+      // If no certificate has been provisioned yet, generate one natively
+      if (!updatedDoc.certificate || !updatedDoc.certificate.certificateId) {
+        // Generates a clean, unique 8-character string from a random UUID
+        const randomHex = crypto.randomUUID().split('-')[0].toUpperCase()
+        const certificateUid = `CERT-${randomHex}`
+
+        updatedDoc.certificate = {
+          certificateId: certificateUid,
+          verificationUrl: `/verify/certificates/${certificateUid}`,
+          issuedAt: new Date(),
+        }
+      }
     } else {
       updatedDoc.status = 'active'
     }
 
     // Persist calculated mathematical results safely to MongoDB
     await updatedDoc.save()
-
     return {
       success: true,
       message: 'Progress updated successfully.',
@@ -447,6 +474,175 @@ export async function updateEnrollmentProgressAction(
     }
   }
 }
+
+
+// export async function updateEnrollmentProgressAction(
+//   userId: string,
+//   courseId: string,
+//   payload: UpdatePayload,
+// ): Promise<EnrollmentActionResult> {
+//   try {
+//     await connectDB()
+
+//     if (!userId || !courseId) {
+//       return { success: false, message: 'Missing user ID or course ID.' }
+//     }
+
+//     // 1. Fetch baseline course information to map total modules & lessons
+//     const courseDoc = await CourseModel.findById(courseId).lean<Course>()
+//     if (!courseDoc) {
+//       return {
+//         success: false,
+//         message: 'Associated course structure was not found.',
+//       }
+//     }
+
+//     // Prepare variables for dynamic updates
+//     let updatedDoc
+
+//     // Handle assignments tracking separately
+//     if (payload.assignmentSubmission) {
+//       const { assignmentId, url } = payload.assignmentSubmission
+
+//       const existingEnrollment = await EnrollmentModel.findOne({
+//         userId: new Types.ObjectId(userId),
+//         courseId: new Types.ObjectId(courseId),
+//         'assignmentSubmissions.assignmentId': assignmentId,
+//       })
+
+//       if (existingEnrollment) {
+//         updatedDoc = await EnrollmentModel.findOneAndUpdate(
+//           {
+//             userId: new Types.ObjectId(userId),
+//             courseId: new Types.ObjectId(courseId),
+//             'assignmentSubmissions.assignmentId': assignmentId,
+//           },
+//           {
+//             $set: {
+//               'assignmentSubmissions.$.submissionUrl': url,
+//               'assignmentSubmissions.$.status': 'pending_reviews',
+//               lastAccessedAt: new Date(),
+//             },
+//           },
+//           { new: true },
+//         )
+//       } else {
+//         updatedDoc = await EnrollmentModel.findOneAndUpdate(
+//           {
+//             userId: new Types.ObjectId(userId),
+//             courseId: new Types.ObjectId(courseId),
+//           },
+//           {
+//             $push: {
+//               assignmentSubmissions: {
+//                 assignmentId,
+//                 submissionUrl: url,
+//                 status: 'pending_reviews',
+//                 reviewsReceived: [],
+//                 finalScore: 0,
+//               },
+//             },
+//             $set: { lastAccessedAt: new Date() },
+//           },
+//           { new: true },
+//         )
+//       }
+//     } else {
+//       // Handle standard lesson progression tracks
+//       const genericUpdate: UpdateQuery<IDbEnrollment> = {
+//         $set: { lastAccessedAt: new Date() },
+//       }
+
+//       if (payload.currentModuleId)
+//         genericUpdate.$set!.currentModuleId = payload.currentModuleId
+//       if (payload.currentLessonId)
+//         genericUpdate.$set!.currentLessonId = payload.currentLessonId
+
+//       if (payload.newCompletedLessonId) {
+//         genericUpdate.$addToSet = {
+//           ...genericUpdate.$addToSet,
+//           completedLessons: payload.newCompletedLessonId,
+//         }
+//       }
+//       if (payload.newCompletedModuleId) {
+//         genericUpdate.$addToSet = {
+//           ...genericUpdate.$addToSet,
+//           completedModules: payload.newCompletedModuleId,
+//         }
+//       }
+//       if (payload.quizAttempt) {
+//         genericUpdate.$push = {
+//           quizAttempts: { ...payload.quizAttempt, attemptedAt: new Date() },
+//         }
+//       }
+
+//       updatedDoc = await EnrollmentModel.findOneAndUpdate(
+//         {
+//           userId: new Types.ObjectId(userId),
+//           courseId: new Types.ObjectId(courseId),
+//         },
+//         genericUpdate,
+//         { new: true },
+//       )
+//     }
+
+//     if (!updatedDoc) {
+//       return { success: false, message: 'Enrollment record not found.' }
+//     }
+
+//     // 2. RECALCULATE COURSE PROGRESS ACCURATELY
+//     // Gather every lesson ID from the official course configuration
+//     const allLessonIds: string[] = []
+//     courseDoc.modules?.forEach((mod) => {
+//       mod.lessons?.forEach((les) => {
+//         if (les.id) allLessonIds.push(String(les.id))
+//       })
+//     })
+
+//     const totalLessonsCount = allLessonIds.length
+
+//     if (totalLessonsCount > 0) {
+//       // Find out how many of this course's specific lessons are completed
+//       const completedCourseLessons = updatedDoc.completedLessons.filter((id) =>
+//         allLessonIds.includes(String(id)),
+//       )
+
+//       const completedCount = completedCourseLessons.length
+//       const rawPercentage = (completedCount / totalLessonsCount) * 100
+
+//       // Assign mathematically clean integer values capped carefully between 0 and 100
+//       updatedDoc.progressPercentage = Math.min(
+//         Math.max(Math.round(rawPercentage), 0),
+//         100,
+//       )
+//     } else {
+//       updatedDoc.progressPercentage = 0
+//     }
+
+//     // 3. SECURE STATUS TRANSITIONS
+//     // Ensure status only jumps to 'completed' when progress matches absolute final targets
+//     if (updatedDoc.progressPercentage === 100) {
+//       updatedDoc.status = 'completed'
+//     } else {
+//       updatedDoc.status = 'active'
+//     }
+
+//     // Persist calculated mathematical results safely to MongoDB
+//     await updatedDoc.save()
+
+//     return {
+//       success: true,
+//       message: 'Progress updated successfully.',
+//       data: serializeEnrollment(updatedDoc),
+//     }
+//   } catch (error: unknown) {
+//     console.error('Failed to update progress status:', error)
+//     return {
+//       success: false,
+//       message: (error as Error).message || 'Server error tracking progress.',
+//     }
+//   }
+// }
 
 /**
  * Checks if a user is already enrolled in a list of course IDs.

@@ -1,26 +1,29 @@
 // /app/types/enrollment.ts
 
+
 import mongoose, { Document } from 'mongoose'
 
-export interface SerializedReview {
-  reviewerId: string
-  score: number
-  feedback: string
+// --- CERTIFICATE SUB-INTERFACES ---
+export interface DbCertificate {
+  certificateId: string
+  issuedAt: Date
+  verificationUrl: string
 }
 
-export interface SerializedAssignmentSubmission {
-  assignmentId: string
-  submissionUrl: string
-  status: 'pending_reviews' | 'passed' | 'failed'
-  reviewsReceived: SerializedReview[]
-  finalScore: number
+export interface SerializedCertificate {
+  certificateId: string
+  issuedAt: string
+  verificationUrl: string
 }
 
+// --- DATABASE SUB-INTERFACES ---
 export interface DbQuizAttempt {
+  _id?: mongoose.Types.ObjectId // Mongoose automatically assigns subdocument IDs
   quizId: string
   score: number
   passed: boolean
   answers: Array<{
+    _id?: mongoose.Types.ObjectId
     questionId: string
     selectedOption: string
     isCorrect: boolean
@@ -29,10 +32,12 @@ export interface DbQuizAttempt {
 }
 
 export interface DbAssignmentSubmission {
+  _id?: mongoose.Types.ObjectId // Mongoose automatically assigns subdocument IDs
   assignmentId: string
   submissionUrl: string
   status: 'pending_reviews' | 'passed' | 'failed'
   reviewsReceived: Array<{
+    _id?: mongoose.Types.ObjectId
     reviewerId: mongoose.Types.ObjectId
     score: number
     feedback: string
@@ -40,6 +45,7 @@ export interface DbAssignmentSubmission {
   finalScore: number
 }
 
+// --- MAIN DATABASE ENROLLMENT INTERFACE ---
 export interface IDbEnrollment extends Document {
   userId: mongoose.Types.ObjectId
   courseId: mongoose.Types.ObjectId
@@ -51,6 +57,7 @@ export interface IDbEnrollment extends Document {
   completedModules: string[]
   quizAttempts: DbQuizAttempt[]
   assignmentSubmissions: DbAssignmentSubmission[]
+  certificate: DbCertificate | null // Added certificate support
   enrolledAt: Date
   lastAccessedAt: Date
   createdAt: Date
@@ -71,21 +78,27 @@ export interface QuizAttemptInput {
 }
 
 export interface SerializedQuizAttempt extends QuizAttemptInput {
+  _id?: string
   attemptedAt: string
 }
 
+export interface SerializedReview {
+  _id?: string
+  reviewerId: string
+  score: number
+  feedback: string
+}
+
 export interface SerializedAssignmentSubmission {
+  _id?: string
   assignmentId: string
   submissionUrl: string
   status: 'pending_reviews' | 'passed' | 'failed'
-  reviewsReceived: Array<{
-    reviewerId: string
-    score: number
-    feedback: string
-  }>
+  reviewsReceived: SerializedReview[]
   finalScore: number
 }
 
+// --- MAIN SERIALIZED FRONTEND ENROLLMENT INTERFACE ---
 export interface SerializedEnrollment {
   _id: string
   userId: string
@@ -98,8 +111,11 @@ export interface SerializedEnrollment {
   completedModules: string[]
   quizAttempts: SerializedQuizAttempt[]
   assignmentSubmissions: SerializedAssignmentSubmission[]
+  certificate: SerializedCertificate | null // Added certificate support
   enrolledAt: string | null
   lastAccessedAt: string | null
+  createdAt?: string
+  updatedAt?: string
 }
 
 export interface UpdatePayload {

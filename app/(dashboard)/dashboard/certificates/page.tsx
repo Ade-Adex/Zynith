@@ -1,260 +1,173 @@
 // /app/certification/page.tsx
+
 'use client'
 
 import React, { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { Text, Loader, Badge, Paper, SimpleGrid } from '@mantine/core'
 import {
-  Paper,
-  Text,
-  Stack,
-  Group,
-  Badge,
-  Button,
-  ActionIcon,
-  Tooltip,
-  Loader,
-} from '@mantine/core'
-import { Award, Download, ShieldCheck, ChevronRight } from 'lucide-react'
-import { Enrollment, UserType } from '@/app/types/user'
-import { Course } from '@/app/types'
+  Award,
+  ShieldCheck,
+  ArrowRight,
+  Calendar,
+  Bookmark,
+} from 'lucide-react'
 import { useAuthStore } from '@/app/store/authStore'
-import { useCourses } from '@/app/hooks/useCourses'
+import { getDashboardOverviewAction } from '@/app/services/dashboardActions'
+import { DashboardData } from '@/app/types/user'
 
-interface CertificateData extends Enrollment {
-  details?: Course
-}
-
-export default function CertificationPage() {
+export default function CertificatesWorkspaceRoot() {
   const store = useAuthStore()
-  const user = store.user as UserType | null | undefined
+  const authUser = store.user
 
-  const { courses: databaseCourses, loading, error } = useCourses()
+  const [loading, setLoading] = useState(true)
+  const [dashboard, setDashboard] = useState<DashboardData | null>(null)
 
-  const activeEnrollments = user?.enrollments || []
+  useEffect(() => {
+    async function loadDashboardCertificates() {
+      try {
+        if (!authUser?._id) return
+        setLoading(true)
 
-  // Direct, safe execution path cleanly mapped out
-  const completedCourses: CertificateData[] = activeEnrollments
-    .filter((en) => en.progressPercentage === 100)
-    .map((en) => ({
-      ...en,
-      details: databaseCourses.find(
-        (c) => String(c._id) === String(en.courseId),
-      ),
-    }))
+        const response = await getDashboardOverviewAction(authUser._id)
+        if (response?.success && response?.data) {
+          setDashboard(response.data as DashboardData)
+        }
+      } catch (error) {
+        console.error('Error fetching dashboard records:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
 
-  // System Loading Viewport
+    loadDashboardCertificates()
+  }, [authUser?._id])
+
   if (loading) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-3">
+      <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4">
         <Loader size="sm" color="blue" />
         <Text
           size="xs"
-          fw={700}
-          className="text-slate-400 uppercase tracking-widest"
-        >
-          Querying secure credentials...
-        </Text>
-      </div>
-    )
-  }
-
-  // System Error Recovery Fallback Viewport
-  if (error) {
-    return (
-      <div className="min-h-[50vh] flex flex-col items-center justify-center gap-2 p-4 text-center">
-        <Text
-          size="sm"
           fw={800}
-          className="text-red-500 uppercase tracking-wider"
+          className="uppercase tracking-[0.25em] text-neutral-500"
         >
-          Registry Exception Enforced
+          Loading Academic Records...
         </Text>
-        <Text size="xs" c="dimmed" className="max-w-xs mb-4">
-          {error}
-        </Text>
-        <Button size="xs" color="dark" onClick={() => window.location.reload()}>
-          Retry Verification
-        </Button>
+      </div>
+    )
+  }
+
+  const certificates = dashboard?.certificates || []
+
+  if (certificates.length === 0) {
+    return (
+      <div className="py-20 px-4 max-w-xl mx-auto text-center flex flex-col items-center justify-center min-h-[450px]">
+        <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-900/60 flex items-center justify-center text-neutral-400 dark:text-neutral-600 mb-5">
+          <Award size={32} />
+        </div>
+        <h3 className="text-xl font-black text-foreground tracking-tight">
+          No Credentials Issued Yet
+        </h3>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-2 max-w-sm leading-relaxed">
+          Certificates are generated instantly once you complete core framework
+          courses, quizzes, and modules.
+        </p>
+        <Link href="/courses" className="mt-6">
+          <button className="bg-blue-600 hover:bg-slate-900 text-white text-xs px-6 py-2.5 rounded-xl font-black uppercase tracking-wider transition-all cursor-pointer">
+            Explore Course Tracks
+          </button>
+        </Link>
       </div>
     )
   }
 
   return (
-    <div className="py-8 max-w-6xl mx-auto">
-      {/* Minimal Header */}
-      <header className="flex justify-between items-end mb-16">
-        <div>
-          <h1 className="text-xl md:text-3xl font-bold uppercase tracking-tighter leading-none">
-            Registry<span className="text-blue-600">.</span>
-          </h1>
-          <Text c="dimmed" className="text-[10px]! md:text-xs! mt-2! max-w-md">
-            Your verified academic record and professional certifications
-            secured on the Zynith framework.
-          </Text>
+    <div className="py-6 md:py-10 px-4 max-w-7xl mx-auto min-h-screen bg-background text-foreground">
+      {/* SECTION HEADER */}
+      <div className="mb-10">
+        <div className="flex items-center gap-2">
+          <ShieldCheck size={16} className="text-blue-600 dark:text-blue-400" />
+          <span className="text-[10px] uppercase font-black tracking-[0.25em] text-neutral-400">
+            Verified Student Desk
+          </span>
         </div>
-        <div className="text-right hidden md:block">
-          <Text className="text-[10px]! md:text-sm uppercase text-slate-400">
-            Total Credentials
-          </Text>
-          <Text className="text-base font-bold">{completedCourses.length}</Text>
-        </div>
-      </header>
+        <h1 className="text-2xl md:text-4xl font-black tracking-tight mt-1 text-slate-900 dark:text-white">
+          Earned Credentials
+        </h1>
+        <p className="text-sm text-neutral-500 dark:text-neutral-400 mt-1">
+          Review, share, and manage your verified academic achievements.
+        </p>
+      </div>
 
-      {completedCourses.length > 0 ? (
-        <Stack gap="xs">
-          {/* List Header */}
-          <Group
-            px="sm"
-            py="sm"
-            className="hidden! md:flex! opacity-40 uppercase font-bold text-[9px]"
+      {/* COMPREHENSIVE CERTIFICATE GRID */}
+      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="lg">
+        {certificates.map((cert) => (
+          <Paper
+            key={String(cert.id)}
+            radius="20px"
+            withBorder
+            className="p-6 bg-white dark:bg-neutral-900/40 border-neutral-200 dark:border-neutral-800/80 flex flex-col justify-between hover:shadow-xl hover:border-blue-500/40 transition-all duration-300 group"
           >
-            <Text className="flex-1 text-[9px]! md:text-sm!">
-              Certification Track
-            </Text>
-            <Text className="w-40 text-center text-[9px]! md:text-sm!">
-              Issued Date
-            </Text>
-            <Text className="w-48 text-center text-[9px]! md:text-sm!">
-              Verification ID
-            </Text>
-            <div className="w-32" />
-          </Group>
+            <div>
+              {/* Card Badge Top Decoration */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+                  <Award size={22} />
+                </div>
+                <Badge
+                  variant="light"
+                  color="blue"
+                  size="xs"
+                  radius="sm"
+                  className="font-black"
+                >
+                  ACTIVE SECURE
+                </Badge>
+              </div>
 
-          {completedCourses.map((cert) => (
-            <CertificateRow key={cert.courseId} cert={cert} />
-          ))}
-        </Stack>
-      ) : (
-        <EmptyRegistry />
-      )}
-    </div>
-  )
-}
+              {/* Title Block */}
+              <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight leading-snug line-clamp-2 mb-4 min-h-[44px]">
+                {cert.courseTitle || cert.title || 'Framework Course Track'}
+              </h3>
 
-function CertificateRow({ cert }: { cert: CertificateData }) {
-  return (
-    <Paper
-      p="md"
-      radius="20px"
-      withBorder
-      className="group bg-white border-slate-100 hover:border-blue-200 hover:shadow-[0_20px_40px_rgb(0,0,0,0.03)] transition-all duration-300"
-    >
-      <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
-        <div className="flex items-start gap-4 flex-1 min-w-0">
-          <div className="w-12 h-12 rounded-xl bg-slate-900 flex items-center justify-center text-white shrink-0 group-hover:scale-110 transition-transform">
-            <Award size={20} strokeWidth={2.5} />
-          </div>
-
-          <div className="flex-1 min-w-0">
-            <Text className="text-sm md:text-base! font-bold! uppercase tracking-tight text-slate-900 leading-snug wrap-break-word">
-              {cert.details?.title || cert.courseTitle}
-            </Text>
-
-            <Group gap={6} mt={4}>
-              <ShieldCheck size={12} className="text-blue-600 shrink-0" />
-              <Text
-                size="10px"
-                fw={700}
-                c="dimmed"
-                className="uppercase tracking-wider"
-              >
-                Verified Credential
-              </Text>
-            </Group>
-
-            <div className="flex flex-col gap-2 mt-4 md:hidden">
-              <Text size="11px" fw={800} className="text-slate-500 uppercase">
-                Issued May 2026
-              </Text>
-
-              <Badge
-                variant="outline"
-                color="gray"
-                radius="sm"
-                className="text-[10px]! border-slate-200 w-fit"
-              >
-                ZN-{String(cert.courseId).toUpperCase()}-X22
-              </Badge>
+              {/* Information Row Meta Fields */}
+              <div className="space-y-2 border-t border-neutral-100 dark:border-neutral-800/60 pt-4 mb-6">
+                <div className="flex items-center gap-2 text-xs text-neutral-500">
+                  <Calendar size={14} className="text-neutral-400" />
+                  <span>
+                    Issued:{' '}
+                    {cert.issueDate
+                      ? new Date(cert.issueDate).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                        })
+                      : 'Recent'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-neutral-400 font-mono">
+                  <Bookmark size={14} className="text-neutral-500" />
+                  <span className="truncate">Ref: {cert.id}</span>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
 
-        <div className="w-40 hidden md:block text-center">
-          <Text size="12px" fw={800} className="text-slate-600">
-            MAY 2026
-          </Text>
-        </div>
-
-        <div className="w-48 hidden md:block text-center">
-          <Badge
-            variant="outline"
-            color="gray"
-            radius="sm"
-            className="text-[10px]! border-slate-200"
-          >
-            ZN-{String(cert.courseId).toUpperCase()}-X22
-          </Badge>
-        </div>
-
-        <Group
-          gap="xs"
-          className="w-full md:w-32 justify-between md:justify-end"
-        >
-          <Tooltip label="Download PDF" position="top">
-            <ActionIcon
-              variant="subtle"
-              color="dark"
-              radius="md"
-              size="lg"
-              className="flex-1 md:flex-none"
+            {/* Redirection Link trigger */}
+            <Link
+              href={`/dashboard/certificates/${cert.id}`}
+              className="block w-full"
             >
-              <Download size={18} />
-            </ActionIcon>
-          </Tooltip>
-
-          <ActionIcon
-            variant="filled"
-            color="blue"
-            radius="md"
-            size="lg"
-            className="shadow-lg shadow-blue-600/20 flex-1 md:flex-none"
-          >
-            <ChevronRight size={20} />
-          </ActionIcon>
-        </Group>
-      </div>
-    </Paper>
-  )
-}
-
-function EmptyRegistry() {
-  return (
-    <Paper
-      radius="16px"
-      className="bg-slate-50 border border-slate-200 px-6 md:px-16 py-12 flex flex-col items-center justify-center text-center"
-    >
-      <div className="relative mb-8">
-        <div className="absolute inset-0 bg-blue-100 blur-2xl rounded-full opacity-50" />
-        <Award size={64} className="text-slate-300 relative z-10" />
-      </div>
-      <Text className="font-bold uppercase text-base md:text-xl tracking-tighter text-slate-400">
-        Registry Entry Empty
-      </Text>
-      <Text
-        size="xs"
-        c="dimmed"
-        className="uppercase font-bold tracking-[0.2em] mt-2"
-      >
-        Complete your active curriculum to populate this list.
-      </Text>
-      <Button
-        mt="xl"
-        variant="filled"
-        color="dark"
-        radius="xl"
-        className="uppercase tracking-widest text-[10px] h-11 px-10"
-      >
-        Go to Learning Path
-      </Button>
-    </Paper>
+              <button className="w-full bg-neutral-50 dark:bg-neutral-900 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 border border-neutral-200 dark:border-neutral-800 group-hover:border-blue-500/20 text-slate-900 dark:text-neutral-300 text-xs font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                View Certificate Verification{' '}
+                <ArrowRight
+                  size={14}
+                  className="group-hover:translate-x-1 transition-transform"
+                />
+              </button>
+            </Link>
+          </Paper>
+        ))}
+      </SimpleGrid>
+    </div>
   )
 }

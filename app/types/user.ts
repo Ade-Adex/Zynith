@@ -33,6 +33,15 @@ export interface UserStats {
   streakDays: number
 }
 
+export interface DashboardCertificate {
+  id: string
+  courseId: string | number
+  courseTitle?: string
+  title?: string
+  issueDate: string
+  url: string
+}
+
 export interface UserType {
   _id: string
   name: string
@@ -90,7 +99,7 @@ export interface DashboardData {
     >,
     'createdAt'
   > & {
-    createdAt: string // Overridden explicitly to match runtime string serialization
+    createdAt: string
   }
 
   metrics: {
@@ -126,4 +135,6 @@ export interface DashboardData {
     updatedAt: string
     course: Pick<Course, '_id' | 'title' | 'image' | 'slug'> | null
   }>
+
+  certificates?: DashboardCertificate[]
 }

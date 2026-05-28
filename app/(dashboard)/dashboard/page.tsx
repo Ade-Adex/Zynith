@@ -16,7 +16,6 @@ import {
   rem,
   Loader,
   RingProgress,
-  Divider,
   Avatar,
 } from '@mantine/core'
 import { useMediaQuery } from '@mantine/hooks'
@@ -24,7 +23,6 @@ import {
   Zap,
   Star,
   ArrowUpRight,
-  Clock3,
   Flame,
   Wallet,
   ChevronRight,
@@ -39,6 +37,8 @@ import {
   ReceiptText,
   Target,
   TrendingUp,
+  Award,
+  ExternalLink,
 } from 'lucide-react'
 
 import { useAuthStore } from '@/app/store/authStore'
@@ -242,7 +242,7 @@ export default function DashboardOverview() {
       </SimpleGrid>
 
       <div className="grid grid-cols-1 2xl:grid-cols-12 gap-6">
-        {/* LEFT */}
+        {/* LEFT PANEL */}
         <div className="2xl:col-span-8 space-y-6">
           {/* ACTIVE COURSE */}
           {activeCourse ? (
@@ -306,10 +306,6 @@ export default function DashboardOverview() {
                         Overall Progress
                       </Text>
 
-                      {/* <Text size="xs" fw={800} className="text-slate-500">
-                        {dashboard.metrics.completedLessons} /{' '}
-                        {dashboard.metrics.totalLessons} Lessons
-                      </Text> */}
                       <Text size="xs" fw={800} className="text-slate-500">
                         {activeCourse.enrollment.completedLessons.length} /{' '}
                         {activeCourse.course.modules?.reduce(
@@ -416,7 +412,7 @@ export default function DashboardOverview() {
             <Card
               radius="24px"
               padding="xl"
-              className="`min-h-80 flex flex-col items-center justify-center border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30 text-center"
+              className="min-h-80 flex flex-col items-center justify-center border border-dashed border-slate-300 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/30 text-center"
             >
               <div className="w-20 h-20 rounded-full bg-blue-50 dark:bg-blue-950/30 flex items-center justify-center mb-5">
                 <BookOpen size={32} className="text-blue-600" />
@@ -454,7 +450,7 @@ export default function DashboardOverview() {
                   Recent Transactions
                 </Text>
 
-                <Text size="" className="text-slate-400 text-[12px]! mt-1">
+                <Text className="text-slate-400 text-[12px]! mt-1">
                   Latest successful payments from your account.
                 </Text>
               </div>
@@ -470,76 +466,34 @@ export default function DashboardOverview() {
                   ) => (
                     <div
                       key={transaction.reference}
-                      className="
-            border
-            surface-border
-            rounded-2xl
-            p-4
-          "
+                      className="border surface-border rounded-2xl p-4"
                     >
-                      {/* Mobile + Desktop Layout */}
                       <div className="flex gap-3">
-                        {/* Icon */}
-                        <div
-                          className="
-                w-10 h-10
-                min-w-11
-                rounded-2xl
-                icon-bg
-                flex items-center justify-center
-                text-green-600
-                shrink-0
-              "
-                        >
+                        <div className="w-10 h-10 min-w-11 rounded-2xl icon-bg flex items-center justify-center text-green-600 shrink-0">
                           <Wallet size={16} />
                         </div>
 
-                        {/* Content */}
                         <div className="flex-1 min-w-0 space-y-3">
-                          {/* Title */}
                           <Text
                             fw={900}
-                            className="
-                  text-xs! md:text-base!
-                  text-slate-900 dark:text-white
-                  leading-snug
-                 wrap-break-word
-                "
+                            className="text-xs! md:text-base! text-slate-900 dark:text-white leading-snug wrap-break-word"
                           >
                             {transaction.titles.join(', ')}
                           </Text>
 
-                          {/* Bottom Row */}
-                          <div
-                            className="
-                  flex flex-col
-                  xs:flex-row
-                  xs:items-center
-                  xs:justify-between
-                  gap-2
-                "
-                          >
-                            {/* Reference */}
+                          <div className="flex flex-col xs:flex-row xs:items-center xs:justify-between gap-2">
                             <Text
                               size="10px"
-                              className="
-                    text-slate-500
-                    break-all py-2!
-                  "
+                              className="text-slate-500 break-all py-2!"
                             >
                               Ref: {transaction.reference}
                             </Text>
 
-                            {/* Amount */}
                             <Badge
                               color="green"
                               variant="light"
                               size="md"
-                              className="
-                    font-black
-                    w-fit
-                    max-w-full
-                  "
+                              className="font-black w-fit max-w-full"
                             >
                               {walletCurrency}
                               {transaction.amount.toLocaleString()}
@@ -551,15 +505,7 @@ export default function DashboardOverview() {
                   ),
                 )
               ) : (
-                <div
-                  className="
-        border
-        surface-border
-        rounded-2xl
-        p-6
-        text-center
-      "
-                >
+                <div className="border surface-border rounded-2xl p-6 text-center">
                   <Text size="sm" className="text-slate-500 font-medium">
                     No recent transactions found.
                   </Text>
@@ -569,9 +515,9 @@ export default function DashboardOverview() {
           </Paper>
         </div>
 
-        {/* RIGHT */}
+        {/* RIGHT PANEL */}
         <div className="2xl:col-span-4 space-y-6">
-          {/* PERFORMANCE */}
+          {/* PERFORMANCE OVERVIEW */}
           <Paper
             radius="24px"
             p={isMobile ? 'md' : 'xl'}
@@ -612,6 +558,95 @@ export default function DashboardOverview() {
             </Stack>
           </Paper>
 
+          {/* EARNED CERTIFICATES HERO/LIST CARD */}
+          {dashboard.metrics.certificates > 0 && (
+            <Paper
+              radius="24px"
+              p={isMobile ? 'md' : 'xl'}
+              withBorder
+              className="bg-linear-to-br from-blue-600 to-indigo-700 text-white border-none shadow-xl relative overflow-hidden group"
+            >
+              <div className="absolute -right-6 -bottom-6 text-white/10 rotate-12 transition-transform group-hover:scale-110 duration-300">
+                <Trophy size={160} className="fill-white/5" />
+              </div>
+
+              <div className="relative z-10 space-y-4">
+                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-md flex items-center justify-center">
+                  <GraduationCap size={20} className="text-amber-300" />
+                </div>
+
+                <div>
+                  <Text
+                    fw={900}
+                    className="uppercase tracking-widest text-[10px] text-blue-200"
+                  >
+                    Credentials Ready
+                  </Text>
+                  <h3 className="text-xl font-black mt-1 leading-tight">
+                    You have earned {dashboard.metrics.certificates}{' '}
+                    {dashboard.metrics.certificates === 1
+                      ? 'Certificate'
+                      : 'Certificates'}
+                    !
+                  </h3>
+                  <p className="text-xs text-blue-100/80 mt-2 leading-relaxed">
+                    Your hard work has officially paid off. Access, share, or
+                    download your verified digital credentials now.
+                  </p>
+                </div>
+
+                {/* Renders safely with autocomplete support */}
+                {dashboard.certificates &&
+                  dashboard.certificates.length > 0 && (
+                    <div className="space-y-2 pt-2 border-t border-white/10">
+                      {dashboard.certificates.map((cert) => (
+                        <div
+                          key={cert.id}
+                          className="flex items-center justify-between bg-white/5 hover:bg-white/10 p-2.5 rounded-xl transition-all"
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Award
+                              size={14}
+                              className="text-amber-300 shrink-0"
+                            />
+                            <Text
+                              size="xs"
+                              fw={700}
+                              className="truncate text-white"
+                            >
+                              {cert.courseTitle ||
+                                cert.title ||
+                                'Course Certificate'}
+                            </Text>
+                          </div>
+                          <Link
+                            href={
+                               `/dashboard/certificates/${cert.id}`
+                            }
+                            target="_blank"
+                          >
+                            <ExternalLink
+                              size={12}
+                              className="text-blue-200 hover:text-white transition-colors"
+                            />
+                          </Link>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                <Link href="/dashboard/certificates" className="block mt-2">
+                  <button className="w-full bg-white hover:bg-amber-400 text-slate-900 hover:text-slate-950 font-black text-xs uppercase tracking-wider py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 shadow-md cursor-pointer">
+                    View My Certificates
+                    <ChevronRight size={14} />
+                  </button>
+                </Link>
+              </div>
+            </Paper>
+          )}
+
+
+          
           {/* RECENT ENROLLMENTS */}
           <Paper
             radius="24px"
@@ -646,10 +681,7 @@ export default function DashboardOverview() {
                             {item.course?.title || 'Course'}
                           </Text>
 
-                          <Text
-                            size=""
-                            className="text-slate-500 mt-1 text-[10px]! md:text-sm!"
-                          >
+                          <Text className="text-slate-500 mt-1 text-[10px]! md:text-sm!">
                             {item.progressPercentage}% completed
                           </Text>
                         </div>
@@ -670,6 +702,7 @@ export default function DashboardOverview() {
   )
 }
 
+/* HELPER COMPONENTS */
 function StatItem({ label, value, icon, trend }: StatProps) {
   return (
     <Paper
