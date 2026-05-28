@@ -47,6 +47,7 @@ export interface UserType {
   location?: string
   website?: string
   joinedAt: string
+  wishlist?: []
   socialLinks: {
     github?: string
     linkedin?: string

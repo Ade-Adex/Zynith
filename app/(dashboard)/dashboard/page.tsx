@@ -306,9 +306,17 @@ export default function DashboardOverview() {
                         Overall Progress
                       </Text>
 
-                      <Text size="xs" fw={800} className="text-slate-500">
+                      {/* <Text size="xs" fw={800} className="text-slate-500">
                         {dashboard.metrics.completedLessons} /{' '}
                         {dashboard.metrics.totalLessons} Lessons
+                      </Text> */}
+                      <Text size="xs" fw={800} className="text-slate-500">
+                        {activeCourse.enrollment.completedLessons.length} /{' '}
+                        {activeCourse.course.modules?.reduce(
+                          (acc, mod) => acc + (mod.lessons?.length || 0),
+                          0,
+                        )}{' '}
+                        Lessons
                       </Text>
                     </Group>
 

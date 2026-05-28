@@ -238,7 +238,7 @@ export default function MyLearningPage() {
                 : 'border-transparent text-neutral-400 hover:text-neutral-900 dark:hover:text-neutral-100'
             }`}
           >
-            Completed Verification ({learningMatrix.completed.length})
+            Completed ({learningMatrix.completed.length})
           </Tabs.Tab>
           <Tabs.Tab
             value="wishlist"
@@ -295,7 +295,7 @@ export default function MyLearningPage() {
               description="Complete all mandatory verification modules to unlock production code certificates."
             />
           ) : (
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="xl">
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="" className='gap-6!'>
               {learningMatrix.completed.map((course) => (
                 <div key={String(course._id)} className="opacity-90">
                   <CourseCard
@@ -318,7 +318,7 @@ export default function MyLearningPage() {
               description="Save paths directly within the course descriptions to plan your engineering track dependencies."
             />
           ) : (
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="xl">
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="" className='gap-6!'>
               {learningMatrix.wishlist.map((course) => (
                 <CourseCard key={String(course._id)} course={course} />
               ))}

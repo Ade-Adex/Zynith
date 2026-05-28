@@ -253,7 +253,8 @@ export async function getEnrollmentProgressAction(
     const enrollment = await EnrollmentModel.findOne({
       userId: new Types.ObjectId(userId),
       courseId: new Types.ObjectId(courseId),
-      status: 'active',
+      // status: 'active',
+      status: { $in: ['active', 'completed'] },
     }).lean()
 
     if (!enrollment) {
@@ -291,6 +292,19 @@ export async function updateEnrollmentProgressAction(
       return { success: false, message: 'Missing user ID or course ID.' }
     }
 
+    // 1. Fetch baseline course information to map total modules & lessons
+    const courseDoc = await CourseModel.findById(courseId).lean<Course>()
+    if (!courseDoc) {
+      return {
+        success: false,
+        message: 'Associated course structure was not found.',
+      }
+    }
+
+    // Prepare variables for dynamic updates
+    let updatedDoc
+
+    // Handle assignments tracking separately
     if (payload.assignmentSubmission) {
       const { assignmentId, url } = payload.assignmentSubmission
 
@@ -301,7 +315,7 @@ export async function updateEnrollmentProgressAction(
       })
 
       if (existingEnrollment) {
-        const updatedDoc = await EnrollmentModel.findOneAndUpdate(
+        updatedDoc = await EnrollmentModel.findOneAndUpdate(
           {
             userId: new Types.ObjectId(userId),
             courseId: new Types.ObjectId(courseId),
@@ -316,16 +330,8 @@ export async function updateEnrollmentProgressAction(
           },
           { new: true },
         )
-
-        if (!updatedDoc)
-          return { success: false, message: 'Enrollment record not found.' }
-        return {
-          success: true,
-          message: 'Assignment updated successfully!',
-          data: serializeEnrollment(updatedDoc),
-        }
       } else {
-        const updatedDoc = await EnrollmentModel.findOneAndUpdate(
+        updatedDoc = await EnrollmentModel.findOneAndUpdate(
           {
             userId: new Types.ObjectId(userId),
             courseId: new Types.ObjectId(courseId),
@@ -344,51 +350,89 @@ export async function updateEnrollmentProgressAction(
           },
           { new: true },
         )
+      }
+    } else {
+      // Handle standard lesson progression tracks
+      const genericUpdate: UpdateQuery<IDbEnrollment> = {
+        $set: { lastAccessedAt: new Date() },
+      }
 
-        if (!updatedDoc)
-          return { success: false, message: 'Enrollment record not found.' }
-        return {
-          success: true,
-          message: 'Assignment submitted successfully!',
-          data: serializeEnrollment(updatedDoc),
+      if (payload.currentModuleId)
+        genericUpdate.$set!.currentModuleId = payload.currentModuleId
+      if (payload.currentLessonId)
+        genericUpdate.$set!.currentLessonId = payload.currentLessonId
+
+      if (payload.newCompletedLessonId) {
+        genericUpdate.$addToSet = {
+          ...genericUpdate.$addToSet,
+          completedLessons: payload.newCompletedLessonId,
         }
       }
+      if (payload.newCompletedModuleId) {
+        genericUpdate.$addToSet = {
+          ...genericUpdate.$addToSet,
+          completedModules: payload.newCompletedModuleId,
+        }
+      }
+      if (payload.quizAttempt) {
+        genericUpdate.$push = {
+          quizAttempts: { ...payload.quizAttempt, attemptedAt: new Date() },
+        }
+      }
+
+      updatedDoc = await EnrollmentModel.findOneAndUpdate(
+        {
+          userId: new Types.ObjectId(userId),
+          courseId: new Types.ObjectId(courseId),
+        },
+        genericUpdate,
+        { new: true },
+      )
     }
-
-    const genericUpdate: UpdateQuery<IDbEnrollment> = {
-      $set: { lastAccessedAt: new Date() },
-    }
-
-    if (payload.currentModuleId)
-      genericUpdate.$set!.currentModuleId = payload.currentModuleId
-    if (payload.currentLessonId)
-      genericUpdate.$set!.currentLessonId = payload.currentLessonId
-    if (payload.newCompletedLessonId)
-      genericUpdate.$addToSet = {
-        completedLessons: payload.newCompletedLessonId,
-      }
-    if (payload.newCompletedModuleId)
-      genericUpdate.$addToSet = {
-        ...genericUpdate.$addToSet,
-        completedModules: payload.newCompletedModuleId,
-      }
-    if (payload.quizAttempt)
-      genericUpdate.$push = {
-        quizAttempts: { ...payload.quizAttempt, attemptedAt: new Date() },
-      }
-
-    const updatedDoc = await EnrollmentModel.findOneAndUpdate(
-      {
-        userId: new Types.ObjectId(userId),
-        courseId: new Types.ObjectId(courseId),
-      },
-      genericUpdate,
-      { new: true },
-    )
 
     if (!updatedDoc) {
       return { success: false, message: 'Enrollment record not found.' }
     }
+
+    // 2. RECALCULATE COURSE PROGRESS ACCURATELY
+    // Gather every lesson ID from the official course configuration
+    const allLessonIds: string[] = []
+    courseDoc.modules?.forEach((mod) => {
+      mod.lessons?.forEach((les) => {
+        if (les.id) allLessonIds.push(String(les.id))
+      })
+    })
+
+    const totalLessonsCount = allLessonIds.length
+
+    if (totalLessonsCount > 0) {
+      // Find out how many of this course's specific lessons are completed
+      const completedCourseLessons = updatedDoc.completedLessons.filter((id) =>
+        allLessonIds.includes(String(id)),
+      )
+
+      const completedCount = completedCourseLessons.length
+      const rawPercentage = (completedCount / totalLessonsCount) * 100
+
+      // Assign mathematically clean integer values capped carefully between 0 and 100
+      updatedDoc.progressPercentage = Math.min(
+        Math.max(Math.round(rawPercentage), 0),
+        100,
+      )
+    } else {
+      updatedDoc.progressPercentage = 0
+    }
+
+    // 3. SECURE STATUS TRANSITIONS
+    // Ensure status only jumps to 'completed' when progress matches absolute final targets
+    if (updatedDoc.progressPercentage === 100) {
+      updatedDoc.status = 'completed'
+    } else {
+      updatedDoc.status = 'active'
+    }
+
+    // Persist calculated mathematical results safely to MongoDB
+    await updatedDoc.save()
 
     return {
       success: true,
