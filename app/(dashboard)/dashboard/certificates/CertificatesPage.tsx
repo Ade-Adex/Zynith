@@ -84,10 +84,10 @@ export default function CertificatesPage({
   }
 
 return (
-  <div className="py-6 md:py-12 px-4 max-w-7xl mx-auto min-h-screen bg-background text-foreground selection:bg-blue-500/10">
+  <div className="py-6 md:py-12 max-w-7xl mx-auto min-h-screen bg-background text-foreground selection:bg-blue-500/10">
     {/* CONDITIONAL HEADER */}
     {isPortalView ? (
-      <div className="mb-10 text-center max-w-2xl mx-auto space-y-3">
+      <div className="mb-10 text-center max-w-3xl mx-auto space-y-3">
         <Link
           href="/dashboard/certificates"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-muted-foreground hover:text-blue-500 mb-2 transition-colors duration-200 group"
