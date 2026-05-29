@@ -4,7 +4,7 @@
 'use client'
 
 import { useAuthStore } from '@/app/store/authStore'
-import { NAV_LINKS } from '@/app/types'
+import { NAV_LINKS } from '@/app/data/navLink'
 import {
   Menu,
   UnstyledButton,

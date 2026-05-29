@@ -1,9 +1,18 @@
+// /app/components/layout/Footer.tsx
+
+
 'use client'
 
 import React from 'react'
+import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
+import {
+  PLATFORM_LINKS,
+  COMPANY_LINKS,
+  SOCIAL_LINKS,
+} from '@/app/data/footerLinks'
 
-// Optimized SVG Social Icons
+// Icon renderer mapped to the data definition strings
 const SocialIcons = {
   X: () => (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
@@ -36,65 +45,62 @@ export const Footer = () => (
           </p>
         </div>
 
-        {/* Links Columns */}
+        {/* Platform Column */}
         <div className="flex flex-col gap-4">
           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
             Platform
           </h4>
-          {['Curriculum', 'Mentorship', 'Enterprise', 'Pricing'].map((item) => (
-            <a
-              key={item}
-              href="#"
+          {PLATFORM_LINKS.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
               className="text-xs font-bold text-slate-600 hover:text-blue-600 transition w-fit"
             >
-              {item}
-            </a>
+              {link.label}
+            </Link>
           ))}
         </div>
 
+        {/* Company Column */}
         <div className="flex flex-col gap-4">
           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
             Company
           </h4>
-          {['About', 'Careers', 'Terms', 'Privacy'].map((item) => (
-            <a
-              key={item}
-              href="#"
+          {COMPANY_LINKS.map((link) => (
+            <Link
+              key={link.label}
+              href={link.href}
               className="text-xs font-bold text-slate-600 hover:text-blue-600 transition w-fit"
             >
-              {item}
-            </a>
+              {link.label}
+            </Link>
           ))}
         </div>
 
-        {/* Custom Social Icons */}
+        {/* Social Icons Column */}
         <div className="flex flex-col gap-4">
           <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400">
             Connect
           </h4>
           <div className="flex gap-5">
-            <a
-              href="#"
-              className="text-slate-400 hover:text-blue-600 transition items-center flex"
-            >
-              <SocialIcons.X />
-            </a>
-            <a
-              href="#"
-              className="text-slate-400 hover:text-blue-600 transition items-center flex"
-            >
-              <SocialIcons.Github />
-            </a>
-            <a
-              href="#"
-              className="text-slate-400 hover:text-blue-600 transition items-center flex"
-            >
-              <SocialIcons.Linkedin />
-            </a>
+            {SOCIAL_LINKS.map((social) => {
+              const IconComponent = SocialIcons[social.iconName]
+              return (
+                <Link
+                  key={social.name}
+                  href={social.href}
+                  aria-label={`Follow Zynith on ${social.name}`}
+                  className="text-slate-400 hover:text-blue-600 transition items-center flex"
+                >
+                  <IconComponent />
+                </Link>
+              )
+            })}
           </div>
         </div>
       </div>
 
+      {/* Sub Footer Infrastructure */}
       <div className="pt-8 border-t border-slate-300! dark:border-slate-600! flex flex-col md:flex-row justify-between items-center gap-6">
         <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
           © 2026 ZYNITH EDUCATION GROUP.
@@ -104,12 +110,12 @@ export const Footer = () => (
             System Status
             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
           </div>
-          <a
+          <Link
             href="#"
             className="flex items-center gap-1 text-[10px] font-black uppercase tracking-widest hover:text-blue-600 transition"
           >
             Support Center <ArrowUpRight size={12} />
-          </a>
+          </Link>
         </div>
       </div>
     </div>

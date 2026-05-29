@@ -62,7 +62,7 @@ export default function CertificatesWorkspaceRoot() {
 
   if (certificates.length === 0) {
     return (
-      <div className="py-20 max-w-xl mx-auto text-center flex flex-col items-center justify-center min-h-[450px]">
+      <div className="py-20 max-w-xl mx-auto text-center flex flex-col items-center justify-center min-h-112.5">
         <div className="w-16 h-16 rounded-2xl bg-neutral-100 dark:bg-neutral-900/60 flex items-center justify-center text-neutral-400 dark:text-neutral-600 mb-5">
           <Award size={32} />
         </div>
@@ -127,7 +127,7 @@ export default function CertificatesWorkspaceRoot() {
               </div>
 
               {/* Title Block */}
-              <h3 className="text-base font-black text-slate-900 dark:text-white tracking-tight leading-snug line-clamp-2 mb-4 min-h-[44px]">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white tracking-tight leading-snug line-clamp-2 mb-4 `min-h-11">
                 {cert.courseTitle || cert.title || 'Framework Course Track'}
               </h3>
 
@@ -157,7 +157,7 @@ export default function CertificatesWorkspaceRoot() {
               href={`/dashboard/certificates/${cert.id}`}
               className="block w-full"
             >
-              <button className="w-full bg-neutral-50 dark:bg-neutral-900 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 border border-neutral-200 dark:border-neutral-800 group-hover:border-blue-500/20 text-slate-900 dark:text-neutral-300 text-xs font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+              <button className="w-full bg-neutral-50 dark:bg-neutral-900 hover:bg-blue-600 hover:text-white dark:hover:bg-blue-600 border border-neutral-200 dark:border-neutral-800 group-hover:border-blue-500/20 text-slate-900 dark:text-neutral-300 text-sm! font-bold! py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-1.5 cursor-pointer">
                 View
                 <ArrowRight
                   size={14}

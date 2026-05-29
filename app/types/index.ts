@@ -1,18 +1,5 @@
 // /app/types/index.ts
 
-export const NAV_LINKS: NavLink[] = [
-  { label: 'Courses', href: '#courses' },
-  { label: 'Certification', href: '#certification' },
-  { label: 'Pricing', href: '#pricing' },
-]
-
-export const STATS: StatItem[] = [
-  { label: 'Active Learners', val: '50K+' },
-  { label: 'Course Rating', val: '4.9/5' },
-  { label: 'Industry Mentors', val: '120+' },
-  { label: 'Global Reach', val: '24/7' },
-]
-
 export type CourseType = 'Free' | 'Premium'
 export type CourseLevel = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert'
 export type CourseTag = 'Trending' | 'Bestseller' | 'New'
