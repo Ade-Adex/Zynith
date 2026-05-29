@@ -16,6 +16,7 @@ import {
   verifyCertificateAction,
   VerificationResult,
 } from '@/app/services/verifyActions'
+import CertificateFrame, { CertificateDataPayload, CertificateUserPayload } from '@/app/components/certificates/CertificateFrame'
 
 type VerifiedData = NonNullable<VerificationResult['data']>
 
@@ -30,6 +31,48 @@ export default function PublicCertificateVerificationPortal() {
   )
   const [errorStatus, setErrorStatus] = useState<string | null>(null)
 
+  // const handleVerifyLookup = async (e: React.FormEvent) => {
+  //   e.preventDefault()
+  //   const targetId = certId.trim()
+  //   if (!targetId) return
+
+  //   setLoading(true)
+  //   setSearched(true)
+  //   setErrorStatus(null)
+  //   setVerifiedPayload(null)
+
+  //   try {
+  //     // Execute the targeted unindexed/sparse index database action
+  //     const response = await verifyCertificateAction(targetId)
+
+  //     if (response.success && response.data) {
+  //       setVerifiedPayload(response.data)
+  //     } else {
+  //       setErrorStatus(
+  //         response.message ||
+  //           'No security record matching this Credential ID could be found.',
+  //       )
+  //     }
+  //   } catch (err) {
+  //     console.error('Verification subsystem fault:', err)
+  //     setErrorStatus(
+  //       'An error occurred while communicating with the verification framework.',
+  //     )
+  //   } finally {
+  //     setLoading(false)
+  //   }
+  // }
+
+  // const formattedIssueDate = verifiedPayload?.issuedAt
+  //   ? new Date(verifiedPayload.issuedAt).toLocaleDateString(undefined, {
+  //       year: 'numeric',
+  //       month: 'long',
+  //       day: 'numeric',
+  //     })
+  //   : ''
+
+
+
   const handleVerifyLookup = async (e: React.FormEvent) => {
     e.preventDefault()
     const targetId = certId.trim()
@@ -41,7 +84,6 @@ export default function PublicCertificateVerificationPortal() {
     setVerifiedPayload(null)
 
     try {
-      // Execute the targeted unindexed/sparse index database action
       const response = await verifyCertificateAction(targetId)
 
       if (response.success && response.data) {
@@ -58,7 +100,7 @@ export default function PublicCertificateVerificationPortal() {
         'An error occurred while communicating with the verification framework.',
       )
     } finally {
-      setLoading(false)
+      loading && setLoading(false)
     }
   }
 
@@ -69,6 +111,25 @@ export default function PublicCertificateVerificationPortal() {
         day: 'numeric',
       })
     : ''
+
+  // Safe mapping of the verified response data fields onto generic certificate context structures
+  const standardUserStructure: CertificateUserPayload | null = verifiedPayload
+    ? {
+        firstName: verifiedPayload.recipient.firstName,
+        lastName: verifiedPayload.recipient.lastName,
+        name: verifiedPayload.recipient.name,
+      }
+    : null
+
+ const standardCertStructure: CertificateDataPayload | null = verifiedPayload
+    ? {
+        id: verifiedPayload.certificateId,
+        title: verifiedPayload.course?.title || 'Course Track Framework', //  Fixed
+        issueDate: verifiedPayload.issuedAt,
+      }
+    : null
+
+
 
   return (
     <div className="pt-20 pb-8 md:pt-24 md:pb-12 max-w-4xl mx-auto min-h-screen px-4 bg-background text-foreground selection:bg-blue-500/10">
@@ -246,96 +307,11 @@ export default function PublicCertificateVerificationPortal() {
               </div>
             </div>
 
-            {/* HIGH-FIDELITY SECURE CERTIFICATE CONTAINER FOR PREVIEW */}
-            <Paper
-              radius="24px"
-              withBorder
-              className="relative p-6 sm:p-12 md:p-16 bg-white dark:bg-[#0b0c10] text-slate-900 dark:text-slate-100 flex flex-col border-slate-200 dark:border-slate-800/80 overflow-hidden shadow-2xl w-full min-h-[520px]"
-            >
-              <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.015] text-slate-900 dark:text-white pointer-events-none flex items-center justify-center select-none z-0">
-                <Cpu size={420} strokeWidth={0.75} />
-              </div>
-
-              <div className="absolute inset-3 sm:inset-5 border border-slate-100 dark:border-slate-800/60 rounded-xl pointer-events-none z-0" />
-
-              <div className="flex justify-between items-start relative z-10 w-full">
-                <div className="flex flex-col space-y-0.5">
-                  <span className="text-xl md:text-2xl font-black tracking-tighter italic leading-none text-slate-900 dark:text-white">
-                    ZYNITH
-                    <span className="text-blue-600 dark:text-blue-500">.</span>
-                  </span>
-                  <span className="text-[6px] md:text-[8px] font-bold uppercase tracking-[0.4em] text-slate-400 dark:text-slate-500">
-                    LMS / Excellence Framework
-                  </span>
-                </div>
-
-                <div className="relative flex items-center justify-center">
-                  <div className="absolute w-14 h-14 bg-blue-600/5 dark:bg-blue-500/10 rounded-full animate-pulse" />
-                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white dark:bg-[#0f1015] border border-slate-200 dark:border-slate-800 rounded-full flex items-center justify-center shadow-md">
-                    <Award
-                      className="text-blue-600 dark:text-blue-400"
-                      size={22}
-                      strokeWidth={2}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex-1 flex flex-col justify-center text-center relative z-10 my-auto py-12 space-y-5 md:space-y-7">
-                <div>
-                  <p className="text-[7px] md:text-[9px] font-black uppercase tracking-[0.6em] text-blue-600 dark:text-blue-400">
-                    Certificate of Achievement
-                  </p>
-                </div>
-
-                <h2 className="text-2xl md:text-5xl font-serif italic text-slate-800 dark:text-slate-100 font-normal tracking-wide">
-                  {verifiedPayload.recipient.firstName
-                    ? `${verifiedPayload.recipient.firstName} ${verifiedPayload.recipient.lastName || ''}`
-                    : verifiedPayload.recipient.name}
-                </h2>
-
-                <div className="flex items-center justify-center gap-4 max-w-xs mx-auto w-full">
-                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-                  <span className="text-[8px] md:text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] whitespace-nowrap">
-                    has successfully mastered
-                  </span>
-                  <div className="h-px flex-1 bg-slate-200 dark:bg-slate-800" />
-                </div>
-
-                <div>
-                  <p className="text-xs md:text-xl font-black uppercase tracking-wide text-slate-900 dark:text-white bg-slate-50 dark:bg-slate-900/40 inline-block px-6 py-2.5 rounded-lg border border-slate-100 dark:border-slate-800/80 shadow-xs">
-                    {verifiedPayload.course.title}
-                  </p>
-                </div>
-              </div>
-
-              <div className="mt-auto pt-6 flex gap-4 flex-row justify-between items-center sm:items-end relative z-10 w-full border-t border-slate-100 dark:border-slate-800/60">
-                <div className="space-y-1 text-center sm:text-left">
-                  <p className="text-[6px] md:text-[8px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                    Credential Issued
-                  </p>
-                  <p className="text-[8px] md:text-[11px] font-black text-slate-900 dark:text-white font-mono uppercase">
-                    {formattedIssueDate}
-                  </p>
-                </div>
-
-                <div className="text-center hidden sm:block">
-                  <div className="w-24 md:w-32 h-px bg-slate-400 dark:bg-slate-600 mb-1.5 mx-auto" />
-                  <p className="text-[6px] md:text-[8px] font-black uppercase tracking-widest text-slate-500 dark:text-slate-400 italic">
-                    Instructor: {verifiedPayload.course.instructor}
-                  </p>
-                </div>
-
-                <div className="text-center space-y-1">
-                  <p className="text-[6px] md:text-[8px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                    Verification ID
-                  </p>
-                  <p className="text-[8px] md:text-[11px] font-black text-blue-600 dark:text-blue-400 font-mono tracking-tight bg-blue-50/50 dark:bg-blue-950/20 px-2 py-0.5 rounded-sm">
-                    {verifiedPayload.certificateId.toUpperCase()}
-                  </p>
-                </div>
-              </div>
-            </Paper>
+            <CertificateFrame
+              userPayload={standardUserStructure}
+              certificate={standardCertStructure}
+              isMobile={false}
+            />
           </div>
         )}
       </div>
