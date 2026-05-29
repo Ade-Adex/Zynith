@@ -100,7 +100,7 @@ export default function PublicCertificateVerificationPortal() {
         'An error occurred while communicating with the verification framework.',
       )
     } finally {
-      loading && setLoading(false)
+      setLoading(false)
     }
   }
 
