@@ -92,6 +92,7 @@ export interface DashboardData {
       | 'firstName'
       | 'lastName'
       | 'email'
+      | 'name'
       | 'avatar'
       | 'wallet'
       | 'stats'
