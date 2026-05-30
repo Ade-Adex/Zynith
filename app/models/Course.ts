@@ -70,7 +70,7 @@ const CourseSchema = new Schema(
     tag: { type: String, required: true },
     price: { type: Number, required: true },
     discountPrice: { type: Number, default: 0 },
-    currency: { type: String, default: 'USD' },
+    currency: { type: String, default: 'NGN' },
     instructor: { type: String, required: true },
     tutorDetails: {
       name: { type: String, required: true },

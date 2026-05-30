@@ -31,48 +31,6 @@ export default function PublicCertificateVerificationPortal() {
   )
   const [errorStatus, setErrorStatus] = useState<string | null>(null)
 
-  // const handleVerifyLookup = async (e: React.FormEvent) => {
-  //   e.preventDefault()
-  //   const targetId = certId.trim()
-  //   if (!targetId) return
-
-  //   setLoading(true)
-  //   setSearched(true)
-  //   setErrorStatus(null)
-  //   setVerifiedPayload(null)
-
-  //   try {
-  //     // Execute the targeted unindexed/sparse index database action
-  //     const response = await verifyCertificateAction(targetId)
-
-  //     if (response.success && response.data) {
-  //       setVerifiedPayload(response.data)
-  //     } else {
-  //       setErrorStatus(
-  //         response.message ||
-  //           'No security record matching this Credential ID could be found.',
-  //       )
-  //     }
-  //   } catch (err) {
-  //     console.error('Verification subsystem fault:', err)
-  //     setErrorStatus(
-  //       'An error occurred while communicating with the verification framework.',
-  //     )
-  //   } finally {
-  //     setLoading(false)
-  //   }
-  // }
-
-  // const formattedIssueDate = verifiedPayload?.issuedAt
-  //   ? new Date(verifiedPayload.issuedAt).toLocaleDateString(undefined, {
-  //       year: 'numeric',
-  //       month: 'long',
-  //       day: 'numeric',
-  //     })
-  //   : ''
-
-
-
   const handleVerifyLookup = async (e: React.FormEvent) => {
     e.preventDefault()
     const targetId = certId.trim()
@@ -187,7 +145,7 @@ export default function PublicCertificateVerificationPortal() {
             type="submit"
             size="md"
             radius="md"
-            className="w-full sm:w-auto bg-blue-600! hover:bg-blue-700! h-10 px-6 transition-all md:mt-7.5"
+            className="w-full sm:w-auto bg-blue-600! dark:bg-blue-500! hover:bg-blue-700! dark:hover:bg-blue-600! h-10 px-6 transition-all md:mt-7.5"
             disabled={loading || !certId.trim()}
             leftSection={
               loading ? (

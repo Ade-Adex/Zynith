@@ -32,15 +32,33 @@ export default function LandingPage() {
 
   const filteredCourses = useMemo<Course[]>(() => {
     const list = [...(courses || [])]
-    if (filter === 'Bestseller')
-      return list.filter((c) => c.tag === 'Bestseller')
+
+    if (filter === 'All') return list
+
+    if (filter === 'Bestseller') {
+      return list.filter((c) => c.tag?.toLowerCase() === 'bestseller')
+    }
+
     if (filter === 'Top Rated') {
       return list
-        .filter((c) => c.rating >= 4.5)
-        .sort((a, b) => b.rating - a.rating)
+        .filter((c) => c.rating && c.rating >= 4.5)
+        .sort((a, b) => (b.rating || 0) - (a.rating || 0))
     }
-    if (filter !== 'All') return list.filter((course) => course.type === filter)
-    return list
+
+    if (filter === 'Free') {
+      return list.filter(
+        (c) => c.type?.toLowerCase() === 'free' || c.price === 0,
+      )
+    }
+
+    if (filter === 'Premium') {
+      return list.filter(
+        (c) => c.type?.toLowerCase() === 'premium' || (c.price && c.price > 0),
+      )
+    }
+
+    // FIX: Typecast fallback check using (filter as string) to eliminate structural union mismatching
+    return list.filter((course) => course.type === (filter as string))
   }, [filter, courses])
 
   const handleFilterChange = (newFilter: CourseFilter): void => {

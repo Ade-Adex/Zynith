@@ -1,3 +1,5 @@
+// /app/components/CourseGrid.tsx
+
 'use client'
 
 import React, { useState, useEffect } from 'react'
@@ -6,14 +8,13 @@ import { CourseFilters } from '@/app/components/CourseFilters'
 import { Pagination } from '@/app/components/Pagination'
 import { Course, FilterType } from '@/app/types'
 
-type CourseFilter = FilterType | 'All' | 'Bestseller' | 'Top Rated'
-
 interface CourseGridProps {
   courses: Course[]
-  currentFilter: CourseFilter
+  currentFilter: FilterType | 'All' | 'Bestseller' | 'Top Rated'
   currentPage: number
-  onFilterChange: (filter: CourseFilter) => void
+  onFilterChange: (filter: FilterType) => void
   onPageChange: (page: number) => void
+  viewLayout?: 'grid' | 'list'
 }
 
 const ITEMS_PER_PAGE = 4
@@ -24,40 +25,34 @@ export function CourseGrid({
   currentPage,
   onFilterChange,
   onPageChange,
+  viewLayout = 'grid',
 }: CourseGridProps) {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(
     null,
   )
-  const [animatingPage, setAnimatingPage] = useState(currentPage)
   const [isTransitioning, setIsTransitioning] = useState(false)
 
   const totalPages = Math.ceil(courses.length / ITEMS_PER_PAGE)
 
-  // Derive courses based on the current animating page block
+  // FIX: Dynamic slice recalculation bound strictly to the managed parent page index
   const displayedCourses = courses.slice(
-    (animatingPage - 1) * ITEMS_PER_PAGE,
-    animatingPage * ITEMS_PER_PAGE,
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
   )
 
   const handlePageTransition = (nextPage: number) => {
     if (nextPage === currentPage || isTransitioning) return
 
-    // Determine swipe vector trajectory
     setSlideDirection(nextPage > currentPage ? 'right' : 'left')
     setIsTransitioning(true)
 
-    // Stage 1: Trigger out-slide action
     setTimeout(() => {
       onPageChange(nextPage)
-      setAnimatingPage(nextPage)
-      // Reverse slide vector to smoothly slide in from the opposite side
-      setSlideDirection(nextPage > currentPage ? 'left' : 'right')
-    }, 250) // Matches half duration cycle
+    }, 250)
   }
 
   useEffect(() => {
     if (isTransitioning) {
-      // Stage 2: Reset transformation tracks to resting state
       const timer = setTimeout(() => {
         setSlideDirection(null)
         setIsTransitioning(false)
@@ -68,25 +63,30 @@ export function CourseGrid({
 
   return (
     <>
-      <div className="mb-8">
-        <h2 className="text-4xl font-black uppercase tracking-tighter mb-2">
+      <div className="mb-8 space-y-2">
+        <h2 className="text-3xl md:text-5xl font-black tracking-tight uppercase italic text-slate-900 dark:text-white">
           Engineering <span className="text-blue-600">Excellence</span>
         </h2>
-        <p className="text-slate-500 text-sm italic">
-          Currently viewing {courses.length} results for &quot;{currentFilter}
-          &quot;
+        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">
+          Currently filtering{' '}
+          <span className="font-bold text-blue-600">{courses.length}</span>{' '}
+          active tracks under framework selection &quot;{currentFilter}&quot;
         </p>
       </div>
 
       <CourseFilters
-        currentFilter={currentFilter}
+        currentFilter={currentFilter as FilterType}
         onFilterChange={onFilterChange}
       />
 
       {displayedCourses.length > 0 ? (
         <div className="w-full overflow-x-hidden py-4 px-1">
           <div
-            className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 transition-all duration-300 ease-out transform ${
+            className={`transition-all duration-300 ease-out transform ${
+              viewLayout === 'list'
+                ? 'flex flex-col gap-6'
+                : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+            } ${
               slideDirection === 'right'
                 ? '-translate-x-12 opacity-20 filter blur-xs'
                 : slideDirection === 'left'
@@ -95,7 +95,11 @@ export function CourseGrid({
             }`}
           >
             {displayedCourses.map((course) => (
-              <CourseCard key={course._id} course={course} />
+              <CourseCard
+                key={course._id}
+                course={course}
+                viewLayout={viewLayout}
+              />
             ))}
           </div>
 
@@ -106,9 +110,13 @@ export function CourseGrid({
           />
         </div>
       ) : (
-        <div className="py-20 text-center border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-4xl">
+        <div className="py-24 text-center border border-dashed border-slate-200 dark:border-slate-800 rounded-3xl max-w-xl mx-auto space-y-2">
           <p className="text-slate-400 text-xs font-black uppercase tracking-widest">
-            No tracks found matching &quot;{currentFilter}&quot;.
+            Zero Catalog Intersections Identified
+          </p>
+          <p className="text-slate-500 text-xs max-w-xs mx-auto">
+            No matching development tracks were extracted using parameter
+            filters: &quot;{currentFilter}&quot;.
           </p>
         </div>
       )}
