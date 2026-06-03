@@ -85,7 +85,7 @@ export function CourseGrid({
             className={`transition-all duration-300 ease-out transform ${
               viewLayout === 'list'
                 ? 'flex flex-col gap-6'
-                : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'
+                : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-2'
             } ${
               slideDirection === 'right'
                 ? '-translate-x-12 opacity-20 filter blur-xs'
