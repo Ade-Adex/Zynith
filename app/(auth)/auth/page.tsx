@@ -138,7 +138,7 @@ export default function LoginPage() {
                   Sending Link...
                 </>
               ) : (
-                'Send Magic Link'
+                'Send Link'
               )}
             </button>
           </form>

@@ -260,7 +260,7 @@ export default function MyLearningPage() {
               description="Your account doesn't point to any ongoing training models right now."
             />
           ) : (
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="" className='gap-6!'>
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="" className='gap-4!'>
               {learningMatrix.active.map((course) => (
                 <div
                   key={String(course._id)}
@@ -295,7 +295,7 @@ export default function MyLearningPage() {
               description="Complete all mandatory verification modules to unlock production code certificates."
             />
           ) : (
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="" className='gap-6!'>
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="" className='gap-4!'>
               {learningMatrix.completed.map((course) => (
                 <div key={String(course._id)} className="opacity-90">
                   <CourseCard
@@ -318,7 +318,7 @@ export default function MyLearningPage() {
               description="Save paths directly within the course descriptions to plan your engineering track dependencies."
             />
           ) : (
-            <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} spacing="" className='gap-6!'>
+            <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }} spacing="" className='gap-4!'>
               {learningMatrix.wishlist.map((course) => (
                 <CourseCard key={String(course._id)} course={course} />
               ))}

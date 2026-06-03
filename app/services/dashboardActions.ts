@@ -1,6 +1,5 @@
 // /app/services/dashboardActions.ts
 
-
 'use server'
 
 import connectDB from '@/app/lib/db'
@@ -20,6 +19,79 @@ interface CourseModule {
 
 interface TransactionItem {
   title: string
+}
+
+interface UpdateProfileInput {
+  userId: string
+  firstName: string
+  lastName: string
+  avatar: string
+}
+
+/**
+ * Updates a user's editable metadata parameters and handles
+ * profile image adjustments securely within database boundaries.
+ */
+export async function updateProfileSettingsAction(input: UpdateProfileInput) {
+  try {
+    await connectDB()
+
+    if (!input.userId) {
+      return { success: false, error: 'Unauthorized user identifier.' }
+    }
+
+    const combinedName = `${input.firstName.trim()} ${input.lastName.trim()}`
+
+    const updatedUser = await User.findByIdAndUpdate(
+      new Types.ObjectId(input.userId),
+      {
+        $set: {
+          firstName: input.firstName.trim(),
+          lastName: input.lastName.trim(),
+          name: combinedName || 'Student Node',
+          avatar: input.avatar,
+        },
+      },
+      { new: true, runValidators: true },
+    ).lean()
+
+    if (!updatedUser) {
+      return { success: false, error: 'Target user record could not be found.' }
+    }
+
+    // Safely transform document mapping to prevent server-side ObjectId transmission leaks
+    const serializedUser = {
+      ...updatedUser,
+      _id: updatedUser._id.toString(),
+      createdAt:
+        updatedUser.createdAt instanceof Date
+          ? updatedUser.createdAt.toISOString()
+          : String(updatedUser.createdAt),
+      updatedAt:
+        updatedUser.updatedAt instanceof Date
+          ? updatedUser.updatedAt.toISOString()
+          : String(updatedUser.updatedAt),
+    }
+
+    // FIX: Explicitly include the message string property for your client snackbar
+    return {
+      success: true,
+      message: 'Profile configuration updated successfully.',
+      data: serializedUser,
+    }
+  } catch (error: unknown) {
+    console.error('Server side database configuration change failure:', error)
+
+    const errorMessage =
+      error instanceof Error
+        ? error.message
+        : 'Failed to update user profile matrix.'
+
+    return {
+      success: false,
+      error: errorMessage,
+    }
+  }
 }
 
 export async function getDashboardOverviewAction(userId: string) {

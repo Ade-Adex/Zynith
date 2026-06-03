@@ -157,11 +157,11 @@ export const CourseCard = ({
               <BookOpen size={12} className="text-blue-500" />
               <span>{moduleCount} Modules</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-center gap-1.5">
               <GraduationCap size={12} className="text-indigo-500" />
               <span>{lessonCount} Blocks</span>
             </div>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-end gap-1.5">
               <Clock size={12} className="text-amber-500" />
               <span>{course.duration}</span>
             </div>

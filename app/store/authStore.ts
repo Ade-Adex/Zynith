@@ -14,6 +14,8 @@ export interface UserData {
   joinedAt?: string
   stats?: { streakDays?: number }
   wallet?: { balance?: number; currency?: string }
+  createdAt: Date
+  updatedAt: Date
 }
 
 interface AuthState {

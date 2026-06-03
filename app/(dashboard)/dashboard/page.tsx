@@ -351,7 +351,9 @@ export default function DashboardOverview() {
 
                     <div className="flex flex-col sm:flex-row gap-3 mt-8">
                       <Link
-                        href={`/courses/${activeCourse.course._id}/learn`}
+                        // href={`/dashboard/courses/${activeCourse.course._id}/lessons`}
+                        href={`/dashboard/courses`}
+
                         className="w-full sm:w-auto"
                       >
                         <button className="w-full sm:w-auto bg-slate-900 dark:bg-white dark:text-slate-950 text-white px-8 py-2.5 rounded-2xl font-black uppercase tracking-[0.18em] text-sm! hover:bg-blue-600 dark:hover:bg-blue-500 dark:hover:text-white transition-all cursor-pointer shadow-lg">
