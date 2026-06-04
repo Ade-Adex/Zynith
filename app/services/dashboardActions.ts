@@ -259,6 +259,13 @@ export async function getDashboardOverviewAction(userId: string) {
       }
     })
 
+    // DYNAMICALLY CALCULATE PENDING PEER REVIEWS FOR ASSIGNMENTS SUBMITTED BY OTHERS
+    const pendingReviewsCount = await EnrollmentModel.countDocuments({
+      userId: { $ne: userObjectId },
+      'assignmentSubmissions.status': 'pending_reviews',
+      'assignmentSubmissions.reviewsReceived.reviewerId': { $ne: userObjectId },
+    })
+
     // SERIALIZE ACTIVE COURSE CONTAINER TO AVOID OBJECTID LEAKAGE
     const serializedActiveCourse =
       latestEnrollment && activeCourse
@@ -336,6 +343,7 @@ export async function getDashboardOverviewAction(userId: string) {
           completionRate,
           points: user.stats?.points || 0,
           peerReviews: user.stats?.peerReviewsDone || 0,
+          peerReviewsPending: pendingReviewsCount,
           streakDays: user.stats?.streakDays || 0,
           certificates: dynamicCertificatesCount,
         },

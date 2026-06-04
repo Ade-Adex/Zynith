@@ -115,6 +115,7 @@ export interface DashboardData {
     streakDays: number
     points: number
     peerReviews: number
+    peerReviewsPending: number
   }
 
   activeCourse: null | {

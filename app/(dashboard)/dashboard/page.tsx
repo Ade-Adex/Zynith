@@ -48,7 +48,8 @@ import { Module } from '@/app/types'
 
 interface StatProps {
   label: string
-  value: string | number
+  // value: string | number
+  value: React.ReactNode
   icon: React.ReactNode
   trend: string
 }
@@ -219,11 +220,38 @@ export default function DashboardOverview() {
           trend={`${dashboard.metrics.completedCourses} Completed`}
         />
 
-        <StatItem
+        {/* <StatItem
           label="Peer Reviews"
           value={dashboard.metrics.peerReviews}
           icon={<Star size={18} className="text-violet-500" />}
           trend="Student Activity"
+        /> */}
+
+        <StatItem
+          label="Peer Reviews"
+          value={
+            <div className="flex items-baseline gap-2 mt-1">
+              <span className="text-2xl font-black text-slate-950 dark:text-white">
+                {dashboard.metrics.peerReviews}
+              </span>
+              <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+                Done
+              </span>
+              <span className="text-slate-300 dark:text-slate-700 mx-1">|</span>
+              <span className="text-xl font-bold text-violet-600 dark:text-violet-400">
+                {dashboard.metrics.peerReviewsPending}
+              </span>
+              <span className="text-xs font-semibold text-violet-500/80">
+                Waiting
+              </span>
+            </div>
+          }
+          icon={<Star size={18} className="text-violet-500" />}
+          trend={
+            dashboard.metrics.peerReviewsPending > 0
+              ? 'Action Required'
+              : 'All Caught Up'
+          }
         />
 
         <StatItem
@@ -353,7 +381,6 @@ export default function DashboardOverview() {
                       <Link
                         // href={`/dashboard/courses/${activeCourse.course._id}/lessons`}
                         href={`/dashboard/courses`}
-
                         className="w-full sm:w-auto"
                       >
                         <button className="w-full sm:w-auto bg-slate-900 dark:bg-white dark:text-slate-950 text-white px-8 py-2.5 rounded-2xl font-black uppercase tracking-[0.18em] text-sm! hover:bg-blue-600 dark:hover:bg-blue-500 dark:hover:text-white transition-all cursor-pointer shadow-lg">
@@ -622,9 +649,7 @@ export default function DashboardOverview() {
                             </Text>
                           </div>
                           <Link
-                            href={
-                               `/dashboard/certificates/${cert.id}`
-                            }
+                            href={`/dashboard/certificates/${cert.id}`}
                             target="_blank"
                           >
                             <ExternalLink
@@ -647,8 +672,6 @@ export default function DashboardOverview() {
             </Paper>
           )}
 
-
-          
           {/* RECENT ENROLLMENTS */}
           <Paper
             radius="24px"
