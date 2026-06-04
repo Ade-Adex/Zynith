@@ -223,20 +223,30 @@ export default function DashboardOverview() {
         <StatItem
           label="Peer Reviews"
           value={
-            <div className="flex items-baseline gap-2 mt-1">
-              <span className="text-2xl font-black text-slate-950 dark:text-white">
-                {dashboard.metrics.peerReviews}
-              </span>
-              <span className="text-xs font-semibold text-slate-400 dark:text-slate-500">
-                Done
-              </span>
+            <div className="flex items-baseline justify-between my-1">
+              <Link
+                href="/dashboard/p2p/results"
+                className="flex items-baseline justify-center gap-1 rounded-lg w-1/2 bg-green-100 dark:bg-green-900/50"
+              >
+                <span className="text-xl font-black ">
+                  {dashboard.metrics.peerReviews}
+                </span>
+                <span className="text-xs font-semibold">
+                  Done
+                </span>
+              </Link>
               <span className="text-slate-300 dark:text-slate-700 mx-1">|</span>
-              <span className="text-xl font-bold text-violet-600 dark:text-violet-400">
-                {dashboard.metrics.peerReviewsPending}
-              </span>
-              <span className="text-xs font-semibold text-violet-500/80">
-                Waiting
-              </span>
+              <Link
+                href="/dashboard/p2p"
+                className="flex items-baseline justify-center gap-1 rounded-lg w-1/2 bg-amber-100 dark:bg-amber-900/50"
+              >
+                <span className="text-xl font-black">
+                  {dashboard.metrics.peerReviewsPending}
+                </span>
+                <span className="text-xs font-semibold ">
+                  Waiting
+                </span>
+              </Link>
             </div>
           }
           icon={<Star size={18} className="text-violet-500" />}
@@ -746,7 +756,7 @@ function StatItem({ label, value, icon, trend }: StatProps) {
       <Text
         size="10px"
         fw={900}
-        className="uppercase tracking-[0.25em] mt-2 text-slate-500"
+        className="uppercase tracking-[0.25em] mt-2 text-slate-500 dark:text-slate-300"
       >
         {label}
       </Text>
@@ -774,7 +784,7 @@ function MiniMetric({
       <Text
         size="10px"
         fw={900}
-        className="uppercase tracking-widest text-slate-500 mt-1"
+        className="uppercase tracking-widest text-slate-500 dark:text-slate-300 mt-1"
       >
         {label}
       </Text>
