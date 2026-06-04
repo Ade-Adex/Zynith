@@ -11,7 +11,7 @@ import { signSessionToken } from '@/app/lib/jwt' // Implemented clean utility re
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const FROM_EMAIL = `Zynith <${process.env.RESEND_MAIL_USER || 'no-reply@christbcogbomoso.org'}>`
+const FROM_EMAIL = `Zynith <${process.env.RESEND_MAIL_USER || ''}>`
 const REPLY_TO_EMAIL = process.env.MAIL_USER || ''
 
 export type AuthActionResult = {
@@ -96,7 +96,7 @@ export async function sendMagicLinkAction(
             You requested a passwordless login path. Click the verified action button below to instantly authenticate your secure workspace session:
           </p>
           <div style="margin: 32px 0;">
-            <a href="${magicLandingUrl}" style="background-color: #0f172a; color: #ffffff; padding: 14px 28px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; text-decoration: none; border-radius: 12px; display: inline-block;">
+            <a href="${magicLandingUrl}" style="background-color: #2563eb; color: #ffffff; padding: 14px 28px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em; text-decoration: none; border-radius: 12px; display: inline-block;">
               Authenticate Session
             </a>
           </div>

@@ -10,8 +10,7 @@ const IssuedCertificateSchema = new Schema(
       type: String,
       required: true,
       unique: true,
-      sparse: true, // Allows null/omitted fields on active enrollments while preserving uniqueness on issued certs
-      index: true,
+      sparse: true, 
     },
     issuedAt: {
       type: Date,
@@ -22,7 +21,7 @@ const IssuedCertificateSchema = new Schema(
       required: true,
     },
   },
-  { _id: false }, // Prevents Mongoose from creating redundant nested sub-document ObjectIds
+  { _id: false },
 )
 
 const EnrollmentSchema = new Schema<IDbEnrollment>(
@@ -82,6 +81,7 @@ const EnrollmentSchema = new Schema<IDbEnrollment>(
             },
             score: { type: Number, required: true },
             feedback: { type: String, required: true },
+            submittedAt: { type: Date, default: Date.now },
           },
         ],
         finalScore: { type: Number, default: 0 },

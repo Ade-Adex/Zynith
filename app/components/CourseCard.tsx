@@ -64,7 +64,7 @@ export const CourseCard = ({
     >
       <Paper
         withBorder
-        radius="24px"
+        radius="16px"
         className={`flex bg-white dark:bg-[#0c0d12] border-slate-200 dark:border-slate-800/60 overflow-hidden shadow-sm hover:shadow-xl hover:border-blue-500/40 transition-all duration-300 ${
           viewLayout === 'list'
             ? 'flex-col md:flex-row items-stretch'
@@ -110,7 +110,7 @@ export const CourseCard = ({
             <Badge
               variant="filled"
               color={course.type === 'Premium' ? 'purple' : 'gray'}
-              size="sm"
+              size="xs"
               radius="md"
               className="font-black uppercase tracking-wider"
             >
@@ -120,7 +120,7 @@ export const CourseCard = ({
               <Badge
                 variant="filled"
                 color="blue"
-                size="sm"
+                size="xs"
                 radius="md"
                 className="font-black uppercase tracking-wider"
               >
@@ -129,15 +129,15 @@ export const CourseCard = ({
             )}
           </div>
 
-          <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded-md font-mono text-[10px] font-bold text-white uppercase tracking-wider z-10">
+          <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-xs px-2 py-0.5 rounded-md font-mono text-[10px]! font-bold text-white uppercase tracking-wider z-10">
             {course.level}
           </div>
         </div>
 
         {/* Info Layout Description Block */}
-        <div className="p-6 flex flex-col flex-1 justify-between gap-4">
+        <div className="p-4 flex flex-col flex-1 justify-between gap-4">
           <div className="space-y-2">
-            <h3 className="text-base md:text-xl font-black tracking-tight text-slate-800 dark:text-white line-clamp-2 leading-snug group-hover:text-blue-500 transition-colors uppercase">
+            <h3 className="text-sm md:text-base font-black tracking-tight text-slate-800 dark:text-white line-clamp-2 leading-snug group-hover:text-blue-500 transition-colors uppercase">
               {course.title}
             </h3>
             <div className="flex items-center gap-1.5 opacity-80 text-xs text-slate-400 dark:text-slate-500 font-medium">
@@ -152,23 +152,23 @@ export const CourseCard = ({
           </div>
 
           {/* Curriculum Stats Metric Grid */}
-          <div className="grid grid-cols-3 gap-4 border-y border-slate-100 dark:border-slate-800/80 py-3.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium max-w-md">
+          <div className="grid grid-cols-3 gap-4 border-y border-slate-100 dark:border-slate-800/80 py-3.5 text-[9px] text-slate-500 dark:text-slate-400 font-medium max-w-md">
             <div className="flex items-center gap-1.5">
-              <BookOpen size={14} className="text-blue-500" />
+              <BookOpen size={12} className="text-blue-500" />
               <span>{moduleCount} Modules</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <GraduationCap size={14} className="text-indigo-500" />
+            <div className="flex items-center justify-center gap-1.5">
+              <GraduationCap size={12} className="text-indigo-500" />
               <span>{lessonCount} Blocks</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Clock size={14} className="text-amber-500" />
+            <div className="flex items-center justify-end gap-1.5">
+              <Clock size={12} className="text-amber-500" />
               <span>{course.duration}</span>
             </div>
           </div>
 
           {/* Pricing and Action Control Footer Line */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+          <div className="flex flex-row sm:items-center justify-between gap-4 pt-1">
             <div className="flex items-center gap-2">
               <div className="flex items-center text-amber-500">
                 <Star size={14} fill="currentColor" />
@@ -182,7 +182,7 @@ export const CourseCard = ({
             </div>
 
             <div className="flex items-center gap-4 self-end sm:self-auto">
-              <span className="text-base md:text-xl font-black text-slate-900 dark:text-white font-mono">
+              <span className="text-base font-black text-slate-900 dark:text-white font-mono">
                 {course.price > 0
                   ? `NGN ${course.price.toLocaleString()}`
                   : 'FREE CORE'}

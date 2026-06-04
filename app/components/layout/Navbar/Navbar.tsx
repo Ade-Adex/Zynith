@@ -218,6 +218,8 @@ export const Navbar = () => {
                   </Menu.Item>
 
                   <Menu.Item
+                    component={Link}
+                    href="/dashboard/profile"
                     leftSection={<User size={14} className="opacity-70" />}
                     className="hover:bg-foreground/5"
                   >
@@ -243,6 +245,8 @@ export const Navbar = () => {
                   </Menu.Label>
 
                   <Menu.Item
+                    component={Link}
+                    href="/dashboard/settings"
                     leftSection={<Settings size={14} className="opacity-70" />}
                     className="hover:bg-foreground/5"
                   >

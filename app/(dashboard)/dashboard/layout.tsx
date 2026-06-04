@@ -134,12 +134,16 @@ export default function DashboardLayout({
                 </div>
                 <Menu.Divider className="dark:border-slate-800" />
                 <Menu.Item
+                  component={Link}
+                  href="/dashboard/profile"
                   leftSection={<User size={16} />}
                   className="dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                 >
                   Profile
                 </Menu.Item>
                 <Menu.Item
+                  component={Link}
+                  href="/dashboard/settings"
                   leftSection={<Settings size={16} />}
                   className="dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300"
                 >
