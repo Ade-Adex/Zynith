@@ -7,6 +7,7 @@ import connectDB from '@/app/lib/db'
 import { EnrollmentModel } from '@/app/models/Enrollment'
 import { CourseModel } from '@/app/models/Course'
 import { Types } from 'mongoose'
+import { User } from '@/app/models/User'
 
 export interface PeerReviewItem {
   enrollmentId: string
@@ -150,6 +151,95 @@ export async function getPendingPeerReviewsAction(
 /**
  * Submits a score and commentary feedback context for an individual peer assignment submission.
  */
+// export async function submitPeerReviewAction(
+//   reviewerId: string,
+//   enrollmentId: string,
+//   assignmentId: string,
+//   payload: { score: number; feedback: string }
+// ): Promise<{ success: boolean; message: string }> {
+//   try {
+//     await connectDB()
+
+//     if (!reviewerId || !enrollmentId || !assignmentId) {
+//       return { success: false, message: 'Missing structural validation IDs.' }
+//     }
+
+//     const reviewerObjectId = new Types.ObjectId(reviewerId)
+//     const enrollmentObjectId = new Types.ObjectId(enrollmentId)
+
+//     // 1. Append the feedback block directly into the array using positional filtering criteria
+//     const updatedEnrollment = await EnrollmentModel.findOneAndUpdate(
+//       {
+//         _id: enrollmentObjectId,
+//         'assignmentSubmissions.assignmentId': assignmentId,
+//         'assignmentSubmissions.reviewsReceived.reviewerId': { $ne: reviewerObjectId }, // Double check safety guard
+//       },
+//       {
+//         $push: {
+//           'assignmentSubmissions.$.reviewsReceived': {
+//             reviewerId: reviewerObjectId,
+//             score: payload.score,
+//             feedback: payload.feedback,
+//           },
+//         },
+//       },
+//       { new: true }
+//     )
+
+//     if (!updatedEnrollment) {
+//       return {
+//         success: false,
+//         message: 'Assignment entry was missing or you have already processed this review sequence.',
+//       }
+//     }
+
+//     // 2. Fetch course structure requirements to calculate threshold configurations
+//     const courseDoc = await CourseModel.findById(updatedEnrollment.courseId).lean()
+//     const targetSubmission = updatedEnrollment.assignmentSubmissions.find(
+//       (sub) => sub.assignmentId === assignmentId
+//     )
+
+//     if (courseDoc && targetSubmission) {
+//       const reviews = targetSubmission.reviewsReceived || []
+      
+//       // Let's assume a standard structural requirement baseline (e.g., 2 reviews) if not set inside Course model
+//       const reviewsRequired = 2 
+//       const passingScoreThreshold = 70
+
+//       if (reviews.length >= reviewsRequired) {
+//         const totalScore = reviews.reduce((sum, rev) => sum + rev.score, 0)
+//         const computedAverage = totalScore / reviews.length
+
+//         targetSubmission.finalScore = Math.round(computedAverage)
+//         targetSubmission.status = computedAverage >= passingScoreThreshold ? 'passed' : 'failed'
+
+//         // Explicitly trigger parent update persistence
+//         await EnrollmentModel.updateOne(
+//           { _id: enrollmentObjectId, 'assignmentSubmissions.assignmentId': assignmentId },
+//           {
+//             $set: {
+//               'assignmentSubmissions.$.finalScore': targetSubmission.finalScore,
+//               'assignmentSubmissions.$.status': targetSubmission.status,
+//             },
+//           }
+//         )
+//       }
+//     }
+
+//     return { success: true, message: 'Peer validation parameters securely synchronized.' }
+//   } catch (error) {
+//     console.error('Peer grading execution structural failure:', error)
+//     return { success: false, message: 'Database query orchestration matrix fault.' }
+//   }
+// }
+
+
+
+
+
+/**
+ * Submits a score and commentary feedback context for an individual peer assignment submission.
+ */
 export async function submitPeerReviewAction(
   reviewerId: string,
   enrollmentId: string,
@@ -192,7 +282,12 @@ export async function submitPeerReviewAction(
       }
     }
 
-    // 2. Fetch course structure requirements to calculate threshold configurations
+    // 2. Update the reviewer's profile statistics to track completed reviews
+    await User.findByIdAndUpdate(reviewerObjectId, {
+      $inc: { 'stats.peerReviewsDone': 1 }
+    })
+
+    // 3. Fetch course structure requirements to calculate threshold configurations
     const courseDoc = await CourseModel.findById(updatedEnrollment.courseId).lean()
     const targetSubmission = updatedEnrollment.assignmentSubmissions.find(
       (sub) => sub.assignmentId === assignmentId
@@ -200,8 +295,6 @@ export async function submitPeerReviewAction(
 
     if (courseDoc && targetSubmission) {
       const reviews = targetSubmission.reviewsReceived || []
-      
-      // Let's assume a standard structural requirement baseline (e.g., 2 reviews) if not set inside Course model
       const reviewsRequired = 2 
       const passingScoreThreshold = 70
 

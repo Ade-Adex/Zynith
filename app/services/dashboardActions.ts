@@ -260,11 +260,38 @@ export async function getDashboardOverviewAction(userId: string) {
     })
 
     // DYNAMICALLY CALCULATE PENDING PEER REVIEWS FOR ASSIGNMENTS SUBMITTED BY OTHERS
-    const pendingReviewsCount = await EnrollmentModel.countDocuments({
-      userId: { $ne: userObjectId },
-      'assignmentSubmissions.status': 'pending_reviews',
-      'assignmentSubmissions.reviewsReceived.reviewerId': { $ne: userObjectId },
-    })
+    // 1. Grab the user's current course enrollment context
+    const explicitUserEnrollment =
+      enrollments.find((e) => e.status === 'active') || enrollments[0]
+
+    // 2. Extract the relevant assignment structure from the active course if it exists
+    let receivedReviewsCompleted = 0
+    let receivedReviewsWaiting = 0
+
+    if (
+      explicitUserEnrollment &&
+      explicitUserEnrollment.assignmentSubmissions?.length > 0
+    ) {
+      // Get the most recent submission
+      const currentSubmission =
+        explicitUserEnrollment.assignmentSubmissions[
+          explicitUserEnrollment.assignmentSubmissions.length - 1
+        ]
+
+      const targetReviewsRequired = 2 // Match standard threshold configuration
+      const reviewsReceivedCount =
+        currentSubmission?.reviewsReceived?.length || 0
+
+      // "Done" is the number of reviews this assignment has accumulated
+      receivedReviewsCompleted = reviewsReceivedCount
+
+      // "Waiting" is the remaining number of reviews needed (clamped to 0 if fulfilled)
+      receivedReviewsWaiting =
+        currentSubmission.status === 'pending_reviews'
+          ? Math.max(0, targetReviewsRequired - reviewsReceivedCount)
+          : 0
+    }
+
 
     // SERIALIZE ACTIVE COURSE CONTAINER TO AVOID OBJECTID LEAKAGE
     const serializedActiveCourse =
@@ -342,8 +369,10 @@ export async function getDashboardOverviewAction(userId: string) {
           totalLessons: activeCourseTotalLessons,
           completionRate,
           points: user.stats?.points || 0,
-          peerReviews: user.stats?.peerReviewsDone || 0,
-          peerReviewsPending: pendingReviewsCount,
+          // peerReviews: user.stats?.peerReviewsDone || 0,
+          // peerReviewsPending: pendingReviewsCount,
+          peerReviews: receivedReviewsCompleted,
+          peerReviewsPending: receivedReviewsWaiting,
           streakDays: user.stats?.streakDays || 0,
           certificates: dynamicCertificatesCount,
         },

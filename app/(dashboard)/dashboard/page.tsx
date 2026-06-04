@@ -220,13 +220,6 @@ export default function DashboardOverview() {
           trend={`${dashboard.metrics.completedCourses} Completed`}
         />
 
-        {/* <StatItem
-          label="Peer Reviews"
-          value={dashboard.metrics.peerReviews}
-          icon={<Star size={18} className="text-violet-500" />}
-          trend="Student Activity"
-        /> */}
-
         <StatItem
           label="Peer Reviews"
           value={
