@@ -11,7 +11,7 @@ import { signSessionToken } from '@/app/lib/jwt' // Implemented clean utility re
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const FROM_EMAIL = `Zynith <${process.env.RESEND_MAIL_USER || 'no-reply@christbcogbomoso.org'}>`
+const FROM_EMAIL = `Zynith <${process.env.RESEND_MAIL_USER || ''}>`
 const REPLY_TO_EMAIL = process.env.MAIL_USER || ''
 
 export type AuthActionResult = {
