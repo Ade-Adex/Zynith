@@ -410,42 +410,160 @@ export async function updateEnrollmentProgressAction(
       return { success: false, message: 'Enrollment record not found.' }
     }
 
-    // 2. RECALCULATE COURSE PROGRESS ACCURATELY
-    // Gather every lesson ID from the official course configuration
-    const allLessonIds: string[] = []
+    // // 2. RECALCULATE COURSE PROGRESS ACCURATELY
+    // // Gather every lesson ID from the official course configuration
+    // const allLessonIds: string[] = []
+    // courseDoc.modules?.forEach((mod) => {
+    //   mod.lessons?.forEach((les) => {
+    //     if (les.id) allLessonIds.push(String(les.id))
+    //   })
+    // })
+
+    // const totalLessonsCount = allLessonIds.length
+
+    // if (totalLessonsCount > 0) {
+    //   // Find out how many of this course's specific lessons are completed
+    //   const completedCourseLessons = updatedDoc.completedLessons.filter((id) =>
+    //     allLessonIds.includes(String(id)),
+    //   )
+
+    //   const completedCount = completedCourseLessons.length
+    //   const rawPercentage = (completedCount / totalLessonsCount) * 100
+
+    //   // Assign mathematically clean integer values capped carefully between 0 and 100
+    //   updatedDoc.progressPercentage = Math.min(
+    //     Math.max(Math.round(rawPercentage), 0),
+    //     100,
+    //   )
+    // } else {
+    //   updatedDoc.progressPercentage = 0
+    // }
+
+    // // 3. SECURE STATUS TRANSITIONS
+    // if (updatedDoc.progressPercentage === 100) {
+    //   updatedDoc.status = 'completed'
+
+    //   // If no certificate has been provisioned yet, generate one natively
+    //   if (!updatedDoc.certificate || !updatedDoc.certificate.certificateId) {
+    //     // Generates a clean, unique 8-character string from a random UUID
+    //     const randomHex = crypto.randomUUID().split('-')[0].toUpperCase()
+    //     const certificateUid = `CERT-${randomHex}`
+
+    //     updatedDoc.certificate = {
+    //       certificateId: certificateUid,
+    //       verificationUrl: `/verify/certificates/${certificateUid}`,
+    //       issuedAt: new Date(),
+    //     }
+    //   }
+    // } else {
+    //   updatedDoc.status = 'active'
+    // }
+
+    // // Persist calculated mathematical results safely to MongoDB
+    // await updatedDoc.save()
+
+    // =================================================================
+    // 2. RECALCULATE COURSE PROGRESS ACCURATELY (Lessons, Quizzes & Assignments)
+    // =================================================================
+
+    // Target constraint collection registries
+    const requiredLessonIds: string[] = []
+    const requiredQuizIds: string[] = []
+    const requiredAssignmentIds: string[] = []
+
+    // Map through structural module configurations dynamically
     courseDoc.modules?.forEach((mod) => {
+      // 1. Collect module-level assignments
+      if (mod.assignment && mod.assignment.id) {
+        requiredAssignmentIds.push(String(mod.assignment.id))
+      }
+
+      // 2. Collect module-level gating quizzes
+      if (mod.quiz && mod.quiz.id) {
+        requiredQuizIds.push(String(mod.quiz.id))
+      }
+
+      // 3. Collect individual lessons and deep nested inline lesson quizzes
       mod.lessons?.forEach((les) => {
-        if (les.id) allLessonIds.push(String(les.id))
+        if (les.id) {
+          requiredLessonIds.push(String(les.id))
+        }
+        if (les.quiz && les.quiz.id) {
+          requiredQuizIds.push(String(les.quiz.id))
+        }
       })
     })
 
-    const totalLessonsCount = allLessonIds.length
+    // Evaluation Metric Flag Fallbacks
+    let allLessonsCompleted = false
+    let allQuizzesPassed = false
+    let allAssignmentsPassed = false
 
+    // Evaluate Lesson Matrix Completion
+    const totalLessonsCount = requiredLessonIds.length
     if (totalLessonsCount > 0) {
-      // Find out how many of this course's specific lessons are completed
-      const completedCourseLessons = updatedDoc.completedLessons.filter((id) =>
-        allLessonIds.includes(String(id)),
+      const completedCourseLessons = (updatedDoc.completedLessons || []).filter(
+        (id) => requiredLessonIds.includes(String(id)),
       )
 
-      const completedCount = completedCourseLessons.length
-      const rawPercentage = (completedCount / totalLessonsCount) * 100
+      allLessonsCompleted = completedCourseLessons.length === totalLessonsCount
 
-      // Assign mathematically clean integer values capped carefully between 0 and 100
+      // Mathematical display calculation based exclusively on lesson progression
+      const rawPercentage =
+        (completedCourseLessons.length / totalLessonsCount) * 100
       updatedDoc.progressPercentage = Math.min(
         Math.max(Math.round(rawPercentage), 0),
         100,
       )
     } else {
+      allLessonsCompleted = true
       updatedDoc.progressPercentage = 0
     }
 
-    // 3. SECURE STATUS TRANSITIONS
-    if (updatedDoc.progressPercentage === 100) {
-      updatedDoc.status = 'completed'
+    // Evaluate Quiz Attempt Metrics (Checks if EVERY required quiz ID has passed === true)
+    if (requiredQuizIds.length > 0) {
+      const passedQuizIdsFromDb = new Set(
+        (updatedDoc.quizAttempts || [])
+          .filter((attempt) => attempt.passed === true)
+          .map((attempt) => String(attempt.quizId)),
+      )
 
-      // If no certificate has been provisioned yet, generate one natively
+      // Verification matches total requirements check
+      allQuizzesPassed = requiredQuizIds.every((id) =>
+        passedQuizIdsFromDb.has(id),
+      )
+    } else {
+      allQuizzesPassed = true
+    }
+
+    // Evaluate Assignment Requirements (Checks status === 'passed')
+    // NOTE: Change status check to 'pending_reviews' if you want them to finish
+    // simply by submitting without waiting for a grading review.
+    if (requiredAssignmentIds.length > 0) {
+      const passedAssignmentIdsFromDb = new Set(
+        (updatedDoc.assignmentSubmissions || [])
+          .filter((sub) => sub.status === 'passed')
+          .map((sub) => String(sub.assignmentId)),
+      )
+
+      allAssignmentsPassed = requiredAssignmentIds.every((id) =>
+        passedAssignmentIdsFromDb.has(id),
+      )
+    } else {
+      allAssignmentsPassed = true
+    }
+
+    // =================================================================
+    // 3. SECURE STATUS TRANSITIONS & METRIC LOCKOUTS
+    // =================================================================
+
+    // Absolute completion validation gate check
+    if (allLessonsCompleted && allQuizzesPassed && allAssignmentsPassed) {
+      updatedDoc.status = 'completed'
+      updatedDoc.progressPercentage = 100 // Hard lock explicit progress layout display metric
+
+      // Provision native verifiable certification token patterns safely
       if (!updatedDoc.certificate || !updatedDoc.certificate.certificateId) {
-        // Generates a clean, unique 8-character string from a random UUID
         const randomHex = crypto.randomUUID().split('-')[0].toUpperCase()
         const certificateUid = `CERT-${randomHex}`
 
@@ -456,11 +574,13 @@ export async function updateEnrollmentProgressAction(
         }
       }
     } else {
+      // Return status gracefully or step down status gracefully if elements were altered or updated downward
       updatedDoc.status = 'active'
     }
 
-    // Persist calculated mathematical results safely to MongoDB
+    // Persist finalized operational logic states safely to MongoDB instance
     await updatedDoc.save()
+
     return {
       success: true,
       message: 'Progress updated successfully.',

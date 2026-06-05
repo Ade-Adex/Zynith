@@ -260,7 +260,6 @@ export async function getDashboardOverviewAction(userId: string) {
     })
 
     // DYNAMICALLY CALCULATE PENDING PEER REVIEWS FOR ASSIGNMENTS SUBMITTED BY OTHERS
-    // 1. Grab the user's current course enrollment context
     const explicitUserEnrollment =
       enrollments.find((e) => e.status === 'active') || enrollments[0]
 
@@ -369,8 +368,6 @@ export async function getDashboardOverviewAction(userId: string) {
           totalLessons: activeCourseTotalLessons,
           completionRate,
           points: user.stats?.points || 0,
-          // peerReviews: user.stats?.peerReviewsDone || 0,
-          // peerReviewsPending: pendingReviewsCount,
           peerReviews: receivedReviewsCompleted,
           peerReviewsPending: receivedReviewsWaiting,
           streakDays: user.stats?.streakDays || 0,
